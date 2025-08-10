@@ -1,0 +1,6 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- State when checked -->
+    <item android:color="?attr/colorOnPrimary" android:state_checked="true" />
+    <!-- Default state -->
+    <item android:color="?attr/colorOnSurface" />
+</selector>

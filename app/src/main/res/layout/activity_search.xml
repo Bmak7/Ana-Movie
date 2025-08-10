@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                                     xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                     xmlns:tools="http://schemas.android.com/tools"
+                                                     android:layout_width="match_parent"
+                                                     android:layout_height="match_parent"
+                                                     android:fitsSystemWindows="true"
+                                                     tools:context="com.faselhd.app.SearchActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fitsSystemWindows="true">
+
+        <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="البحث"
+                app:subtitleTextColor="#2F2546"
+                android:textColor="#2F2546"
+                app:titleTextColor="@color/md_theme_dark_onPrimary" />
+
+        <!-- Search View Container -->
+        <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="2dp">
+
+            <androidx.appcompat.widget.SearchView
+                    android:id="@+id/search_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    app:iconifiedByDefault="false"
+                    app:queryHint="ابحث عن الأنمي..."
+                    app:searchIcon="@drawable/ic_search"
+                    app:closeIcon="@drawable/ic_close" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+            <!-- Search Results -->
+            <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/search_recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    tools:listitem="@layout/item_anime_grid" />
+
+            <!-- Empty State -->
+            <LinearLayout
+                    android:id="@+id/empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="64dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                <ImageView
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:alpha="0.5"
+                        android:src="@drawable/ic_search"
+                        app:tint="@color/md_theme_dark_onSurfaceVariant"/>
+
+                <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="ابحث عن الأنمي المفضل لديك"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="@color/md_theme_dark_onSurfaceVariant"
+                        app:startIconTint="?attr/colorPrimary"
+                        app:endIconTint="?attr/colorOnSurfaceVariant"
+                        app:hintTextColor="?attr/colorOnSurfaceVariant"/>
+
+                <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="استخدم شريط البحث أعلاه للعثور على المحتوى"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="@color/md_theme_dark_onSurfaceVariant" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Loading Progress -->
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent">
+
+        <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/compose_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:background="@drawable/circle_background"
+                android:elevation="8dp"
+                android:outlineAmbientShadowColor="#404D4B4B"
+                android:outlineSpotShadowColor="#404D4B4B"
+                android:padding="16dp"/>
+    </FrameLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--                                                     xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--                                                     xmlns:tools="http://schemas.android.com/tools"-->
+<!--                                                     android:layout_width="match_parent"-->
+<!--                                                     android:layout_height="match_parent"-->
+<!--                                                     tools:context="com.faselhd.app.SearchActivity">-->
+
+<!--    <com.google.android.material.appbar.AppBarLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content">-->
+
+<!--        <com.google.android.material.appbar.MaterialToolbar-->
+<!--                android:id="@+id/toolbar"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="?attr/actionBarSize"-->
+<!--                 />-->
+
+<!--    </com.google.android.material.appbar.AppBarLayout>-->
+
+<!--    <FrameLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            app:layout_behavior="@string/appbar_scrolling_view_behavior">-->
+
+<!--        <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/search_results_recycler_view"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent"-->
+<!--                android:padding="8dp"-->
+<!--                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"-->
+<!--                app:spanCount="2"-->
+<!--                tools:listitem="@layout/item_anime_grid" />-->
+
+<!--        <com.google.android.material.progressindicator.CircularProgressIndicator-->
+<!--                android:id="@+id/progress_indicator"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:visibility="gone" />-->
+
+<!--        <TextView-->
+<!--                android:id="@+id/empty_text_view"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:text="لا توجد نتائج"-->
+<!--                android:textAppearance="?attr/textAppearanceTitleMedium"-->
+<!--                android:visibility="gone"-->
+<!--                tools:visibility="visible"/>-->
+
+<!--    </FrameLayout>-->
+
+<!--</androidx.coordinatorlayout.widget.CoordinatorLayout>-->

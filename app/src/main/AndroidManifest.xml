@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+
+    <uses-feature
+            android:name="android.software.picture_in_picture"
+            android:required="false" />
+
+    <!-- Add this feature requirement. It's NOT required, so users can install on both phones and TVs. -->
+    <uses-feature
+            android:name="android.software.leanback"
+            android:required="false" />
+
+    <!-- This allows the app to appear on the TV homescreen launcher -->
+    <uses-feature
+            android:name="android.hardware.touchscreen"
+            android:required="false" />
+
+    <!-- Declare that the app doesn't require a camera -->
+    <uses-feature
+            android:name="android.hardware.camera"
+            android:required="false" />
+
+    <!-- Declare that the app doesn't require GPS -->
+    <uses-feature
+            android:name="android.hardware.location"
+            android:required="false" />
+
+    <!-- Declare that the app doesn't require microphone -->
+    <uses-feature
+            android:name="android.hardware.microphone"
+            android:required="false" />
+
+    <application
+            android:allowBackup="true"
+            android:dataExtractionRules="@xml/data_extraction_rules"
+            android:fullBackupContent="@xml/backup_rules"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:theme="@style/Theme.FaselHD"
+            android:usesCleartextTraffic="true"
+            tools:targetApi="31"
+            android:requestLegacyExternalStorage="true">
+        <service
+                android:name="com.faselhd.app.services.VideoDownloadService"
+                android:foregroundServiceType="dataSync"
+                android:exported="false" />
+
+        <activity
+                android:name="com.faselhd.app.MainActivity"
+                android:exported="true"
+                android:theme="@style/Theme.FaselHD">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="com.faselhd.app.BrowseActivity" />
+
+
+        <activity
+                android:name="com.faselhd.app.VideoPlayerActivity"
+                android:exported="false"
+                android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+                android:theme="@style/Theme.FaselHD.VideoPlayer" />
+
+        <activity
+                android:name="com.faselhd.app.GridViewActivity"
+                android:exported="false" />
+
+<!--        <activity-->
+<!--                android:name="com.faselhd.app.VideoPlayerActivityEnhanced"-->
+<!--                android:configChanges="orientation|screenSize|keyboardHidden|screenLayout"-->
+<!--                android:supportsPictureInPicture="true"-->
+<!--                android:theme="@style/Theme.VideoPlayer.Fullscreen"-->
+<!--                android:exported="false" />-->
+
+        <activity
+                android:name="com.faselhd.app.AnimeDetailsActivity"
+                android:exported="false"
+                android:theme="@style/Theme.FaselHD" />
+
+        <activity
+                android:name="com.faselhd.app.SearchActivity"
+                android:exported="false"
+                android:theme="@style/Theme.FaselHD"
+                android:windowSoftInputMode="adjustResize" />
+        <activity
+                android:name="com.faselhd.app.DownloadsActivity"
+                android:exported="false" />
+        <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="${applicationId}.provider"
+                android:exported="false"
+                android:grantUriPermissions="true">
+            <meta-data
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/provider_paths" />
+        </provider>
+
+    </application>
+
+</manifest>
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<manifest xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    xmlns:tools="http://schemas.android.com/tools">-->
+
+<!--    <uses-permission android:name="android.permission.INTERNET" />-->
+<!--    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />-->
+<!--    <uses-permission android:name="android.permission.WAKE_LOCK" />-->
+<!--    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />-->
+
+<!--    &lt;!&ndash; Optional: For local file access &ndash;&gt;-->
+<!--    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
+<!--    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"-->
+<!--                     android:maxSdkVersion="28" />-->
+
+<!--    <application-->
+<!--        android:allowBackup="true"-->
+<!--        android:dataExtractionRules="@xml/data_extraction_rules"-->
+<!--        android:fullBackupContent="@xml/backup_rules"-->
+<!--        android:icon="@mipmap/ic_launcher"-->
+<!--        android:label="@string/app_name"-->
+<!--        android:roundIcon="@mipmap/ic_launcher_round"-->
+<!--        android:theme="@style/Theme.FaselHD"-->
+<!--        android:usesCleartextTraffic="true"-->
+<!--        tools:targetApi="31">-->
+<!--        -->
+<!--        <activity-->
+<!--            android:name="com.faselhd.app.MainActivity"-->
+<!--            android:exported="true"-->
+<!--            android:theme="@style/Theme.FaselHD">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+<!--        &lt;!&ndash; In AndroidManifest.xml, inside the <application> tag &ndash;&gt;-->
+
+<!--        <activity-->
+<!--                android:name="com.faselhd.app.SearchActivity"-->
+<!--                android:exported="false" />-->
+<!--        <activity-->
+<!--                android:name="com.faselhd.app.utils.VideoPlayerActivity"-->
+<!--                android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"-->
+<!--                android:exported="true"-->
+<!--                android:launchMode="singleTop"-->
+<!--                android:screenOrientation="sensor"-->
+<!--                android:theme="@style/Theme.VideoPlayer.Fullscreen">-->
+
+<!--            &lt;!&ndash; Intent filters for handling video files &ndash;&gt;-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.VIEW" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--                <category android:name="android.intent.category.BROWSABLE" />-->
+<!--                <data android:scheme="http" />-->
+<!--                <data android:scheme="https" />-->
+<!--                <data android:scheme="file" />-->
+<!--                <data android:mimeType="video/*" />-->
+<!--            </intent-filter>-->
+
+<!--            &lt;!&ndash; Support for streaming protocols &ndash;&gt;-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.VIEW" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--                <category android:name="android.intent.category.BROWSABLE" />-->
+<!--                <data android:scheme="http" />-->
+<!--                <data android:scheme="https" />-->
+<!--                <data android:pathPattern=".*\\.m3u8" />-->
+<!--                <data android:pathPattern=".*\\.mpd" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+
+<!--        &lt;!&ndash; Media Session Service (for background playback and media controls) &ndash;&gt;-->
+<!--        <service-->
+<!--                android:name="androidx.media3.session.MediaSessionService"-->
+<!--                android:exported="false">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="androidx.media3.session.MediaSessionService" />-->
+<!--            </intent-filter>-->
+<!--        </service>-->
+<!--        -->
+<!--        <activity-->
+<!--            android:name="com.faselhd.app.VideoPlayerActivity"-->
+<!--            android:exported="false"-->
+<!--            android:configChanges="orientation|screenSize|keyboardHidden"-->
+<!--            android:theme="@style/Theme.FaselHD.VideoPlayer" />-->
+<!--            -->
+<!--        <activity-->
+<!--            android:name="com.faselhd.app.AnimeDetailsActivity"-->
+<!--            android:exported="false"-->
+<!--            android:theme="@style/Theme.FaselHD" />-->
+
+<!--    </application>-->
+
+<!--</manifest>-->
+

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 Dynamic Color Scheme -->
+    <!-- Light Theme Colors -->
+    <color name="md_theme_light_primary">#6750A4</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#EADDFF</color>
+    <color name="md_theme_light_onPrimaryContainer">#21005D</color>
+    <color name="md_theme_light_secondary">#625B71</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#E8DEF8</color>
+    <color name="md_theme_light_onSecondaryContainer">#1D192B</color>
+    <color name="md_theme_light_tertiary">#7D5260</color>
+    <color name="md_theme_light_onTertiary">#FFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#FFD8E4</color>
+    <color name="md_theme_light_onTertiaryContainer">#31111D</color>
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_errorContainer">#FFDAD6</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_onErrorContainer">#410002</color>
+    <color name="md_theme_light_background">#FFFBFE</color>
+    <color name="md_theme_light_onBackground">#1C1B1F</color>
+    <color name="md_theme_light_surface">#FFFBFE</color>
+    <color name="md_theme_light_onSurface">#1C1B1F</color>
+    <color name="md_theme_light_surfaceVariant">#E7E0EC</color>
+    <color name="md_theme_light_onSurfaceVariant">#49454F</color>
+    <color name="md_theme_light_outline">#79747E</color>
+    <color name="md_theme_light_outlineVariant">#CAC4D0</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="md_theme_dark_primary">#D0BCFF</color>
+    <color name="md_theme_dark_onPrimary">#381E72</color>
+    <color name="md_theme_dark_primaryContainer">#4F378B</color>
+    <color name="md_theme_dark_onPrimaryContainer">#EADDFF</color>
+    <color name="md_theme_dark_secondary">#CCC2DC</color>
+    <color name="md_theme_dark_onSecondary">#332D41</color>
+    <color name="md_theme_dark_secondaryContainer">#4A4458</color>
+    <color name="md_theme_dark_onSecondaryContainer">#E8DEF8</color>
+    <color name="md_theme_dark_tertiary">#EFB8C8</color>
+    <color name="md_theme_dark_onTertiary">#492532</color>
+    <color name="md_theme_dark_tertiaryContainer">#633B48</color>
+    <color name="md_theme_dark_onTertiaryContainer">#FFD8E4</color>
+    <color name="md_theme_dark_error">#FFB4AB</color>
+    <color name="md_theme_dark_errorContainer">#93000A</color>
+    <color name="md_theme_dark_onError">#690005</color>
+    <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>
+    <color name="md_theme_dark_background">#1C1B1F</color>
+    <color name="md_theme_dark_onBackground">#E6E1E5</color>
+    <color name="md_theme_dark_surface">#1C1B1F</color>
+    <color name="md_theme_dark_onSurface">#E6E1E5</color>
+    <color name="md_theme_dark_surfaceVariant">#49454F</color>
+    <color name="md_theme_dark_onSurfaceVariant">#CAC4D0</color>
+    <color name="md_theme_dark_outline">#938F99</color>
+    <color name="md_theme_dark_outlineVariant">#49454F</color>
+
+    <!-- Additional colors -->
+
+    <color name="transparent">#00000000</color>
+
+    <!-- Custom colors for the app -->
+    <color name="card_background_dark">#2D2D2D</color>
+    <color name="shimmer_base">#F0F0F0</color>
+    <color name="shimmer_highlight">#FFFFFF</color>
+
+    <!-- Light theme inverse colors -->
+    <color name="md_theme_light_inverseSurface">#FFF1F1F1</color>
+    <color name="md_theme_light_inverseOnSurface">#FF121212</color>
+    <color name="md_theme_light_inversePrimary">#FF6750A4</color>
+
+    <!-- Dark theme inverse colors -->
+    <color name="md_theme_dark_inverseSurface">#FF121212</color>
+    <color name="md_theme_dark_inverseOnSurface">#FFF1F1F1</color>
+    <color name="md_theme_dark_inversePrimary">#FFD0BCFF</color>
+    <!-- Material 3 color system -->
+    <color name="primary">#6750A4</color>
+    <color name="primary_dark">#4F378B</color>
+    <color name="secondary">#958DA5</color>
+    <color name="tertiary">#B58392</color>
+<!--    <color name="error">#B3261E</color>-->
+    <color name="onError">#FFFFFF</color>
+
+    <!-- Surface colors -->
+    <color name="surface_dim">#F5EDF6</color>
+    <color name="surface_container_low">#F7F2FA</color>
+    <color name="surface_container_high">#F3EDF7</color>
+    <color name="surface_container_highest">#ECE6F0</color>
+
+    <!-- On colors -->
+    <color name="onPrimary">#FFFFFF</color>
+    <color name="onPrimaryContainer">#21005D</color>
+    <color name="onSurface">#1C1B1F</color>
+    <color name="onSurfaceVariant">#49454F</color>
+
+    <!-- Primary Colors -->
+    <color name="anime_red">#FF4444</color>
+    <color name="anime_blue">#4A90E2</color>
+    <color name="anime_purple">#8E44AD</color>
+
+    <!-- Background Colors -->
+    <color name="background_dark">#0F0F0F</color>
+    <color name="background_darker">#000000</color>
+    <color name="card_background">#1A1A1A</color>
+    <color name="surface_dark">#121212</color>
+
+    <!-- Text Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3B3B3</color>
+    <color name="text_tertiary">#666666</color>
+
+    <!-- Accent Colors -->
+    <color name="accent_green">#4CAF50</color>
+    <color name="accent_orange">#FF9800</color>
+    <color name="accent_yellow">#FFC107</color>
+
+    <!-- Status Colors -->
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+    <color name="error">#F44336</color>
+    <color name="info">#2196F3</color>
+
+    <!-- Progress and UI Elements -->
+    <color name="progress_background">#333333</color>
+    <color name="divider">#2A2A2A</color>
+    <color name="overlay_dark">#80000000</color>
+    <color name="overlay_light">#40000000</color>
+
+    <!-- Chip Colors -->
+    <color name="chip_background_color">@color/card_background</color>
+    <color name="chip_text_color">@color/text_primary</color>
+
+    <!-- Material Design Colors -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="accent_color">#FF00BCD4</color> <!-- Example Cyan color -->
+    <color name="lock_overlay_background">#B3000000</color> <!-- 70% opaque black -->
+    <color name="skip_button_background">#CC000000</color> <!-- Semi-transparent black -->
+    <color name="ripple_color">#33FFFFFF</color> <!-- Semi-transparent white for ripple -->
+
+</resources>
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<resources>-->
+<!--    &lt;!&ndash; Material 3 Dynamic Color Scheme &ndash;&gt;-->
+<!--    &lt;!&ndash; Light Theme Colors &ndash;&gt;-->
+<!--    <color name="md_theme_light_primary">#6750A4</color>-->
+<!--    <color name="md_theme_light_onPrimary">#FFFFFF</color>-->
+<!--    <color name="md_theme_light_primaryContainer">#EADDFF</color>-->
+<!--    <color name="md_theme_light_onPrimaryContainer">#21005D</color>-->
+<!--    <color name="md_theme_light_secondary">#625B71</color>-->
+<!--    <color name="md_theme_light_onSecondary">#FFFFFF</color>-->
+<!--    <color name="md_theme_light_secondaryContainer">#E8DEF8</color>-->
+<!--    <color name="md_theme_light_onSecondaryContainer">#1D192B</color>-->
+<!--    <color name="md_theme_light_tertiary">#7D5260</color>-->
+<!--    <color name="md_theme_light_onTertiary">#FFFFFF</color>-->
+<!--    <color name="md_theme_light_tertiaryContainer">#FFD8E4</color>-->
+<!--    <color name="md_theme_light_onTertiaryContainer">#31111D</color>-->
+<!--    <color name="md_theme_light_error">#BA1A1A</color>-->
+<!--    <color name="md_theme_light_errorContainer">#FFDAD6</color>-->
+<!--    <color name="md_theme_light_onError">#FFFFFF</color>-->
+<!--    <color name="md_theme_light_onErrorContainer">#410002</color>-->
+<!--    <color name="md_theme_light_background">#FFFBFE</color>-->
+<!--    <color name="md_theme_light_onBackground">#1C1B1F</color>-->
+<!--    <color name="md_theme_light_surface">#FFFBFE</color>-->
+<!--    <color name="md_theme_light_onSurface">#1C1B1F</color>-->
+<!--    <color name="md_theme_light_surfaceVariant">#E7E0EC</color>-->
+<!--    <color name="md_theme_light_onSurfaceVariant">#49454F</color>-->
+<!--    <color name="md_theme_light_outline">#79747E</color>-->
+<!--    <color name="md_theme_light_outlineVariant">#CAC4D0</color>-->
+
+<!--    &lt;!&ndash; Dark Theme Colors &ndash;&gt;-->
+<!--    <color name="md_theme_dark_primary">#D0BCFF</color>-->
+<!--    <color name="md_theme_dark_onPrimary">#381E72</color>-->
+<!--    <color name="md_theme_dark_primaryContainer">#4F378B</color>-->
+<!--    <color name="md_theme_dark_onPrimaryContainer">#EADDFF</color>-->
+<!--    <color name="md_theme_dark_secondary">#CCC2DC</color>-->
+<!--    <color name="md_theme_dark_onSecondary">#332D41</color>-->
+<!--    <color name="md_theme_dark_secondaryContainer">#4A4458</color>-->
+<!--    <color name="md_theme_dark_onSecondaryContainer">#E8DEF8</color>-->
+<!--    <color name="md_theme_dark_tertiary">#EFB8C8</color>-->
+<!--    <color name="md_theme_dark_onTertiary">#492532</color>-->
+<!--    <color name="md_theme_dark_tertiaryContainer">#633B48</color>-->
+<!--    <color name="md_theme_dark_onTertiaryContainer">#FFD8E4</color>-->
+<!--    <color name="md_theme_dark_error">#FFB4AB</color>-->
+<!--    <color name="md_theme_dark_errorContainer">#93000A</color>-->
+<!--    <color name="md_theme_dark_onError">#690005</color>-->
+<!--    <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>-->
+<!--    <color name="md_theme_dark_background">#1C1B1F</color>-->
+<!--    <color name="md_theme_dark_onBackground">#E6E1E5</color>-->
+<!--    <color name="md_theme_dark_surface">#1C1B1F</color>-->
+<!--    <color name="md_theme_dark_onSurface">#E6E1E5</color>-->
+<!--    <color name="md_theme_dark_surfaceVariant">#49454F</color>-->
+<!--    <color name="md_theme_dark_onSurfaceVariant">#CAC4D0</color>-->
+<!--    <color name="md_theme_dark_outline">#938F99</color>-->
+<!--    <color name="md_theme_dark_outlineVariant">#49454F</color>-->
+
+<!--    &lt;!&ndash; Additional colors &ndash;&gt;-->
+<!--    <color name="black">#FF000000</color>-->
+<!--    <color name="white">#FFFFFFFF</color>-->
+<!--    <color name="transparent">#00000000</color>-->
+<!--    -->
+<!--    &lt;!&ndash; Custom colors for the app &ndash;&gt;-->
+<!--    <color name="card_background">#FFFFFF</color>-->
+<!--    <color name="card_background_dark">#2D2D2D</color>-->
+<!--    <color name="shimmer_base">#F0F0F0</color>-->
+<!--    <color name="shimmer_highlight">#FFFFFF</color>-->
+<!--</resources>-->
+

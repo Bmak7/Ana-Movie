@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                                     xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                     xmlns:tools="http://schemas.android.com/tools"
+                                                     android:layout_width="match_parent"
+                                                     android:layout_height="match_parent"
+                                                     android:fitsSystemWindows="true"
+                                                     android:background="?attr/colorSurface"
+                                                     tools:context="com.faselhd.app.MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fitsSystemWindows="true"
+            app:liftOnScroll="true">
+
+        <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="@string/app_name"
+                app:titleTextAppearance="?attr/textAppearanceHeadlineMedium"
+                app:titleTextColor="?attr/colorOnSurface"
+                android:textColor="#2F2546"
+                app:menu="@menu/main_menu"
+                app:navigationIconTint="?attr/colorOnSurface" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <androidx.core.widget.NestedScrollView
+                android:id="@+id/nested_scroll_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:focusable="true"
+                android:descendantFocusability="beforeDescendants">
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <!-- Hero Section with Search -->
+<!--            <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:orientation="vertical"-->
+<!--                    android:background="@drawable/hero_gradient_background"-->
+<!--                    android:padding="24dp">-->
+
+<!--                <TextView-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text="اكتشف عالم الأنمي"-->
+<!--                        android:textAppearance="?attr/textAppearanceHeadlineLarge"-->
+<!--                        android:textStyle="bold"-->
+<!--                        android:textColor="?attr/colorOnPrimary"-->
+<!--                        android:gravity="center"-->
+<!--                        android:layout_marginBottom="8dp" />-->
+
+<!--                <TextView-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text="شاهد أحدث الأنمي والمسلسلات المفضلة لديك"-->
+<!--                        android:textAppearance="?attr/textAppearanceBodyLarge"-->
+<!--                        android:textColor="?attr/colorOnPrimary"-->
+<!--                        android:alpha="0.8"-->
+<!--                        android:gravity="center"-->
+<!--                        android:layout_marginBottom="24dp" />-->
+
+<!--                &lt;!&ndash; Enhanced Search Bar &ndash;&gt;-->
+<!--                <com.google.android.material.card.MaterialCardView-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        app:cardCornerRadius="32dp"-->
+<!--                        app:cardElevation="8dp"-->
+<!--                        app:cardBackgroundColor="?attr/colorSurface">-->
+
+<!--                    <com.google.android.material.textfield.TextInputLayout-->
+<!--                            android:layout_width="match_parent"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:hint="@string/search_hint"-->
+<!--                            app:boxBackgroundMode="none"-->
+<!--                            app:endIconMode="clear_text"-->
+<!--                            app:startIconDrawable="@drawable/ic_search"-->
+<!--                            app:startIconTint="?attr/colorPrimary"-->
+<!--                            app:endIconTint="?attr/colorOnSurfaceVariant"-->
+<!--                            app:hintTextColor="?attr/colorOnSurfaceVariant">-->
+
+<!--                        <com.google.android.material.textfield.TextInputEditText-->
+<!--                                android:id="@+id/search_edit_text"-->
+<!--                                android:layout_width="match_parent"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:imeOptions="actionSearch"-->
+<!--                                android:inputType="text"-->
+<!--                                android:maxLines="1"-->
+<!--                                android:padding="16dp"-->
+<!--                                android:textAppearance="?attr/textAppearanceBodyLarge" />-->
+
+<!--                    </com.google.android.material.textfield.TextInputLayout>-->
+
+<!--                </com.google.android.material.card.MaterialCardView>-->
+
+<!--            </LinearLayout>-->
+
+
+            <!-- Content Section -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                <!-- NEW: Main Slider Section -->
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/main_slider_view_pager"
+                    android:layout_width="match_parent"
+                    android:layout_height="280dp"
+                    android:layout_marginBottom="16dp"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"/>
+
+                <!-- Continue Watching Section -->
+                <LinearLayout
+                        android:id="@+id/continue_watching_section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:visibility="gone"> <!-- Initially hidden -->
+
+                    <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_play_arrow"
+                            android:layout_marginEnd="8dp"
+                            app:tint="?attr/colorPrimary"/>
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="تابع المشاهدة"
+                            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface" />
+
+                    <!-- THIS IS THE NEW BUTTON -->
+                    <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_see_all_continue_watching"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/see_all"
+                            android:textColor="?attr/colorPrimary" />
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/continue_watching_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="32dp"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:listitem="@layout/item_continue_watching" />
+
+                <!-- Popular Section -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                    <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_trending"
+                            android:layout_marginEnd="8dp"
+                            app:tint="?attr/colorPrimary"/>
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/popular_anime"
+                            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface" />
+
+                    <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_see_all_popular"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/see_all"
+                            android:textColor="?attr/colorPrimary" />
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/popular_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="32dp"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:listitem="@layout/item_anime_horizontal" />
+                <!-- NEW: Latest Episodes Section -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:paddingHorizontal="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/latest_episodes"
+                            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorPrimary"/>
+
+                    <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_see_all_episodes"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/see_all" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/latest_episodes_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="32dp"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:listitem="@layout/item_anime_horizontal" />
+
+                <!-- Latest Updates Section -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                    <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_new_releases"
+                            android:layout_marginEnd="8dp"
+                            app:tint="?attr/colorSecondary"/>
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/latest_updates"
+                            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface" />
+
+                    <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_see_all_latest"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="عرض الكل"
+                            android:textColor="?attr/colorSecondary" />
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/latest_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:orientation="vertical"
+                        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                        app:spanCount="2"
+                        tools:listitem="@layout/item_anime_grid" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- No Internet Layout -->
+    <LinearLayout
+            android:id="@+id/no_internet_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone"
+            android:background="?attr/colorSurface"
+            tools:visibility="visible">
+
+        <ImageView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:src="@drawable/signal_wifi_off_24px"
+                app:tint="?attr/colorOnSurface"
+                android:layout_marginBottom="16dp"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Internet Connection"
+                android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                android:layout_marginBottom="8dp"/>
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Please check your connection and try again."
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:layout_marginBottom="16dp"/>
+
+        <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_refresh"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Refresh"/>
+
+    </LinearLayout>
+
+    <!-- Loading Progress -->
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent">
+
+        <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/compose_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:background="@drawable/circle_background"
+                android:elevation="8dp"
+                android:outlineAmbientShadowColor="#404D4B4B"
+                android:outlineSpotShadowColor="#404D4B4B"
+                android:padding="16dp"/>
+    </FrameLayout>
+    <!-- Enhanced Floating Action Button -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fab_downloads"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:contentDescription="التحميلات"
+            android:text="Downloads"
+            app:icon="@drawable/download_2_24px"
+            app:backgroundTint="?attr/colorPrimary"
+            app:iconTint="?attr/colorOnPrimary"
+            android:textColor="?attr/colorOnPrimary" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+
+<!--        <?xml version="1.0" encoding="utf-8"?>-->
+<!--<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--    xmlns:tools="http://schemas.android.com/tools"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="match_parent"-->
+<!--    android:fitsSystemWindows="true"-->
+<!--    tools:context="com.faselhd.app.MainActivity">-->
+
+<!--    <com.google.android.material.appbar.AppBarLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:fitsSystemWindows="true">-->
+
+<!--        <com.google.android.material.appbar.MaterialToolbar-->
+<!--            android:id="@+id/toolbar"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="?attr/actionBarSize"-->
+<!--            app:title="@string/app_name"-->
+<!--            app:titleTextColor="?attr/colorOnPrimary"-->
+<!--            app:menu="@menu/main_menu" />-->
+
+<!--    </com.google.android.material.appbar.AppBarLayout>-->
+
+<!--    <androidx.core.widget.NestedScrollView-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        app:layout_behavior="@string/appbar_scrolling_view_behavior">-->
+
+<!--        <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
+<!--            android:padding="16dp">-->
+
+<!--            &lt;!&ndash; Search Bar &ndash;&gt;-->
+<!--            <com.google.android.material.card.MaterialCardView-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginBottom="24dp"-->
+<!--                app:cardCornerRadius="28dp"-->
+<!--                app:cardElevation="2dp">-->
+
+<!--                <com.google.android.material.textfield.TextInputLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:hint="@string/search_hint"-->
+<!--                    app:boxBackgroundMode="none"-->
+<!--                    app:endIconMode="clear_text"-->
+<!--                    app:startIconDrawable="@drawable/ic_search">-->
+
+<!--                    <com.google.android.material.textfield.TextInputEditText-->
+<!--                        android:id="@+id/search_edit_text"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:imeOptions="actionSearch"-->
+<!--                        android:inputType="text"-->
+<!--                        android:maxLines="1" />-->
+
+<!--                </com.google.android.material.textfield.TextInputLayout>-->
+
+<!--            </com.google.android.material.card.MaterialCardView>-->
+
+<!--            &lt;!&ndash; Popular Section &ndash;&gt;-->
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginBottom="16dp"-->
+<!--                android:orientation="horizontal">-->
+
+<!--                <TextView-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_weight="1"-->
+<!--                    android:text="@string/popular_anime"-->
+<!--                    android:textAppearance="?attr/textAppearanceHeadlineSmall"-->
+<!--                    android:textStyle="bold" />-->
+
+<!--                <com.google.android.material.button.MaterialButton-->
+<!--                    android:id="@+id/btn_see_all_popular"-->
+<!--                    style="@style/Widget.Material3.Button.TextButton"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="عرض الكل" />-->
+
+<!--            </LinearLayout>-->
+
+<!--            <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/popular_recycler_view"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginBottom="32dp"-->
+<!--                android:clipToPadding="false"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:paddingStart="8dp"-->
+<!--                android:paddingEnd="8dp"-->
+<!--                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"-->
+<!--                tools:listitem="@layout/item_anime_horizontal" />-->
+
+<!--            &lt;!&ndash; Latest Updates Section &ndash;&gt;-->
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginBottom="16dp"-->
+<!--                android:orientation="horizontal">-->
+
+<!--                <TextView-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_weight="1"-->
+<!--                    android:text="@string/latest_updates"-->
+<!--                    android:textAppearance="?attr/textAppearanceHeadlineSmall"-->
+<!--                    android:textStyle="bold" />-->
+
+<!--                <com.google.android.material.button.MaterialButton-->
+<!--                    android:id="@+id/btn_see_all_latest"-->
+<!--                    style="@style/Widget.Material3.Button.TextButton"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="عرض الكل" />-->
+
+<!--            </LinearLayout>-->
+
+<!--            <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/latest_recycler_view"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:clipToPadding="false"-->
+<!--                android:orientation="vertical"-->
+<!--                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"-->
+<!--                app:spanCount="2"-->
+<!--                tools:listitem="@layout/item_anime_grid" />-->
+
+<!--        </LinearLayout>-->
+
+<!--    </androidx.core.widget.NestedScrollView>-->
+
+<!--    &lt;!&ndash; Loading Progress &ndash;&gt;-->
+<!--    <com.google.android.material.progressindicator.CircularProgressIndicator-->
+<!--        android:id="@+id/progress_indicator"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="center"-->
+<!--        android:visibility="gone" />-->
+
+<!--    &lt;!&ndash; Floating Action Button &ndash;&gt;-->
+<!--    <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+<!--        android:id="@+id/fab_search"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="bottom|end"-->
+<!--        android:layout_margin="16dp"-->
+<!--        android:contentDescription="@string/nav_search"-->
+<!--        app:srcCompat="@drawable/ic_search" />-->
+
+<!--</androidx.coordinatorlayout.widget.CoordinatorLayout>-->
+

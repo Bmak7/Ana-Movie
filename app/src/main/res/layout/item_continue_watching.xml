@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:tools="http://schemas.android.com/tools"
+                                                   android:layout_width="280dp"
+                                                   android:layout_height="wrap_content"
+                                                   android:layout_margin="8dp"
+                                                   app:cardCornerRadius="16dp">
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="160dp">
+
+            <!-- This is the ImageView with id 'episode_icon' -->
+            <ImageView
+                    android:id="@+id/episode_icon"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    tools:src="@tools:sample/backgrounds/scenic" />
+
+            <!-- This is the ProgressBar with id 'episode_progress_bar' -->
+            <ProgressBar
+                    android:id="@+id/episode_progress_bar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="5dp"
+                    android:layout_gravity="bottom"
+                    android:progressDrawable="@drawable/custom_seekbar_progress"
+                    tools:progress="60" />
+
+        </FrameLayout>
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+            <!-- This is the TextView with id 'anime_title_text' -->
+            <TextView
+                    android:id="@+id/anime_title_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="Attack on Titan" />
+
+            <!-- This is the TextView with id 'episode_title' -->
+            <TextView
+                    android:id="@+id/episode_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="Season 1: The Fall of Shiganshina" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--                                                   xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--                                                   xmlns:tools="http://schemas.android.com/tools"-->
+<!--                                                   android:layout_width="280dp"-->
+<!--                                                   android:layout_height="wrap_content"-->
+<!--                                                   android:layout_margin="8dp"-->
+<!--                                                   app:cardCornerRadius="12dp">-->
+
+<!--    <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical">-->
+
+<!--        <FrameLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="160dp">-->
+
+<!--            <ImageView-->
+<!--                    android:id="@+id/item_image"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="match_parent"-->
+<!--                    android:scaleType="centerCrop"-->
+<!--                    tools:src="@tools:sample/backgrounds/scenic" />-->
+
+<!--            <View-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="match_parent"-->
+<!--                    android:background="#66000000" />-->
+
+<!--            <ProgressBar-->
+<!--                    android:id="@+id/item_progress"-->
+<!--                    style="?android:attr/progressBarStyleHorizontal"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="4dp"-->
+<!--                    android:layout_gravity="bottom"-->
+<!--                    android:progressDrawable="@drawable/custom_seekbar_progress"-->
+<!--                    tools:progress="60" />-->
+
+<!--        </FrameLayout>-->
+
+<!--        <TextView-->
+<!--                android:id="@+id/item_title"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:paddingHorizontal="12dp"-->
+<!--                android:paddingTop="8dp"-->
+<!--                android:textAppearance="?attr/textAppearanceBodyLarge"-->
+<!--                android:maxLines="1"-->
+<!--                android:ellipsize="end"-->
+<!--                tools:text="Attack on Titan" />-->
+
+<!--        <TextView-->
+<!--                android:id="@+id/item_episode_title"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:paddingHorizontal="12dp"-->
+<!--                android:paddingBottom="12dp"-->
+<!--                android:textAppearance="?attr/textAppearanceBodySmall"-->
+<!--                android:textColor="?attr/colorOnSurfaceVariant"-->
+<!--                android:maxLines="1"-->
+<!--                android:ellipsize="end"-->
+<!--                tools:text="Season 1: Episode 5" />-->
+<!--    </LinearLayout>-->
+<!--</com.google.android.material.card.MaterialCardView>-->

@@ -1,0 +1,14 @@
+<resources>
+    <!-- Screen margins -->
+    <dimen name="screen_edge_margin">16dp</dimen>
+    <dimen name="item_spacing">8dp</dimen>
+    <dimen name="grid_spacing">4dp</dimen>
+
+    <!-- App bar -->
+    <dimen name="app_bar_height">280dp</dimen>
+
+    <!-- FAB -->
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="fab_corner_radius">16dp</dimen>
+    <dimen name="fab_elevation">6dp</dimen>
+</resources>

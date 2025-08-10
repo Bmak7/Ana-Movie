@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:tools="http://schemas.android.com/tools"
+                                                   android:layout_width="match_parent"
+                                                   android:layout_height="wrap_content"
+                                                   android:layout_marginHorizontal="8dp"
+                                                   android:layout_marginVertical="6dp"
+                                                   android:clickable="true"
+                                                   android:focusable="true"
+                                                   app:cardCornerRadius="16dp"
+                                                   app:cardElevation="2dp"
+                                                   app:cardBackgroundColor="?attr/colorSurface"
+                                                   app:rippleColor="?attr/colorPrimary">
+
+    <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        <!-- Konten Utama -->
+        <LinearLayout
+                android:id="@+id/episode_info_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+
+            <!-- Ikon Episode -->
+            <com.google.android.material.card.MaterialCardView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="?attr/colorPrimaryContainer">
+
+                <!-- BERI ID PADA IKON INI -->
+                <ImageView
+                        android:id="@+id/episode_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_play_arrow"
+                        app:tint="?attr/colorOnPrimaryContainer"/>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Info Episode -->
+            <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:orientation="vertical">
+
+                <TextView
+                        android:id="@+id/episode_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        tools:text="الحلقة الأولى - البداية" />
+
+                <TextView
+                        android:id="@+id/episode_number"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="الحلقة 1" />
+
+                <!-- Info Meta Episode tidak perlu diubah -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                    <!-- ... (konten meta tetap sama) ... -->
+                </LinearLayout>
+
+                <!-- Spacer to push button to the end -->
+                <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                <!-- Download Action Button -->
+                <ImageButton
+                        android:id="@+id/btn_download"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/download_2_24px"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:tint="?attr/colorOnSurfaceVariant"
+                        android:contentDescription="Download Episode" />
+
+                <!-- ADD THIS Download-Specific Progress Bar -->
+                <ProgressBar
+                        android:id="@+id/download_progress_indicator"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+            </LinearLayout>
+
+            <!-- Tombol Aksi (Tombol putar di sebelah kanan, bisa juga dihapus jika ikon di kiri sudah cukup) -->
+            <com.google.android.material.button.MaterialButton
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    app:icon="@drawable/ic_play_arrow"
+                    app:iconTint="?attr/colorPrimary" />
+        </LinearLayout>
+
+        <!-- TAMBAHKAN PROGRESS BAR DI SINI -->
+        <ProgressBar
+                android:id="@+id/episode_progress_bar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_gravity="bottom"
+                android:progressDrawable="@drawable/custom_seekbar_progress"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:progress="60" />
+
+    </FrameLayout>
+</com.google.android.material.card.MaterialCardView>
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--                                                   xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--                                                   xmlns:tools="http://schemas.android.com/tools"-->
+<!--                                                   android:layout_width="match_parent"-->
+<!--                                                   android:layout_height="wrap_content"-->
+<!--                                                   android:layout_margin="8dp"-->
+<!--                                                   android:clickable="true"-->
+<!--                                                   android:focusable="true"-->
+<!--                                                   app:cardCornerRadius="16dp"-->
+<!--                                                   app:cardElevation="2dp"-->
+<!--                                                   app:cardBackgroundColor="?attr/colorSurface"-->
+<!--                                                   app:rippleColor="?attr/colorPrimary">-->
+
+<!--    <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:padding="16dp"-->
+<!--            android:gravity="center_vertical">-->
+
+<!--        &lt;!&ndash; Episode Icon &ndash;&gt;-->
+<!--        <com.google.android.material.card.MaterialCardView-->
+<!--                android:layout_width="48dp"-->
+<!--                android:layout_height="48dp"-->
+<!--                app:cardCornerRadius="24dp"-->
+<!--                app:cardElevation="0dp"-->
+<!--                app:cardBackgroundColor="?attr/colorPrimaryContainer">-->
+
+<!--            <ImageView-->
+<!--                    android:layout_width="24dp"-->
+<!--                    android:layout_height="24dp"-->
+<!--                    android:layout_gravity="center"-->
+<!--                    android:src="@drawable/ic_play_arrow"-->
+<!--                    app:tint="?attr/colorOnPrimaryContainer"/>-->
+
+<!--        </com.google.android.material.card.MaterialCardView>-->
+
+<!--        &lt;!&ndash; Episode Info &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:layout_marginStart="16dp"-->
+<!--                android:orientation="vertical">-->
+
+<!--            <TextView-->
+<!--                    android:id="@+id/episode_title"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:textAppearance="?attr/textAppearanceBodyLarge"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:textColor="?attr/colorOnSurface"-->
+<!--                    android:maxLines="2"-->
+<!--                    android:ellipsize="end"-->
+<!--                    tools:text="الحلقة الأولى - البداية" />-->
+
+<!--            <TextView-->
+<!--                    android:id="@+id/episode_number"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="4dp"-->
+<!--                    android:textAppearance="?attr/textAppearanceBodyMedium"-->
+<!--                    android:textColor="?attr/colorOnSurfaceVariant"-->
+<!--                    tools:text="الحلقة 1" />-->
+
+<!--            &lt;!&ndash; Episode Meta Info &ndash;&gt;-->
+<!--            <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="8dp"-->
+<!--                    android:orientation="horizontal"-->
+<!--                    android:gravity="center_vertical">-->
+
+<!--                <ImageView-->
+<!--                        android:layout_width="16dp"-->
+<!--                        android:layout_height="16dp"-->
+<!--                        android:src="@drawable/ic_access_time"-->
+<!--                        app:tint="?attr/colorOnSurfaceVariant"/>-->
+
+<!--                <TextView-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginStart="4dp"-->
+<!--                        android:text="24 دقيقة"-->
+<!--                        android:textAppearance="?attr/textAppearanceLabelMedium"-->
+<!--                        android:textColor="?attr/colorOnSurfaceVariant" />-->
+
+<!--                <View-->
+<!--                        android:layout_width="8dp"-->
+<!--                        android:layout_height="8dp"-->
+<!--                        android:layout_marginHorizontal="8dp"-->
+<!--                        android:background="@drawable/dot_separator" />-->
+
+<!--                <TextView-->
+<!--                        android:layout_width="wrap_content"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:text="HD"-->
+<!--                        android:textAppearance="?attr/textAppearanceLabelMedium"-->
+<!--                        android:textColor="?attr/colorSecondary"-->
+<!--                        android:textStyle="bold" />-->
+
+<!--            </LinearLayout>-->
+
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash; Action Button &ndash;&gt;-->
+<!--        <com.google.android.material.button.MaterialButton-->
+<!--                style="@style/Widget.Material3.Button.IconButton"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center_vertical"-->
+<!--                app:icon="@drawable/ic_play_arrow"-->
+<!--                app:iconTint="?attr/colorPrimary" />-->
+
+<!--    </LinearLayout>-->
+
+<!--</com.google.android.material.card.MaterialCardView>-->
+
+<!--&lt;!&ndash;<?xml version="1.0" encoding="utf-8"?>&ndash;&gt;-->
+<!--&lt;!&ndash;<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"&ndash;&gt;-->
+<!--&lt;!&ndash;    xmlns:app="http://schemas.android.com/apk/res-auto"&ndash;&gt;-->
+<!--&lt;!&ndash;    xmlns:tools="http://schemas.android.com/tools"&ndash;&gt;-->
+<!--&lt;!&ndash;    android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;    android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;    android:layout_margin="8dp"&ndash;&gt;-->
+<!--&lt;!&ndash;    android:clickable="true"&ndash;&gt;-->
+<!--&lt;!&ndash;    android:focusable="true"&ndash;&gt;-->
+<!--&lt;!&ndash;    app:cardCornerRadius="8dp"&ndash;&gt;-->
+<!--&lt;!&ndash;    app:cardElevation="2dp">&ndash;&gt;-->
+
+<!--&lt;!&ndash;    <LinearLayout&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:orientation="horizontal"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:padding="16dp">&ndash;&gt;-->
+
+<!--&lt;!&ndash;        <LinearLayout&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_width="0dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_weight="1"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:orientation="vertical">&ndash;&gt;-->
+
+<!--&lt;!&ndash;            <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;                android:id="@+id/episode_title"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:textAppearance="?attr/textAppearanceBodyLarge"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:textStyle="bold"&ndash;&gt;-->
+<!--&lt;!&ndash;                tools:text="الحلقة الأولى" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;            <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;                android:id="@+id/episode_number"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_marginTop="4dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:textAppearance="?attr/textAppearanceBodyMedium"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:textColor="?attr/colorOnSurfaceVariant"&ndash;&gt;-->
+<!--&lt;!&ndash;                tools:text="الحلقة 1" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;        </LinearLayout>&ndash;&gt;-->
+
+<!--&lt;!&ndash;        <com.google.android.material.button.MaterialButton&ndash;&gt;-->
+<!--&lt;!&ndash;            style="@style/Widget.Material3.Button.IconButton"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_width="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_gravity="center_vertical"&ndash;&gt;-->
+<!--&lt;!&ndash;            app:icon="@drawable/ic_play_arrow" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;    </LinearLayout>&ndash;&gt;-->
+
+<!--&lt;!&ndash;</com.google.android.material.card.MaterialCardView>&ndash;&gt;-->
+

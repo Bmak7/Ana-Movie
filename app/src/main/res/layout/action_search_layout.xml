@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImageButton xmlns:android="http://schemas.android.com/apk/res/android"
+             android:id="@+id/search_button"
+             android:layout_width="?attr/actionBarSize"
+             android:layout_height="?attr/actionBarSize"
+             android:src="@drawable/ic_search"
+             android:background="?attr/selectableItemBackgroundBorderless"
+             android:contentDescription="@string/nav_search"
+             android:focusable="true"
+             android:textColor="?attr/colorPrimary"
+             android:focusableInTouchMode="true"/>

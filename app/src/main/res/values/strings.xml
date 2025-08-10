@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ana Movie</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_search">البحث</string>
+    <string name="nav_latest">الأحدث</string>
+    <string name="nav_favorites">المفضلة</string>
+    
+    <!-- Home Screen -->
+    <string name="popular_anime">أحدث المسلسلات</string>
+    <string name="latest_updates">آخر التحديثات</string>
+    <string name="trending_now">الأكثر رواجاً الآن</string>
+    
+    <!-- Search -->
+    <string name="search_hint">ابحث عن الأنمي...</string>
+    <string name="search_results">نتائج البحث</string>
+    <string name="no_resultss">لا توجد نتائج</string>
+
+
+    <!-- Video Player -->
+    <string name="lock_controls">قفل التحكم</string>
+    <string name="fullscreen">ملء الشاشة</string>
+    <string name="subtitles">الترجمة</string>
+    <string name="next_episode">الحلقة التالية</string>
+    <string name="resize_mode">تصغير</string>
+    <string name="quality">الجودة</string>
+
+
+    <!-- Anime Details -->
+    <string name="episodes">الحلقات</string>
+    <string name="description">الوصف</string>
+    <string name="genre">النوع</string>
+    <string name="status">الحالة</string>
+    <string name="watch_now">شاهد الآن</string>
+    <string name="add_to_favorites">إضافة للمفضلة</string>
+    <string name="remove_from_favorites">إزالة من المفضلة</string>
+    <string name="seasons">المواسم</string>
+
+    <!-- Status -->
+    <string name="status_ongoing">مستمر</string>
+    <string name="status_completed">مكتمل</string>
+    <string name="status_unknown">غير معروف</string>
+    
+    <!-- Video Player -->
+    <string name="video_loading">جاري تحميل الفيديو...</string>
+    <string name="video_error">خطأ في تشغيل الفيديو</string>
+    <string name="video_retry">إعادة المحاولة</string>
+    
+    <!-- Loading and Error States -->
+    <string name="loading">جاري التحميل...</string>
+    <string name="error_network">خطأ في الشبكة</string>
+    <string name="error_generic">حدث خطأ ما</string>
+    <string name="retry">إعادة المحاولة</string>
+    
+    <!-- Common -->
+    <string name="ok">موافق</string>
+    <string name="cancel">إلغاء</string>
+    <string name="yes">نعم</string>
+    <string name="no">لا</string>
+    <string name="close">إغلاق</string>
+    <string name="back">رجوع</string>
+    
+    <!-- Filters -->
+    <string name="filter_all">الكل</string>
+    <string name="filter_movies">أفلام</string>
+    <string name="filter_series">مسلسلات</string>
+    <string name="filter_anime">أنمي</string>
+    
+    <!-- Quality -->
+    <string name="quality_1080p">1080p</string>
+    <string name="quality_720p">720p</string>
+    <string name="quality_480p">480p</string>
+    <string name="quality_360p">360p</string>
+
+    <!-- Existing strings -->
+    <string name="search">Search</string>
+    <string name="see_all">عرض الكل</string>
+    <string name="discover_anime_world">Discover Anime World</string>
+    <string name="discover_anime_subtitle">Watch your favorite shows and movies</string>
+    <string name="no_content">No content available</string>
+    <string name="load_error_short">Failed to load content</string>
+
+    <string name="search_error">Search error: %s</string>
+    <string name="load_error">Load error: %s</string>
+
+
+    <string name="no_description">لا يوجد وصف متاح</string>
+    <string name="unknown">غير محدد</string>
+    <string name="genre_format">النوع: %s</string>
+    <string name="status_format">الحالة: %s</string>
+    <string name="no_episodes_available">لا توجد حلقات متاحة</string>
+    <string name="episode_load_error">خطأ في تحميل الحلقات: %s</string>
+    <string name="invalid_anime_url">رابط الأنمي غير صالح</string>
+    <string name="no_video_url_found">لا يمكن العثور على رابط الفيديو</string>
+    <string name="video_load_error">خطأ في تحميل الفيديو: %s</string>
+    <string name="invalid_episode_url">رابط الحلقة غير صالح</string>
+    <string name="episode_default_name">حلقة</string>
+    <string name="download_channel_name">chanel 1</string>
+    <string name="tap_to_unlock">Tap to unlock</string>
+    <string name="skip_intro">Skip Intro</string>
+
+    <string name="nav_settings">nav settings</string>
+    <string name="nav_downloads">nav downloads</string>
+    <string name="play">play</string>
+    <string name="info">info</string>
+    <string name="continue_watching">continue watching</string>
+
+    <!-- Main Activity -->
+
+
+    <!-- Anime Details -->
+
+    <string name="year">Year</string>
+    <string name="rating">Rating</string>
+
+
+    <!-- Search -->
+
+    <string name="no_results">No results found</string>
+    <string name="search_anime_hint">Search for your favorite anime</string>
+    <string name="use_search_bar">Use the search bar above to find content</string>
+
+    <!-- Downloads -->
+    <string name="downloads">Downloads</string>
+    <string name="download">Download</string>
+    <string name="downloading">Downloading</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="download_failed">Download Failed</string>
+    <string name="download_paused">Paused</string>
+    <string name="download_queued">Queued</string>
+    <string name="cancel_download">Cancel Download</string>
+    <string name="pause_download">Pause Download</string>
+    <string name="resume_download">Resume Download</string>
+    <string name="delete_download">Delete Download</string>
+    <string name="play_download">Play</string>
+
+    <!-- Video Player -->
+    <string name="pause">Pause</string>
+    <string name="previous_episode">Previous Episode</string>
+    <string name="exit_fullscreen">Exit Fullscreen</string>
+    <string name="volume">Volume</string>
+    <string name="brightness">Brightness</string>
+
+    <!-- Status Messages -->
+    <string name="error_loading">Error loading content</string>
+    <string name="no_internet">No internet connection</string>
+    <string name="try_again">Try Again</string>
+    <string name="something_went_wrong">Something went wrong</string>
+
+    <!-- Anime Status -->
+
+    <string name="status_licensed">Licensed</string>
+    <string name="status_publishing_finished">Publishing Finished</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="status_on_hiatus">On Hiatus</string>
+
+    <!-- Quality Options -->
+    <string name="quality_auto">Auto</string>
+
+
+    <!-- Permissions -->
+    <string name="permission_storage_title">Storage Permission</string>
+    <string name="permission_storage_message">This app needs storage permission to download anime episodes</string>
+    <string name="permission_notification_title">Notification Permission</string>
+    <string name="permission_notification_message">This app needs notification permission to show download progress</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="deny_permission">Deny</string>
+
+    <!-- Menu -->
+    <string name="menu_search">Search</string>
+    <string name="menu_downloads">Downloads</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_about">About</string>
+
+    <!-- Content Descriptions -->
+    <string name="anime_poster">Anime poster</string>
+    <string name="episode_thumbnail">Episode thumbnail</string>
+    <string name="play_button">Play button</string>
+    <string name="download_button">Download button</string>
+    <string name="search_button">Search button</string>
+    <string name="back_button">Back button</string>
+    <string name="menu_button">Menu button</string>
+
+    <!-- Progress -->
+    <string name="progress_format">%d%% watched</string>
+    <string name="download_progress_format">%d%% downloaded</string>
+    <string name="file_size_format">%.1f MB</string>
+
+    <!-- Time Format -->
+    <string name="duration_format">%d min</string>
+    <string name="time_format">%02d:%02d</string>
+
+    <!-- Empty States -->
+    <string name="empty_downloads">No downloads yet</string>
+    <string name="empty_continue_watching">No episodes in progress</string>
+    <string name="empty_search">Start typing to search for anime</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_delete_title">Delete Download</string>
+    <string name="dialog_delete_message">Are you sure you want to delete this download?</string>
+    <string name="dialog_quality_title">Select Quality</string>
+    <string name="dialog_player_title">Choose Player</string>
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_delete">Delete</string>
+    <string name="dialog_ok">OK</string>
+
+    <!-- Player Options -->
+    <string name="play_with_internal">Play with In-App Player</string>
+    <string name="play_with_external">Play with External App</string>
+    <string name="no_external_player">No external player found</string>
+    <string name="latest_episodes">أحدث الحلقات</string>
+
+
+</resources>
+
