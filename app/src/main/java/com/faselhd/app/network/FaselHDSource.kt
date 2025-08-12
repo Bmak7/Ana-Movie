@@ -2,6 +2,7 @@ package com.faselhd.app.network
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import com.faselhd.app.models.*
 import com.faselhd.app.utils.PlaylistUtils
 import com.faselhd.app.utils.Tls12SocketFactory
@@ -300,27 +301,59 @@ class FaselHDSource(private val context: Context)  {
 
     // ============================ Video Links (FINAL VERSION) =============================
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
-        val absoluteUrl = if (episodeUrl.startsWith("http")) episodeUrl else "$baseUrl$episodeUrl"
-        val request = Request.Builder().url(absoluteUrl).build()
-        val response = client.newCall(request).execute()
+        try {
+            val absoluteUrl = if (episodeUrl.startsWith("http")) episodeUrl else "$baseUrl$episodeUrl"
+            val request = Request.Builder()
+                .url(absoluteUrl)
+                .header("Referer", baseUrl)
+                .header("Origin", baseUrl)
+                .build()
 
-        videoListParse(response)
+            val response = client.newCall(request).execute()
+            videoListParse(response)
+        } catch (e: Exception) {
+            Log.e("FaselHDSource", "Error fetching video list", e)
+            emptyList()
+        }
+    }
+
+    fun normalizeHlsUrl(url: String): String {
+        return url
+            .trim() // remove spaces and line breaks
+            .removeSuffix("\\") // remove unwanted trailing backslash
+            .removeSuffix("/") // optional: remove trailing slash if not needed
     }
 
     private suspend fun videoListParse(response: Response): List<Video> {
-        val document = Jsoup.parse(response.body!!.string())
-        val iframeUrl = document.selectFirst("iframe")?.attr("src")?.substringBefore("&img")
+        return try {
+            val document = Jsoup.parse(response.body!!.string())
+            val iframeUrl = document.selectFirst("iframe")?.attr("src")?.substringBefore("&img")
+            Log.d("FaselHDSource", "Extracted iframe URL: $iframeUrl")
 
-        if (iframeUrl.isNullOrBlank()) {
-            return emptyList()
-        }
+            if (iframeUrl.isNullOrBlank()) {
+                return emptyList()
+            }
 
-        // Pass empty headers for now, can be customized later if needed
-        val hlsUrl = webViewResolver.getUrl(iframeUrl, emptyMap())
-        println("videos323344dcw : $hlsUrl")
-        return if (hlsUrl.isNotBlank()) {
-            playlistUtils.extractFromHls(hlsUrl)
-        } else {
+            // Add necessary headers
+            val headers = mapOf(
+                "Referer" to baseUrl,
+                "Origin" to baseUrl,
+                "User-Agent" to webViewResolver.userAgent
+            )
+
+            val rawUrl  = webViewResolver.getUrl(iframeUrl, headers)
+            val hlsUrl = normalizeHlsUrl(rawUrl)
+            Log.d("FaselHDSource", "Resolved video URL: $hlsUrl ana")
+
+            if (hlsUrl.isNotBlank()) {
+                playlistUtils.extractFromHls(hlsUrl).also {
+                    Log.d("FaselHDSource", "Extracted ${it.size} video qualities")
+                }
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("FaselHDSource", "Error parsing video list", e)
             emptyList()
         }
     }

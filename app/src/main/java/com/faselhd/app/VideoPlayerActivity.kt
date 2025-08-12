@@ -258,6 +258,21 @@ class VideoPlayerActivity : AppCompatActivity() {
 
                     // 4. Upsert the new entry for the next episode.
                     db.watchHistoryDao().upsert(nextEpisodeHistory)
+
+                    val watchHistory = WatchHistory(
+                        episodeUrl = episode.url!!,
+                        animeUrl = anime.url!!,
+                        animeTitle = anime.title ?: "Unknown Title",
+                        animeThumbnailUrl = anime.thumbnail_url,
+                        episodeName = episode.name ?: "Unknown Episode",
+                        lastWatchedPosition = position,
+                        duration = duration,
+                        timestamp = System.currentTimeMillis(),
+                        isFinished = true,
+                        episodeNumber = episode.episode_number.toInt(),
+                        seasonEpisodes = seasonEpisodeList
+                    )
+                    db.watchHistoryDao().upsert(watchHistory)
                 }
                 // If it's the last episode of the season, we do nothing, effectively removing the series
                 // from the "Continue Watching" list because the last episode was deleted and there's no next one to add.

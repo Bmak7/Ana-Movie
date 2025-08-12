@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -12,13 +13,17 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 class WebViewResolver(private val context: Context) {
-
-    private val handler = Handler(Looper.getMainLooper())
-    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
+    private val TAG = "WebViewResolver"
+    val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
 
     companion object {
-        private const val TIMEOUT_MS: Long = 20000 // 20 seconds
-        private val VIDEO_REGEX by lazy { Regex("\\.(mp4|m3u8)") }
+        private const val TIMEOUT_MS: Long = 30000
+        private val VIDEO_REGEX by lazy {
+            Regex("""\.(mp4|m3u8|mpd|mkv|avi|mov|flv|wmv|webm)""", RegexOption.IGNORE_CASE)
+        }
+        private val STREAM_REGEX by lazy {
+            Regex("""(https?://[^\s'"]+\.(m3u8|mp4)[^\s'"]*)""", RegexOption.IGNORE_CASE)
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -26,57 +31,80 @@ class WebViewResolver(private val context: Context) {
         return suspendCancellableCoroutine { continuation ->
             var webView: WebView? = null
             var resolved = false
+            val mainHandler = Handler(Looper.getMainLooper())
 
             val timeoutRunnable = Runnable {
                 if (!resolved) {
                     resolved = true
-                    continuation.resume("") // Return empty string on timeout
+                    continuation.resume("")
                     webView?.destroy()
                 }
             }
 
-            handler.post {
-                val wv = WebView(context)
-                webView = wv
-                with(wv.settings) {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    databaseEnabled = true
-                    useWideViewPort = false
-                    loadWithOverviewMode = false
-                    userAgentString = this@WebViewResolver.userAgent
-                }
+            mainHandler.post {
+                val wv = WebView(context).apply {
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        databaseEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+                        userAgentString = this@WebViewResolver.userAgent
+                    }
 
-                wv.webViewClient = object : WebViewClient() {
-                    override fun shouldInterceptRequest(
-                        view: WebView,
-                        request: WebResourceRequest,
-                    ): WebResourceResponse? {
-                        val url = request.url.toString()
-                        if (VIDEO_REGEX.containsMatchIn(url) && !resolved) {
-                            resolved = true
-                            // *** THE FIX IS HERE ***
-                            // We are on a background thread. Post the work to the main thread.
-                            handler.post {
-                                handler.removeCallbacks(timeoutRunnable) // Clean up the timeout
-                                continuation.resume(url) // Resume the coroutine with the result
-                                view.destroy() // Safely destroy the WebView on the main thread
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(
+                            view: WebView,
+                            request: WebResourceRequest
+                        ): WebResourceResponse? {
+                            val url = request.url.toString()
+                            if (VIDEO_REGEX.containsMatchIn(url)) {
+                                if (!resolved) {
+                                    resolved = true
+                                    mainHandler.removeCallbacks(timeoutRunnable)
+                                    continuation.resume(url)
+                                    view.destroy()
+                                }
+                            }
+                            return super.shouldInterceptRequest(view, request)
+                        }
+
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            if (!resolved && view != null) {
+                                view.evaluateJavascript("(function() { return document.body.innerHTML; })();") { html ->
+                                    if (resolved) return@evaluateJavascript
+
+                                    try {
+                                        val matches = STREAM_REGEX.findAll(html ?: "")
+                                        matches.firstOrNull()?.groupValues?.get(1)?.let { videoUrl ->
+                                            if (!resolved) {
+                                                resolved = true
+                                                mainHandler.removeCallbacks(timeoutRunnable)
+                                                continuation.resume(videoUrl)
+                                                view.destroy()
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        // Log error if needed
+                                    }
+                                }
                             }
                         }
-                        return super.shouldInterceptRequest(view, request)
                     }
                 }
+                webView = wv
 
                 continuation.invokeOnCancellation {
-                    handler.removeCallbacks(timeoutRunnable)
-                    handler.post {
-                        webView?.stopLoading()
-                        webView?.destroy()
+                    mainHandler.removeCallbacks(timeoutRunnable)
+                    mainHandler.post {
+                        if (!resolved) {
+                            resolved = true
+                            webView?.stopLoading()
+                            webView?.destroy()
+                        }
                     }
                 }
 
-                // Start timeout
-                handler.postDelayed(timeoutRunnable, TIMEOUT_MS)
+                mainHandler.postDelayed(timeoutRunnable, TIMEOUT_MS)
                 wv.loadUrl(requestUrl, headers)
             }
         }
