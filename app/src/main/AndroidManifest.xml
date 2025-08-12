@@ -77,7 +77,12 @@
                 android:name="com.faselhd.app.GridViewActivity"
                 android:exported="false" />
 
-<!--        <activity-->
+        <activity
+                android:name="com.faselhd.app.MyListActivity"
+                android:exported="false" />
+
+
+        <!--        <activity-->
 <!--                android:name="com.faselhd.app.VideoPlayerActivityEnhanced"-->
 <!--                android:configChanges="orientation|screenSize|keyboardHidden|screenLayout"-->
 <!--                android:supportsPictureInPicture="true"-->

@@ -40,6 +40,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.navigation.NavigationView
 import com.faselhd.app.adapters.ContinueWatchingAdapter
 import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.WatchHistory
@@ -54,6 +58,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import androidx.core.widget.NestedScrollView
+import androidx.drawerlayout.widget.DrawerLayout.DrawerListener // Add this import
 import androidx.viewpager2.widget.ViewPager2
 import com.faselhd.app.adapters.SliderAdapter
 import com.google.android.material.button.MaterialButton
@@ -61,7 +66,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.isActive
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+
 
     // 1. Declare the permission launcher
     private val requestPermissionLauncher =
@@ -125,6 +131,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSeeAllContinueWatching: MaterialButton // Add this
 
 
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
+    private lateinit var toggle: ActionBarDrawerToggle
+
+
+
 
     private fun setupFab() {
         // The search functionality is now only in the top search bar
@@ -149,6 +161,7 @@ class MainActivity : AppCompatActivity() {
 
         initViews()
         setupToolbar()
+        setupDrawer()
         setupRecyclerViews()
         setupFab() // Call the renamed setup function
         setupSwipeToRefresh() // Add this
@@ -195,17 +208,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
+        // Pass the event to the ActionBarDrawerToggle.
+        // If it returns true, it means the drawer toggle has handled the event.
+        if (toggle.onOptionsItemSelected(item)) {
+            return true
+        }
+
+        // Handle your other app bar items, like search
+        when (item.itemId) {
             R.id.action_search -> {
                 openSearchActivity()
-                true
+                return true
             }
-            R.id.action_change_url -> {
-                showChangeUrlDialog()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
         }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun showChangeUrlDialog() {
@@ -295,7 +311,59 @@ class MainActivity : AppCompatActivity() {
         btnRefresh = findViewById(R.id.btn_refresh)
         nestedScrollView = findViewById(R.id.nested_scroll_view)
         btnSeeAllContinueWatching = findViewById(R.id.btn_see_all_continue_watching)
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
     }
+
+    private fun setupDrawer() {
+        toggle = ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
+
+        // **** ADD THIS NEW DRAWER LISTENER ****
+        drawerLayout.addDrawerListener(object : DrawerListener {
+            override fun onDrawerOpened(drawerView: View) {
+                // When the drawer opens, request focus on the navigation view itself.
+                // This ensures the D-pad starts inside the drawer.
+                navigationView.requestFocus()
+            }
+            override fun onDrawerClosed(drawerView: View) {
+                // Optional: You could move focus back to a default main content view here if needed.
+            }
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) { /* Do nothing */ }
+            override fun onDrawerStateChanged(newState: Int) { /* Do nothing */ }
+        })
+
+        drawerLayout.addDrawerListener(toggle) // Your existing listener for the toggle
+        toggle.syncState()
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        navigationView.setNavigationItemSelectedListener(this)
+    }
+
+    // **** ADD THIS NEW FUNCTION TO HANDLE KEY EVENTS FOR THE DRAWER ****
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // If the drawer is open, let the navigation view handle the key events
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                // If user presses right, close the drawer
+                drawerLayout.closeDrawer(GravityCompat.START)
+                return true
+            }
+            // Let the system handle DPAD_UP, DPAD_DOWN, and ENTER/DPAD_CENTER
+            return super.onKeyDown(keyCode, event)
+        }
+
+        // If the drawer is CLOSED, and the user presses left, open the drawer
+        val mainContent: View = findViewById(R.id.main_slider_view_pager) // A reference view in your main layout
+        if (mainContent.isFocused && keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+            drawerLayout.openDrawer(GravityCompat.START)
+            return true
+        }
+
+        return super.onKeyDown(keyCode, event)
+    }
+
+
+
 
     private fun setupSwipeToRefresh() {
         swipeRefreshLayout.setOnRefreshListener {
@@ -377,24 +445,15 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    // **** MODIFIED FUNCTION ****
     private fun setupToolbar() {
         setSupportActionBar(toolbar)
+        // The toolbar is now responsible for showing the navigation button.
+        // The ActionBarDrawerToggle will automatically use it.
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
-//    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-//        menuInflater.inflate(R.menu.main_menu, menu)
-//        return true
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        return when (item.itemId) {
-//            R.id.action_search -> {
-//                openSearchActivity()
-//                true
-//            }
-//            else -> super.onOptionsItemSelected(item)
-//        }
-//    }
+
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
@@ -427,6 +486,38 @@ class MainActivity : AppCompatActivity() {
         }
 
         return true
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_my_list -> {
+                val intent = Intent(this, MyListActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.nav_downloads -> {
+                val intent = Intent(this, DownloadsActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.nav_change_url -> {
+                showChangeUrlDialog()
+            }
+            R.id.nav_home -> {
+                // Already on home, do nothing or refresh
+            }
+        }
+        // Close the drawer after an item is tapped
+        drawerLayout.closeDrawer(GravityCompat.START)
+        return true
+    }
+
+    override fun onBackPressed() {
+        // If the drawer is open, the back button should close it
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            // Otherwise, perform the default back action
+            super.onBackPressed()
+        }
     }
 
 

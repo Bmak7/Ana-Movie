@@ -40,7 +40,8 @@ import com.faselhd.app.network.FaselHDSource
 import com.faselhd.app.services.VideoDownloadService
 import com.faselhd.app.workers.DownloadWorker
 import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.button.MaterialButton
+import com.faselhd.app.models.Favorite
+import com.google.android.material.button.MaterialButton // Ensure this is the correct import
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -67,6 +68,9 @@ class AnimeDetailsActivity : AppCompatActivity() {
     private var allEpisodes: List<SEpisode> = emptyList()
     private var episodesBySeason: Map<String, List<EpisodeWithHistory>> = emptyMap()
     private var resumeEpisodeUrl: String? = null
+
+    private lateinit var addToListButton: MaterialButton // Add this
+    private var isFavorite = false // Add this to track state
 
     companion object {
         private const val EXTRA_ANIME = "extra_anime"
@@ -102,6 +106,8 @@ class AnimeDetailsActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerViews()
         displayAnimeInfo()
+        checkIfFavorite()
+        setupFavoriteButtonListener()
         loadEpisodes()
     }
 
@@ -131,12 +137,56 @@ class AnimeDetailsActivity : AppCompatActivity() {
         watchButton = findViewById(R.id.watch_button)
         composeProgress = findViewById(R.id.compose_progress)
         seasonsRecyclerView = findViewById(R.id.seasons_recycler_view)
+        addToListButton = findViewById(R.id.btn_add_to_list) // Initialize the new button
     }
 
     private fun setupToolbar() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressed() }
+    }
+
+    private fun checkIfFavorite() {
+        lifecycleScope.launch {
+            val favorite = db.favoriteDao().getFavoriteByUrl(currentAnime!!.url!!)
+            isFavorite = favorite != null
+            updateFavoriteButtonUI()
+        }
+    }
+
+    private fun updateFavoriteButtonUI() {
+        if (isFavorite) {
+            addToListButton.text = "إزالة من قائمتي"
+            // addToListButton.setIconResource(R.drawable.ic_check) // Example icon change
+        } else {
+            addToListButton.text = "أضف إلى قائمتي"
+            // addToListButton.setIconResource(R.drawable.ic_add) // Example icon change
+        }
+    }
+
+    private fun setupFavoriteButtonListener() {
+        addToListButton.setOnClickListener {
+            lifecycleScope.launch {
+                val anime = currentAnime!!
+                if (isFavorite) {
+                    // It's a favorite, so delete it
+                    db.favoriteDao().delete(anime.url!!)
+                    Toast.makeText(this@AnimeDetailsActivity, "Removed from My List", Toast.LENGTH_SHORT).show()
+                } else {
+                    // It's not a favorite, so add it
+                    val newFavorite = Favorite(
+                        animeUrl = anime.url!!,
+                        title = anime.title,
+                        thumbnailUrl = anime.thumbnail_url
+                    )
+                    db.favoriteDao().insert(newFavorite)
+                    Toast.makeText(this@AnimeDetailsActivity, "Added to My List", Toast.LENGTH_SHORT).show()
+                }
+                // Toggle the state and update the UI
+                isFavorite = !isFavorite
+                updateFavoriteButtonUI()
+            }
+        }
     }
 
     private fun setupRecyclerViews() {

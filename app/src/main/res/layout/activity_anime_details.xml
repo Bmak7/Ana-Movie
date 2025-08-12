@@ -125,6 +125,16 @@
                             android:text="Download Season"
                             app:icon="@drawable/download_2_24px" />
 
+                    <!-- **** ADD THIS NEW BUTTON **** -->
+                    <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_add_to_list"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="أضف إلى قائمتي"
+                            app:icon="@drawable/add_24px" /> <!-- You will need to add an 'ic_add' drawable -->
+
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>

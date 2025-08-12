@@ -24,7 +24,9 @@ class FaselHDSource(private val context: Context)  {
 
         private const val PREFS_NAME = "FaselHD_prefs"
         private const val KEY_BASE_URL = "base_url"
-        private const val DEFAULT_BASE_URL = "https://www.faselhds.club"
+        private const val DEFAULT_BASE_URL = "https://www.faselhds.life"
+//        "https://www.faselhd.pro"
+
 
         fun getBaseUrl(context: Context): String {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

@@ -49,6 +49,7 @@ import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import android.view.WindowManager // Add this import
 import kotlinx.coroutines.withContext
 
 
@@ -164,6 +165,7 @@ class VideoPlayerActivity : AppCompatActivity() {
     private var skipStamps: List<EpisodeSkip.SkipStamp> = emptyList()
     private var currentSkipStamp: EpisodeSkip.SkipStamp? = null
 
+
     // In VideoPlayerActivity.kt -> onCreate() method
 
     @SuppressLint("ClickableViewAccessibility")
@@ -211,6 +213,9 @@ class VideoPlayerActivity : AppCompatActivity() {
         if (currentIndex == -1 || currentIndex == seasonEpisodeList.size - 1) {
             btnNextEpisode.visibility = View.GONE
         }
+
+        // --- NEW: Add the flag here to keep the screen on when activity is created ---
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private fun saveWatchProgress() {
@@ -1186,6 +1191,9 @@ class VideoPlayerActivity : AppCompatActivity() {
         player.release()
         hideHandler.removeCallbacksAndMessages(null)
 
+        // --- NEW: Remove the flag when the activity is completely destroyed ---
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
     }
 
     override fun onPause() {
@@ -1194,6 +1202,9 @@ class VideoPlayerActivity : AppCompatActivity() {
         if (::player.isInitialized && player.isPlaying) {
             player.pause()
         }
+
+        // --- NEW: Remove the flag when the activity goes to the background ---
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onResume() {
@@ -1201,5 +1212,8 @@ class VideoPlayerActivity : AppCompatActivity() {
         if (::player.isInitialized && !player.isPlaying) {
             player.play()
         }
+
+        // --- NEW: Add the flag back when the activity comes to the foreground ---
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 }

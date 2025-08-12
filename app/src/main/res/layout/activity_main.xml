@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/drawer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        tools:openDrawer="start">
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
                                                      xmlns:app="http://schemas.android.com/apk/res-auto"
                                                      xmlns:tools="http://schemas.android.com/tools"
@@ -39,90 +48,26 @@
                 android:focusable="true"
                 android:descendantFocusability="beforeDescendants">
 
-        <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-            <!-- Hero Section with Search -->
-<!--            <LinearLayout-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:orientation="vertical"-->
-<!--                    android:background="@drawable/hero_gradient_background"-->
-<!--                    android:padding="24dp">-->
-
-<!--                <TextView-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:text="اكتشف عالم الأنمي"-->
-<!--                        android:textAppearance="?attr/textAppearanceHeadlineLarge"-->
-<!--                        android:textStyle="bold"-->
-<!--                        android:textColor="?attr/colorOnPrimary"-->
-<!--                        android:gravity="center"-->
-<!--                        android:layout_marginBottom="8dp" />-->
-
-<!--                <TextView-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:text="شاهد أحدث الأنمي والمسلسلات المفضلة لديك"-->
-<!--                        android:textAppearance="?attr/textAppearanceBodyLarge"-->
-<!--                        android:textColor="?attr/colorOnPrimary"-->
-<!--                        android:alpha="0.8"-->
-<!--                        android:gravity="center"-->
-<!--                        android:layout_marginBottom="24dp" />-->
-
-<!--                &lt;!&ndash; Enhanced Search Bar &ndash;&gt;-->
-<!--                <com.google.android.material.card.MaterialCardView-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        app:cardCornerRadius="32dp"-->
-<!--                        app:cardElevation="8dp"-->
-<!--                        app:cardBackgroundColor="?attr/colorSurface">-->
-
-<!--                    <com.google.android.material.textfield.TextInputLayout-->
-<!--                            android:layout_width="match_parent"-->
-<!--                            android:layout_height="wrap_content"-->
-<!--                            android:hint="@string/search_hint"-->
-<!--                            app:boxBackgroundMode="none"-->
-<!--                            app:endIconMode="clear_text"-->
-<!--                            app:startIconDrawable="@drawable/ic_search"-->
-<!--                            app:startIconTint="?attr/colorPrimary"-->
-<!--                            app:endIconTint="?attr/colorOnSurfaceVariant"-->
-<!--                            app:hintTextColor="?attr/colorOnSurfaceVariant">-->
-
-<!--                        <com.google.android.material.textfield.TextInputEditText-->
-<!--                                android:id="@+id/search_edit_text"-->
-<!--                                android:layout_width="match_parent"-->
-<!--                                android:layout_height="wrap_content"-->
-<!--                                android:imeOptions="actionSearch"-->
-<!--                                android:inputType="text"-->
-<!--                                android:maxLines="1"-->
-<!--                                android:padding="16dp"-->
-<!--                                android:textAppearance="?attr/textAppearanceBodyLarge" />-->
-
-<!--                    </com.google.android.material.textfield.TextInputLayout>-->
-
-<!--                </com.google.android.material.card.MaterialCardView>-->
-
-<!--            </LinearLayout>-->
-
-
-            <!-- Content Section -->
             <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:orientation="vertical">
+
+                <!-- Content Section -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
                 <!-- NEW: Main Slider Section -->
                 <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/main_slider_view_pager"
-                    android:layout_width="match_parent"
-                    android:layout_height="280dp"
-                    android:layout_marginBottom="16dp"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"/>
+                        android:id="@+id/main_slider_view_pager"
+                        android:layout_width="match_parent"
+                        android:layout_height="280dp"
+                        android:layout_marginBottom="16dp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"/>
 
                 <!-- Continue Watching Section -->
                 <LinearLayout
@@ -171,6 +116,21 @@
                         android:visibility="gone"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                         tools:listitem="@layout/item_continue_watching" />
+
+
+                <!-- My List Section -->
+
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/my_list_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="32dp"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:listitem="@layout/item_anime_horizontal" />
 
                 <!-- Popular Section -->
                 <LinearLayout
@@ -378,6 +338,17 @@
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
+    <!-- **** THIS IS THE NEW NAVIGATION VIEW (THE DRAWER ITSELF) **** -->
+    <com.google.android.material.navigation.NavigationView
+            android:id="@+id/nav_view"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            app:headerLayout="@layout/nav_header"
+            app:menu="@menu/drawer_menu"
+            app:itemBackground="@drawable/drawer_item_background"/>
+
+</androidx.drawerlayout.widget.DrawerLayout>
 
 <!--        <?xml version="1.0" encoding="utf-8"?>-->
 <!--<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"-->

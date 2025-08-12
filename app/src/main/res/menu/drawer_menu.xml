@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+                android:id="@+id/nav_home"
+                android:icon="@drawable/home_24px"
+        android:title="الرئيسية" />
+        <item
+                android:id="@+id/nav_my_list"
+                android:icon="@drawable/playlist_add_check_24px"
+        android:title="قائمتي" />
+        <item
+                android:id="@+id/nav_downloads"
+                android:icon="@drawable/download_2_24px"
+                android:title="التحميلات" />
+    </group>
+
+    <item android:title="الإعددات">
+        <menu>
+            <item
+                    android:id="@+id/nav_change_url"
+                    android:icon="@drawable/settings_24px"
+            android:title="تغيير عنوان URL للخادم" />
+        </menu>
+    </item>
+</menu>

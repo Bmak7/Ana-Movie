@@ -7,6 +7,8 @@
     <string name="nav_search">البحث</string>
     <string name="nav_latest">الأحدث</string>
     <string name="nav_favorites">المفضلة</string>
+    <string name="navigation_drawer_open">فتح القائمة</string>
+    <string name="navigation_drawer_close">غلق القائمة</string>
     
     <!-- Home Screen -->
     <string name="popular_anime">أحدث المسلسلات</string>

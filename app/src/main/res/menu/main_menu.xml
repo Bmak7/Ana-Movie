@@ -7,9 +7,5 @@
             app:actionLayout="@layout/action_search_layout"
             app:showAsAction="ifRoom"
             />
-    <item
-            android:id="@+id/action_change_url"
-            android:title="Change URL"
-            android:icon="@android:drawable/ic_menu_preferences"
-    app:showAsAction="ifRoom" />
+
 </menu>

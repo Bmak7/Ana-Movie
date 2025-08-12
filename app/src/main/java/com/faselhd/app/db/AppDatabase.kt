@@ -7,14 +7,16 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.faselhd.app.models.Download
+import com.faselhd.app.models.Favorite
 import com.faselhd.app.models.WatchHistory
 
-@Database(entities = [WatchHistory::class, Download::class], version = 6)
+@Database(entities = [WatchHistory::class, Download::class, Favorite::class], version = 7) // 2. Change version to 7
 @androidx.room.TypeConverters(com.faselhd.app.db.TypeConverters::class, com.faselhd.app.db.EpisodeListConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun watchHistoryDao(): WatchHistoryDao
-    abstract fun downloadDao(): DownloadDao // <-- Add abstract function for the new DAO
+    abstract fun downloadDao(): DownloadDao
+    abstract fun favoriteDao(): FavoriteDao
 
     companion object {
 
@@ -69,7 +71,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "anime_app_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3,MIGRATION_3_4, MIGRATION_5_6)
+//                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3,MIGRATION_3_4, MIGRATION_5_6)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
