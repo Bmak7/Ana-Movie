@@ -21,12 +21,28 @@ import javax.net.ssl.X509TrustManager
 class FaselHDSource(private val context: Context)  {
     companion object {
         const val name = "فاصل اعلاني"
-        const val baseUrl = "https://www.faselhds.club"
-        // faselhd.pro
+
+        private const val PREFS_NAME = "FaselHD_prefs"
+        private const val KEY_BASE_URL = "base_url"
+        private const val DEFAULT_BASE_URL = "https://www.faselhds.club"
+
+        fun getBaseUrl(context: Context): String {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
+        }
+
+        fun setBaseUrl(context: Context, newUrl: String) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_BASE_URL, newUrl).apply()
+        }
+
         const val lang = "ar"
         const val supportsLatest = true
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
     }
+
+    private val baseUrl: String
+        get() = getBaseUrl(context)
 
     private val client: OkHttpClient by lazy {
         val clientBuilder = OkHttpClient.Builder()
@@ -543,7 +559,6 @@ class FaselHDSource(private val context: Context)  {
     }
 
 }
-
 
 
 

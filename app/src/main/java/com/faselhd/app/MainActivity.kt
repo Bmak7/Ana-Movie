@@ -1,131 +1,3 @@
-//package com.faselhd.app
-//
-//import android.os.Bundle
-//import android.view.View
-//import android.widget.Toast
-//import androidx.appcompat.app.AppCompatActivity
-//import androidx.lifecycle.lifecycleScope
-//import androidx.recyclerview.widget.GridLayoutManager
-//import androidx.recyclerview.widget.LinearLayoutManager
-//import androidx.recyclerview.widget.RecyclerView
-//import com.faselhd.app.adapters.AnimeAdapter
-//import com.faselhd.app.models.SAnime
-//import com.example.myapplication.R
-//import com.faselhd.app.network.FaselHDSource
-//import com.google.android.material.progressindicator.CircularProgressIndicator
-//import com.google.android.material.search.SearchBar
-//import com.google.android.material.search.SearchView
-//import kotlinx.coroutines.launch
-//
-//class MainActivity : AppCompatActivity() {
-//
-//    private lateinit var popularRecyclerView: RecyclerView
-//    private lateinit var latestRecyclerView: RecyclerView
-//    private lateinit var progressIndicator: CircularProgressIndicator
-//    private lateinit var searchBar: SearchBar
-//    private lateinit var searchView: SearchView
-//
-//    private lateinit var popularAdapter: AnimeAdapter
-//    private lateinit var latestAdapter: AnimeAdapter
-//
-//    private val faselHDSource by lazy { FaselHDSource(applicationContext) }
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContentView(R.layout.activity_main)
-//
-//        initViews()
-//        setupRecyclerViews()
-//        loadData()
-//    }
-//
-//    private fun initViews() {
-//        popularRecyclerView = findViewById(R.id.popular_recycler_view)
-//        latestRecyclerView = findViewById(R.id.latest_recycler_view)
-//        progressIndicator = findViewById(R.id.progress_indicator)
-////        searchView = findViewById(R.id.search_results_recycler_view)
-//    }
-//
-//    private fun setupRecyclerViews() {
-//        // Popular anime horizontal list
-//        popularAdapter = AnimeAdapter(AnimeAdapter.ViewType.HORIZONTAL) { anime ->
-//            openAnimeDetails(anime)
-//        }
-//        popularRecyclerView.apply {
-//            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-//            adapter = popularAdapter
-//        }
-//
-//        // Latest anime grid
-//        latestAdapter = AnimeAdapter(AnimeAdapter.ViewType.GRID) { anime ->
-//            openAnimeDetails(anime)
-//        }
-//        latestRecyclerView.apply {
-//            layoutManager = GridLayoutManager(this@MainActivity, 2)
-//            adapter = latestAdapter
-//        }
-//    }
-//
-//    // In MainActivity.kt
-//
-//    private fun setupSearch() {
-//        // This will now work because searchView and searchBar are initialized
-//        searchView.setupWithSearchBar(searchBar)
-//        searchView
-//            .editText
-//            .setOnEditorActionListener { v, actionId, event ->
-//                val query = searchView.text.toString()
-//                if (query.isNotBlank()) {
-//                    searchView.hide()
-//                    val intent = SearchActivity.newIntent(this, query)
-//                    startActivity(intent)
-//                }
-//                true
-//            }
-//    }
-//
-//    private fun loadData() {
-//        showLoading(true)
-//
-//        lifecycleScope.launch {
-//            try {
-//                // Load popular anime
-//                val popularPage = faselHDSource.fetchPopularAnime(1)
-//                popularAdapter.submitList(popularPage.manga.take(10)) // Show first 10 items
-//
-//                // Load latest updates
-//                val latestPage = faselHDSource.fetchLatestUpdates(1)
-//                latestAdapter.submitList(latestPage.manga.take(20)) // Show first 20 items
-//
-//                showLoading(false)
-//            } catch (e: Exception) {
-//                showLoading(false)
-//                showError("خطأ في تحميل البيانات: ${e.message}")
-//            }
-//        }
-//    }
-//
-//    private fun openAnimeDetails(anime: SAnime) {
-//        // Navigate to anime details activity
-//        val intent = AnimeDetailsActivity.newIntent(this, anime)
-//        startActivity(intent)
-//    }
-//
-//    private fun showLoading(show: Boolean) {
-//        progressIndicator.visibility = if (show) View.VISIBLE else View.GONE
-//    }
-//
-//    private fun showError(message: String) {
-//        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-//    }
-//}
-//
-//
-//
-//
-
-
-
 package com.faselhd.app
 
 import android.os.Build
@@ -173,15 +45,20 @@ import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.WatchHistory
 import kotlinx.coroutines.flow.collectLatest
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import android.view.inputmethod.EditorInfo
+import android.widget.Button
+import android.widget.EditText
 import androidx.core.widget.NestedScrollView
 import androidx.viewpager2.widget.ViewPager2
 import com.faselhd.app.adapters.SliderAdapter
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.async
+import kotlinx.coroutines.isActive
 
 
 class MainActivity : AppCompatActivity() {
@@ -247,6 +124,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var btnSeeAllContinueWatching: MaterialButton // Add this
 
+
+
     private fun setupFab() {
         // The search functionality is now only in the top search bar
 //        searchEditText.setOnEditorActionListener { _, _, _ ->
@@ -282,6 +161,8 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+
+
     // It's good practice to start and stop the auto-swipe with the activity's lifecycle
     override fun onPause() {
         super.onPause()
@@ -311,6 +192,70 @@ class MainActivity : AppCompatActivity() {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_search -> {
+                openSearchActivity()
+                true
+            }
+            R.id.action_change_url -> {
+                showChangeUrlDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showChangeUrlDialog() {
+        // Inflate the custom layout you just created
+        val dialogView = layoutInflater.inflate(R.layout.dialog_change_url, null)
+        val urlInput = dialogView.findViewById<EditText>(R.id.url_input_edittext)
+        val okButton = dialogView.findViewById<Button>(R.id.button_ok)
+        val cancelButton = dialogView.findViewById<Button>(R.id.button_cancel)
+
+        // Create the AlertDialog using the custom view
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        // Set the current URL in the EditText
+        urlInput.setText(FaselHDSource.getBaseUrl(applicationContext))
+
+        // Set a listener for the OK button
+        okButton.setOnClickListener {
+            val newUrl = urlInput.text.toString().trim()
+            if (newUrl.isNotEmpty() && android.util.Patterns.WEB_URL.matcher(newUrl).matches()) {
+                FaselHDSource.setBaseUrl(applicationContext, newUrl)
+                Toast.makeText(this, "Base URL updated. Restarting...", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+                recreate() // Restart the activity to apply changes
+            } else {
+                Toast.makeText(this, "Please enter a valid URL", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Set a listener for the Cancel button
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // This makes the "Done" button on the on-screen keyboard trigger the "OK" button
+        urlInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                okButton.performClick()
+                return@setOnEditorActionListener true
+            }
+            return@setOnEditorActionListener false
+        }
+
+        // Show the dialog
+        dialog.show()
+
+        // Explicitly request focus for the EditText so the user can start typing immediately
+        // or see that it's the active element. This is crucial for TV.
+        urlInput.requestFocus()
     }
 
     private fun askForStoragePermission() {
@@ -485,13 +430,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // This will now only handle other menu items, not the search one.
-        return when (item.itemId) {
-            // R.id.action_search case is now handled above, so it can be removed from here if it exists.
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
+//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+//        // This will now only handle other menu items, not the search one.
+//        return when (item.itemId) {
+//            // R.id.action_search case is now handled above, so it can be removed from here if it exists.
+//            else -> super.onOptionsItemSelected(item)
+//        }
+//    }
     private fun setupRecyclerViews() {
         // Popular anime horizontal list
         popularAdapter = AnimeAdapter(AnimeAdapter.ViewType.HORIZONTAL) { anime ->
@@ -641,9 +586,10 @@ class MainActivity : AppCompatActivity() {
         if (!swipeRefreshLayout.isRefreshing) {
             showLoadingg(true)
         }
+
         lifecycleScope.launch {
             try {
-                // Fetch all data in parallel for speed
+                // Fetch all data in parallel
                 val sliderJob = async { faselHDSource.fetchMainSlider() }
                 val popularJob = async { faselHDSource.fetchPopularSeries(1) }
                 val latestEpisodesJob = async { faselHDSource.fetchHomePageLatestEpisodes() }
@@ -655,58 +601,71 @@ class MainActivity : AppCompatActivity() {
                 val latestEpisodes = latestEpisodesJob.await()
                 val latestPage = latestUpdatesJob.await()
 
+                // --- SAFETY CHECK ---
+                // Before touching any views, check if the coroutine is still active.
+                // If the user closed the app while loading, we stop here.
+                if (!isActive) return@launch
 
+                // --- SUCCESS: Update the UI ---
+                // Show the main content and hide the error layout
+                nestedScrollView.visibility = View.VISIBLE
+                noInternetLayout.visibility = View.GONE
 
-                // --- Populate UI ---
-                // Slider
-                mainSliderViewPager.adapter = SliderAdapter(sliderItems) { anime ->
-                    openAnimeDetails(anime)
-                }
-
-                // Popular
-                popularAdapter.submitList(popularPage.manga.take(10))
-
-                // Latest Episodes
-                latestEpisodesAdapter.submitList(latestEpisodes)
-
-                // Latest Updates Grid
-                latestAdapter.submitList(latestPage.manga.take(20))
-                // Slider
-                val sliderAdapter = SliderAdapter(sliderItems) { anime ->
-                    openAnimeDetails(anime)
-                }
-
+                // Populate Slider
+                val sliderAdapter = SliderAdapter(sliderItems) { anime -> openAnimeDetails(anime) }
                 mainSliderViewPager.adapter = sliderAdapter
+                setupAutoSwipe(sliderAdapter) // Extracted auto-swipe logic for clarity
 
-                // ** NEW AUTO-SWIPE LOGIC IS HERE **
-                // 1. Define what the auto-swipe action does
-                sliderRunnable = Runnable {
-                    val currentItem = mainSliderViewPager.currentItem
-                    val itemCount = sliderAdapter.itemCount
-                    if (itemCount > 0) {
-                        mainSliderViewPager.setCurrentItem((currentItem + 1) % itemCount, true)
-                    }
-                }
+                // Populate other lists
+                popularAdapter.submitList(popularPage.manga.take(10))
+                latestEpisodesAdapter.submitList(latestEpisodes)
+                latestAdapter.submitList(latestPage.manga.take(20))
 
-                // 2. Register a callback to automatically restart the swipe timer after each manual or auto swipe
-                mainSliderViewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                    override fun onPageSelected(position: Int) {
-                        super.onPageSelected(position)
-                        // Remove any pending swipe actions and schedule a new one
-                        sliderHandler.removeCallbacks(sliderRunnable)
-                        sliderHandler.postDelayed(sliderRunnable, 3000) // 3 seconds delay
-                    }
-                })
-
-
-                showLoadingg(false)
             } catch (e: Exception) {
-                showLoadingg(false)
-                showError("Error loading data: ${e.message}")
+                // --- SAFETY CHECK ---
+                // Also check for activity state before handling the error UI.
+                if (!isActive) return@launch
+
+                // --- FAILURE: Update the UI ---
+                // Hide the main content and show the error layout
+                nestedScrollView.visibility = View.GONE
+                noInternetLayout.visibility = View.VISIBLE
+                showError("Error loading data. Please check your connection.")
+
             } finally {
-                showLoadingg(false)
-                swipeRefreshLayout.isRefreshing = false
+                // --- FINAL CLEANUP ---
+                // This block will ALWAYS run, after success or failure.
+                // It's the perfect place for cleanup code.
+                if (isActive) { // Final safety check for the cleanup itself
+                    showLoadingg(false)
+                    swipeRefreshLayout.isRefreshing = false
+                }
             }
+        }
+    }
+
+    private fun setupAutoSwipe(sliderAdapter: SliderAdapter) {
+        // Define what the auto-swipe action does
+        sliderRunnable = Runnable {
+            val currentItem = mainSliderViewPager.currentItem
+            val itemCount = sliderAdapter.itemCount
+            if (itemCount > 0) {
+                mainSliderViewPager.setCurrentItem((currentItem + 1) % itemCount, true)
+            }
+        }
+
+        // Register a callback to automatically restart the swipe timer
+        mainSliderViewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                sliderHandler.removeCallbacks(sliderRunnable)
+                sliderHandler.postDelayed(sliderRunnable, 3000)
+            }
+        })
+
+        // Start the first swipe if not already running
+        if(::sliderRunnable.isInitialized) {
+            sliderHandler.postDelayed(sliderRunnable, 3000)
         }
     }
 
@@ -722,8 +681,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showError(message: String) {
+        if (isFinishing || isDestroyed) {
+            return
+        }
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 }
+
+
+
+
 
 

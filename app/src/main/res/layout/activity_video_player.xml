@@ -8,16 +8,16 @@
              android:fitsSystemWindows="true"
              tools:context="com.faselhd.app.VideoPlayerActivity">
 
-    <!-- ExoPlayer View (using AndroidX Media3) -->
+    <!-- ExoPlayer View -->
     <androidx.media3.ui.PlayerView
             android:id="@+id/player_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@android:color/black"
-            app:use_controller="false"
-            app:resize_mode="fill" />
+            app:resize_mode="fill"
+            app:use_controller="false" />
 
-    <!-- Top Overlay (Title, Resolution, Back Button) -->
+    <!-- Top Overlay -->
     <LinearLayout
             android:id="@+id/top_overlay"
             android:layout_width="match_parent"
@@ -28,14 +28,12 @@
             android:padding="16dp"
             android:visibility="visible">
 
-        <!-- Top Controls Row -->
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-            <!-- Back Button -->
             <ImageButton
                     android:id="@+id/btn_back"
                     android:layout_width="48dp"
@@ -43,15 +41,17 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/back"
                     android:src="@drawable/ic_arrow_back"
-                    app:tint="@android:color/white"/>
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusDown="@id/btn_play_pause"
+                    android:nextFocusRight="@id/tv_resolution"
+                    android:nextFocusLeft="@id/btn_back" />
 
-            <!-- Spacer -->
             <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1" />
 
-            <!-- Resolution Display -->
             <TextView
                     android:id="@+id/tv_resolution"
                     android:layout_width="wrap_content"
@@ -59,28 +59,28 @@
                     android:background="@drawable/resolution_badge_background"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="6dp"
-                    android:text="1080p - 1920×1080"
                     android:textColor="@android:color/white"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="1080p"
+                    android:focusable="false"/>
 
         </LinearLayout>
 
-        <!-- Episode Title -->
         <TextView
                 android:id="@+id/tv_episode_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:gravity="center"
-                android:text="مسلسل Ozark - Episode 35 - موسم 4 : الحلقة 7"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="Episode Title" />
 
     </LinearLayout>
 
-    <!-- Center Controls (Play/Pause, Rewind, Fast Forward) -->
+    <!-- Center Controls -->
     <LinearLayout
             android:id="@+id/center_controls"
             android:layout_width="wrap_content"
@@ -90,7 +90,6 @@
             android:orientation="horizontal"
             android:visibility="visible">
 
-        <!-- Rewind 10s -->
         <FrameLayout
                 android:id="@+id/btn_rewind"
                 android:layout_width="80dp"
@@ -98,25 +97,30 @@
                 android:layout_marginEnd="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                android:nextFocusRight="@id/btn_play_pause"
+                android:nextFocusDown="@id/seek_bar"
+                android:nextFocusUp="@id/btn_back">
 
             <ImageView
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:layout_gravity="center"
                     android:src="@drawable/replay_10_24px"
-                    app:tint="@android:color/white"/>
-
+                    app:tint="@android:color/white" />
         </FrameLayout>
 
-        <!-- Play/Pause Button -->
         <FrameLayout
                 android:id="@+id/btn_play_pause"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                android:nextFocusLeft="@id/btn_rewind"
+                android:nextFocusRight="@id/btn_fast_forward"
+                android:nextFocusUp="@id/btn_back"
+                android:nextFocusDown="@id/seek_bar">
 
             <ImageView
                     android:id="@+id/iv_play_pause"
@@ -124,11 +128,9 @@
                     android:layout_height="80dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_play_arrow_large"
-                    app:tint="@android:color/white"/>
-
+                    app:tint="@android:color/white" />
         </FrameLayout>
 
-        <!-- Fast Forward 10s -->
         <FrameLayout
                 android:id="@+id/btn_fast_forward"
                 android:layout_width="80dp"
@@ -136,20 +138,21 @@
                 android:layout_marginStart="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
-                android:focusable="true">
+                android:focusable="true"
+                android:nextFocusLeft="@id/btn_play_pause"
+                android:nextFocusDown="@id/seek_bar"
+                android:nextFocusUp="@id/btn_back">
 
             <ImageView
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:layout_gravity="center"
                     android:src="@drawable/forward_10_24px"
-                    app:tint="@android:color/white"/>
-
+                    app:tint="@android:color/white" />
         </FrameLayout>
-
     </LinearLayout>
 
-    <!-- Seek Time Display (Center) -->
+    <!-- THIS IS THE VIEW THAT WAS MISSING -->
     <TextView
             android:id="@+id/tv_seek_time"
             android:layout_width="wrap_content"
@@ -159,11 +162,13 @@
             android:background="@drawable/seek_time_background"
             android:paddingHorizontal="16dp"
             android:paddingVertical="8dp"
-            android:text="01:22 [+01:22]"
             android:textColor="@android:color/white"
-            android:textSize="10sp"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:text="+01:22 [34:55]" />
+    <!-- END OF MISSING VIEW -->
+
 
     <!-- Bottom Controls -->
     <LinearLayout
@@ -176,7 +181,6 @@
             android:padding="16dp"
             android:visibility="visible">
 
-        <!-- Progress Bar -->
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -184,50 +188,45 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-            <!-- Current Time -->
             <TextView
                     android:id="@+id/tv_current_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:minWidth="48dp"
-                    android:text="00:00"
                     android:textColor="@android:color/white"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    tools:text="00:00" />
 
-            <!-- Progress Bar -->
             <SeekBar
                     android:id="@+id/seek_bar"
                     android:layout_width="0dp"
-                    android:layout_height="8dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginHorizontal="16dp"
                     android:layout_weight="1"
+                    android:focusable="true"
                     android:max="100"
-                    android:progress="0"
                     android:progressDrawable="@drawable/custom_seekbar_progress"
-                    android:secondaryProgress="0"
-                    android:thumb="@drawable/custom_seekbar_thumb" />
+                    android:thumb="@drawable/custom_seekbar_thumb"
+                    android:nextFocusUp="@id/btn_play_pause"
+                    android:nextFocusDown="@id/btn_quality"/>
 
-            <!-- Total Time -->
             <TextView
                     android:id="@+id/tv_total_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="end"
                     android:minWidth="48dp"
-                    android:text="55:42"
                     android:textColor="@android:color/white"
-                    android:textSize="14sp" />
-
+                    android:textSize="14sp"
+                    tools:text="55:42" />
         </LinearLayout>
 
-        <!-- Bottom Action Buttons -->
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-            <!-- Lock Button -->
             <ImageButton
                     android:id="@+id/btn_lock"
                     android:layout_width="48dp"
@@ -235,17 +234,16 @@
                     android:background="@drawable/control_button_background"
                     android:contentDescription="@string/lock_controls"
                     android:src="@drawable/ic_lock_open"
-                    app:tint="@android:color/white"/>
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/seek_bar"
+                    android:nextFocusRight="@id/btn_quality"/>
 
-            <!-- Spacer -->
             <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1" />
 
-            <!-- ======================================================= -->
-            <!-- NEW: Quality/Settings Button -->
-            <!-- ======================================================= -->
             <ImageButton
                     android:id="@+id/btn_quality"
                     android:layout_width="48dp"
@@ -253,9 +251,12 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/quality"
                     android:src="@drawable/settings_24px"
-                    app:tint="@android:color/white"/>
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/seek_bar"
+                    android:nextFocusLeft="@id/btn_lock"
+                    android:nextFocusRight="@id/btn_resize"/>
 
-            <!-- Resize Button -->
             <ImageButton
                     android:id="@+id/btn_resize"
                     android:layout_width="48dp"
@@ -264,9 +265,12 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/resize_mode"
                     android:src="@drawable/ic_resize"
-                    app:tint="@android:color/white"/>
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/seek_bar"
+                    android:nextFocusLeft="@id/btn_quality"
+                    android:nextFocusRight="@id/btn_fullscreen"/>
 
-            <!-- Fullscreen Button -->
             <ImageButton
                     android:id="@+id/btn_fullscreen"
                     android:layout_width="48dp"
@@ -275,9 +279,12 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/fullscreen"
                     android:src="@drawable/mobile_rotate_24px"
-                    app:tint="@android:color/white"/>
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/seek_bar"
+                    android:nextFocusLeft="@id/btn_resize"
+                    android:nextFocusRight="@id/btn_subtitle"/>
 
-            <!-- Subtitle Button -->
             <ImageButton
                     android:id="@+id/btn_subtitle"
                     android:layout_width="48dp"
@@ -286,9 +293,12 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/subtitles"
                     android:src="@drawable/ic_subtitles"
-                    app:tint="@android:color/white"/>
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/seek_bar"
+                    android:nextFocusLeft="@id/btn_fullscreen"
+                    android:nextFocusRight="@id/btn_next_episode"/>
 
-            <!-- Next Episode Button -->
             <ImageButton
                     android:id="@+id/btn_next_episode"
                     android:layout_width="48dp"
@@ -297,30 +307,58 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/next_episode"
                     android:src="@drawable/ic_skip_next"
-                    app:tint="@android:color/white"/>
-
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/seek_bar"
+                    android:nextFocusLeft="@id/btn_subtitle"/>
         </LinearLayout>
-
-        <!-- ADD THIS PLAYBACK SPEED INDICATOR -->
-        <TextView
-                android:id="@+id/speed_indicator_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal|top"
-                android:layout_marginTop="32dp"
-                android:background="@drawable/seek_time_background"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"
-                android:text="Speed: 2.0x"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
     </LinearLayout>
 
-    <!-- Volume Control Overlay (Right Side) -->
+    <!-- Lock Overlay (the unlock button is the only focusable item here) -->
+    <FrameLayout
+            android:id="@+id/lock_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#66000000"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+        <ImageButton
+                android:id="@+id/btn_unlock"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center"
+                android:background="@drawable/control_button_background"
+                android:src="@drawable/ic_lock"
+                app:tint="@android:color/white"
+                android:focusable="true"/>
+    </FrameLayout>
+
+    <!-- Other Overlays -->
+    <ProgressBar
+            android:id="@+id/loading_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@android:color/white"
+            android:visibility="gone" />
+
+    <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_skip_intro"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="120dp"
+            android:focusable="true"
+            android:text="Skip Intro"
+            android:nextFocusUp="@id/btn_fast_forward"
+            android:nextFocusLeft="@id/btn_next_episode"
+            app:icon="@drawable/ic_skip_next"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    <!-- Volume, Brightness, and other indicators here... -->
     <LinearLayout
             android:id="@+id/volume_overlay"
             android:layout_width="120dp"
@@ -330,7 +368,8 @@
             android:background="@drawable/control_overlay_background"
             android:gravity="center"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="gone">
 
         <ImageView
                 android:id="@+id/iv_volume_icon"
@@ -362,8 +401,6 @@
                 android:textStyle="bold" />
 
     </LinearLayout>
-
-    <!-- Brightness Control Overlay (Left Side) -->
     <LinearLayout
             android:id="@+id/brightness_overlay"
             android:layout_width="120dp"
@@ -373,7 +410,8 @@
             android:background="@drawable/control_overlay_background"
             android:gravity="center"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="gone">
 
         <ImageView
                 android:layout_width="32dp"
@@ -404,62 +442,6 @@
                 android:textStyle="bold" />
 
     </LinearLayout>
-
-
-
-
-    <!-- Loading Indicator -->
-    <ProgressBar
-            android:id="@+id/loading_indicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:indeterminateTint="@android:color/white"
-            android:visibility="gone" />
-
-    <!-- ADD THIS SKIP BUTTON -->
-    <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_skip_intro"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="24dp"
-            android:text="Skip Intro"
-            app:icon="@drawable/ic_skip_next"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
-    <FrameLayout
-            android:id="@+id/lock_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#66000000"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-        <ImageButton
-                android:id="@+id/btn_unlock"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_gravity="center"
-                android:background="@drawable/control_button_background"
-                android:src="@drawable/ic_lock"
-                app:tint="@android:color/white" />
-
-        <TextView
-                android:id="@+id/lock_message_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="60dp"
-                android:background="@drawable/seek_time_background"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"
-                android:text="Screen is locked"
-                android:textColor="@android:color/white"
-                android:visibility="gone" />
-    </FrameLayout>
-    <!-- REWIND VISUAL FEEDBACK -->
     <LinearLayout
             android:id="@+id/rewind_indicator"
             android:layout_width="wrap_content"
@@ -469,7 +451,7 @@
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone"
-            tools:visibility="visible">
+            tools:visibility="gone">
 
         <ImageView
                 android:layout_width="48dp"
@@ -483,8 +465,6 @@
                 android:text="-10 seconds"
                 android:textColor="@android:color/white" />
     </LinearLayout>
-
-    <!-- FORWARD VISUAL FEEDBACK -->
     <LinearLayout
             android:id="@+id/forward_indicator"
             android:layout_width="wrap_content"
@@ -494,7 +474,7 @@
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone"
-            tools:visibility="visible">
+            tools:visibility="gone">
 
         <ImageView
                 android:layout_width="48dp"
@@ -508,153 +488,681 @@
                 android:text="+10 seconds"
                 android:textColor="@android:color/white" />
     </LinearLayout>
+    <TextView
+            android:id="@+id/speed_indicator_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|top"
+            android:layout_marginTop="32dp"
+            android:background="@drawable/seek_time_background"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:text="Speed: 2.0x"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
 
 </FrameLayout>
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--             xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--             xmlns:tools="http://schemas.android.com/tools"-->
+<!--             android:layout_width="match_parent"-->
+<!--             android:layout_height="match_parent"-->
+<!--             android:background="@android:color/black"-->
+<!--             android:fitsSystemWindows="true"-->
+<!--             tools:context="com.faselhd.app.VideoPlayerActivity">-->
 
-        <!--<?xml version="1.0" encoding="utf-8"?>-->
-<!--<androidx.constraintlayout.widget.ConstraintLayout-->
-<!--        xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--        xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="match_parent"-->
-<!--        android:background="@android:color/black">-->
-
-<!--    &lt;!&ndash; Use the new SimplePlayerView from the library &ndash;&gt;-->
+<!--    &lt;!&ndash; ExoPlayer View (using AndroidX Media3) &ndash;&gt;-->
 <!--    <androidx.media3.ui.PlayerView-->
 <!--            android:id="@+id/player_view"-->
-<!--            android:layout_width="0dp"-->
-<!--            android:layout_height="0dp"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            app:layout_constraintEnd_toEndOf="parent"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent"-->
-<!--            app:show_buffering="when_playing"-->
-<!--            app:use_controller="true" />-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:background="@android:color/black"-->
+<!--            app:use_controller="false"-->
+<!--            app:resize_mode="fill" />-->
 
-<!--</androidx.constraintlayout.widget.ConstraintLayout>-->
-        <!--<?xml version="1.0" encoding="utf-8"?>-->
-        <!--<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-        <!--                xmlns:app="http://schemas.android.com/apk/res-auto"-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="match_parent"-->
-        <!--                android:background="@android:color/black">-->
+<!--    &lt;!&ndash; Top Overlay (Title, Resolution, Back Button) &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--            android:id="@+id/top_overlay"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="top"-->
+<!--            android:background="@drawable/gradient_overlay_top"-->
+<!--            android:orientation="vertical"-->
+<!--            android:padding="16dp"-->
+<!--            android:visibility="visible">-->
 
-        <!--    &lt;!&ndash; Main Player View &ndash;&gt;-->
-        <!--    <androidx.media3.ui.PlayerView-->
-        <!--            android:id="@+id/player_view"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="match_parent"-->
-        <!--            android:layout_centerInParent="true"-->
-        <!--            app:use_controller="false"-->
-        <!--            app:resize_mode="fit" />-->
+<!--        &lt;!&ndash; Top Controls Row &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:gravity="center_vertical"-->
+<!--                android:orientation="horizontal">-->
 
-        <!--    &lt;!&ndash; Subtitle View &ndash;&gt;-->
-        <!--    <androidx.media3.ui.SubtitleView-->
-        <!--            android:id="@+id/subtitle_view"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="match_parent"-->
-        <!--            android:layout_centerInParent="true" />-->
+<!--            &lt;!&ndash; Back Button &ndash;&gt;-->
+<!--            <ImageButton-->
+<!--                    android:id="@+id/btn_back"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="48dp"-->
+<!--                    android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                    android:contentDescription="@string/back"-->
+<!--                    android:src="@drawable/ic_arrow_back"-->
+<!--                    app:tint="@android:color/white"/>-->
 
-        <!--    &lt;!&ndash; Loading Progress Bar &ndash;&gt;-->
-        <!--    <ProgressBar-->
-        <!--            android:id="@+id/progress_bar"-->
-        <!--            android:layout_width="wrap_content"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:layout_centerInParent="true"-->
-        <!--            android:visibility="gone" />-->
+<!--            &lt;!&ndash; Spacer &ndash;&gt;-->
+<!--            <View-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="1dp"-->
+<!--                    android:layout_weight="1" />-->
 
-        <!--    &lt;!&ndash; Custom Controls Overlay &ndash;&gt;-->
-        <!--    <LinearLayout-->
-        <!--            android:id="@+id/controls_overlay"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:layout_alignParentBottom="true"-->
-        <!--            android:background="@drawable/gradient_overlay"-->
-        <!--            android:orientation="vertical"-->
-        <!--            android:padding="16dp">-->
+<!--            &lt;!&ndash; Resolution Display &ndash;&gt;-->
+<!--            <TextView-->
+<!--                    android:id="@+id/tv_resolution"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:background="@drawable/resolution_badge_background"-->
+<!--                    android:paddingHorizontal="12dp"-->
+<!--                    android:paddingVertical="6dp"-->
+<!--                    android:text="1080p - 1920×1080"-->
+<!--                    android:textColor="@android:color/white"-->
+<!--                    android:textSize="14sp"-->
+<!--                    android:textStyle="bold" />-->
 
-        <!--        &lt;!&ndash; Seek Bar &ndash;&gt;-->
-        <!--        <SeekBar-->
-        <!--                android:id="@+id/seek_bar"-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_marginBottom="8dp"-->
-        <!--                android:max="100"-->
-        <!--                android:progress="0" />-->
+<!--        </LinearLayout>-->
 
-        <!--        &lt;!&ndash; Time and Controls Row &ndash;&gt;-->
-        <!--        <LinearLayout-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:gravity="center_vertical"-->
-        <!--                android:orientation="horizontal">-->
+<!--        &lt;!&ndash; Episode Title &ndash;&gt;-->
+<!--        <TextView-->
+<!--                android:id="@+id/tv_episode_title"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="8dp"-->
+<!--                android:gravity="center"-->
+<!--                android:text="مسلسل Ozark - Episode 35 - موسم 4 : الحلقة 7"-->
+<!--                android:textColor="@android:color/white"-->
+<!--                android:textSize="16sp"-->
+<!--                android:textStyle="bold" />-->
 
-        <!--            &lt;!&ndash; Current Time &ndash;&gt;-->
-        <!--            <TextView-->
-        <!--                    android:id="@+id/tv_current_time"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:text="00:00"-->
-        <!--                    android:textColor="@android:color/white"-->
-        <!--                    android:textSize="14sp" />-->
+<!--    </LinearLayout>-->
 
-        <!--            &lt;!&ndash; Spacer &ndash;&gt;-->
-        <!--            <View-->
-        <!--                    android:layout_width="0dp"-->
-        <!--                    android:layout_height="1dp"-->
-        <!--                    android:layout_weight="1" />-->
+<!--    &lt;!&ndash; Center Controls (Play/Pause, Rewind, Fast Forward) &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--            android:id="@+id/center_controls"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="center"-->
+<!--            android:gravity="center_vertical"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:visibility="visible">-->
 
-        <!--            &lt;!&ndash; Play/Pause Button &ndash;&gt;-->
-        <!--            <ImageButton-->
-        <!--                    android:id="@+id/btn_play_pause"-->
-        <!--                    android:layout_width="48dp"-->
-        <!--                    android:layout_height="48dp"-->
-        <!--                    android:layout_marginHorizontal="8dp"-->
-        <!--                    android:background="?android:attr/selectableItemBackgroundBorderless"-->
-        <!--                    android:contentDescription="Play/Pause"-->
-        <!--                    android:src="@android:drawable/ic_media_play"-->
-        <!--                    app:tint="@android:color/white"/>-->
+<!--        &lt;!&ndash; Rewind 10s &ndash;&gt;-->
+<!--        <FrameLayout-->
+<!--                android:id="@+id/btn_rewind"-->
+<!--                android:layout_width="80dp"-->
+<!--                android:layout_height="80dp"-->
+<!--                android:layout_marginEnd="40dp"-->
+<!--                android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                android:clickable="true"-->
+<!--                android:focusable="true">-->
 
-        <!--            &lt;!&ndash; Fullscreen Button &ndash;&gt;-->
-        <!--            <ImageButton-->
-        <!--                    android:id="@+id/btn_fullscreen"-->
-        <!--                    android:layout_width="48dp"-->
-        <!--                    android:layout_height="48dp"-->
-        <!--                    android:layout_marginHorizontal="8dp"-->
-        <!--                    android:background="?android:attr/selectableItemBackgroundBorderless"-->
-        <!--                    android:contentDescription="Fullscreen"-->
-        <!--                    android:src="@android:drawable/ic_menu_crop"-->
-        <!--                    app:tint="@android:color/white"/>-->
+<!--            <ImageView-->
+<!--                    android:layout_width="60dp"-->
+<!--                    android:layout_height="60dp"-->
+<!--                    android:layout_gravity="center"-->
+<!--                    android:src="@drawable/replay_10_24px"-->
+<!--                    app:tint="@android:color/white"/>-->
 
-        <!--            &lt;!&ndash; Spacer &ndash;&gt;-->
-        <!--            <View-->
-        <!--                    android:layout_width="0dp"-->
-        <!--                    android:layout_height="1dp"-->
-        <!--                    android:layout_weight="1" />-->
+<!--        </FrameLayout>-->
 
-        <!--            &lt;!&ndash; Total Time &ndash;&gt;-->
-        <!--            <TextView-->
-        <!--                    android:id="@+id/tv_total_time"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:text="00:00"-->
-        <!--                    android:textColor="@android:color/white"-->
-        <!--                    android:textSize="14sp" />-->
+<!--        &lt;!&ndash; Play/Pause Button &ndash;&gt;-->
+<!--        <FrameLayout-->
+<!--                android:id="@+id/btn_play_pause"-->
+<!--                android:layout_width="100dp"-->
+<!--                android:layout_height="100dp"-->
+<!--                android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                android:clickable="true"-->
+<!--                android:focusable="true">-->
 
-        <!--        </LinearLayout>-->
+<!--            <ImageView-->
+<!--                    android:id="@+id/iv_play_pause"-->
+<!--                    android:layout_width="80dp"-->
+<!--                    android:layout_height="80dp"-->
+<!--                    android:layout_gravity="center"-->
+<!--                    android:src="@drawable/ic_play_arrow_large"-->
+<!--                    app:tint="@android:color/white"/>-->
 
-        <!--    </LinearLayout>-->
+<!--        </FrameLayout>-->
 
-        <!--    &lt;!&ndash; Center Play Button (for when paused) &ndash;&gt;-->
-        <!--    <ImageButton-->
-        <!--            android:id="@+id/btn_center_play"-->
-        <!--            android:layout_width="80dp"-->
-        <!--            android:layout_height="80dp"-->
-        <!--            android:layout_centerInParent="true"-->
-        <!--            android:background="@drawable/circle_background"-->
-        <!--            android:contentDescription="Play"-->
-        <!--            android:src="@android:drawable/ic_media_play"-->
-        <!--            android:visibility="gone"-->
-        <!--            app:tint="@android:color/white"/>-->
+<!--        &lt;!&ndash; Fast Forward 10s &ndash;&gt;-->
+<!--        <FrameLayout-->
+<!--                android:id="@+id/btn_fast_forward"-->
+<!--                android:layout_width="80dp"-->
+<!--                android:layout_height="80dp"-->
+<!--                android:layout_marginStart="40dp"-->
+<!--                android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                android:clickable="true"-->
+<!--                android:focusable="true">-->
 
-        <!--</RelativeLayout>-->
+<!--            <ImageView-->
+<!--                    android:layout_width="60dp"-->
+<!--                    android:layout_height="60dp"-->
+<!--                    android:layout_gravity="center"-->
+<!--                    android:src="@drawable/forward_10_24px"-->
+<!--                    app:tint="@android:color/white"/>-->
+
+<!--        </FrameLayout>-->
+
+<!--    </LinearLayout>-->
+
+<!--    &lt;!&ndash; Seek Time Display (Center) &ndash;&gt;-->
+<!--    <TextView-->
+<!--            android:id="@+id/tv_seek_time"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="center"-->
+<!--            android:layout_marginTop="-120dp"-->
+<!--            android:background="@drawable/seek_time_background"-->
+<!--            android:paddingHorizontal="16dp"-->
+<!--            android:paddingVertical="8dp"-->
+<!--            android:text="01:22 [+01:22]"-->
+<!--            android:textColor="@android:color/white"-->
+<!--            android:textSize="10sp"-->
+<!--            android:textStyle="bold"-->
+<!--            android:visibility="gone" />-->
+
+<!--    &lt;!&ndash; Bottom Controls &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--            android:id="@+id/bottom_controls"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="bottom"-->
+<!--            android:background="@drawable/gradient_overlay_bottom"-->
+<!--            android:orientation="vertical"-->
+<!--            android:padding="16dp"-->
+<!--            android:visibility="visible">-->
+
+<!--        &lt;!&ndash; Progress Bar &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginBottom="16dp"-->
+<!--                android:gravity="center_vertical"-->
+<!--                android:orientation="horizontal">-->
+
+<!--            &lt;!&ndash; Current Time &ndash;&gt;-->
+<!--            <TextView-->
+<!--                    android:id="@+id/tv_current_time"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:minWidth="48dp"-->
+<!--                    android:text="00:00"-->
+<!--                    android:textColor="@android:color/white"-->
+<!--                    android:textSize="14sp" />-->
+
+<!--            &lt;!&ndash; Progress Bar &ndash;&gt;-->
+<!--            <SeekBar-->
+<!--                    android:id="@+id/seek_bar"-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="8dp"-->
+<!--                    android:layout_marginHorizontal="16dp"-->
+<!--                    android:layout_weight="1"-->
+<!--                    android:max="100"-->
+<!--                    android:progress="0"-->
+<!--                    android:progressDrawable="@drawable/custom_seekbar_progress"-->
+<!--                    android:secondaryProgress="0"-->
+<!--                    android:thumb="@drawable/custom_seekbar_thumb" />-->
+
+<!--            &lt;!&ndash; Total Time &ndash;&gt;-->
+<!--            <TextView-->
+<!--                    android:id="@+id/tv_total_time"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:gravity="end"-->
+<!--                    android:minWidth="48dp"-->
+<!--                    android:text="55:42"-->
+<!--                    android:textColor="@android:color/white"-->
+<!--                    android:textSize="14sp" />-->
+
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash; Bottom Action Buttons &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:gravity="center_vertical"-->
+<!--                android:orientation="horizontal">-->
+
+<!--            &lt;!&ndash; Lock Button &ndash;&gt;-->
+<!--            <ImageButton-->
+<!--                    android:id="@+id/btn_lock"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="48dp"-->
+<!--                    android:background="@drawable/control_button_background"-->
+<!--                    android:contentDescription="@string/lock_controls"-->
+<!--                    android:src="@drawable/ic_lock_open"-->
+<!--                    app:tint="@android:color/white"/>-->
+
+<!--            &lt;!&ndash; Spacer &ndash;&gt;-->
+<!--            <View-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_height="1dp"-->
+<!--                    android:layout_weight="1" />-->
+
+<!--            &lt;!&ndash; ======================================================= &ndash;&gt;-->
+<!--            &lt;!&ndash; NEW: Quality/Settings Button &ndash;&gt;-->
+<!--            &lt;!&ndash; ======================================================= &ndash;&gt;-->
+<!--            <ImageButton-->
+<!--                    android:id="@+id/btn_quality"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="48dp"-->
+<!--                    android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                    android:contentDescription="@string/quality"-->
+<!--                    android:src="@drawable/settings_24px"-->
+<!--                    app:tint="@android:color/white"/>-->
+
+<!--            &lt;!&ndash; Resize Button &ndash;&gt;-->
+<!--            <ImageButton-->
+<!--                    android:id="@+id/btn_resize"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="48dp"-->
+<!--                    android:layout_marginStart="8dp"-->
+<!--                    android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                    android:contentDescription="@string/resize_mode"-->
+<!--                    android:src="@drawable/ic_resize"-->
+<!--                    app:tint="@android:color/white"/>-->
+
+<!--            &lt;!&ndash; Fullscreen Button &ndash;&gt;-->
+<!--            <ImageButton-->
+<!--                    android:id="@+id/btn_fullscreen"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="48dp"-->
+<!--                    android:layout_marginStart="8dp"-->
+<!--                    android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                    android:contentDescription="@string/fullscreen"-->
+<!--                    android:src="@drawable/mobile_rotate_24px"-->
+<!--                    app:tint="@android:color/white"/>-->
+
+<!--            &lt;!&ndash; Subtitle Button &ndash;&gt;-->
+<!--            <ImageButton-->
+<!--                    android:id="@+id/btn_subtitle"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="48dp"-->
+<!--                    android:layout_marginStart="8dp"-->
+<!--                    android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                    android:contentDescription="@string/subtitles"-->
+<!--                    android:src="@drawable/ic_subtitles"-->
+<!--                    app:tint="@android:color/white"/>-->
+
+<!--            &lt;!&ndash; Next Episode Button &ndash;&gt;-->
+<!--            <ImageButton-->
+<!--                    android:id="@+id/btn_next_episode"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="48dp"-->
+<!--                    android:layout_marginStart="8dp"-->
+<!--                    android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                    android:contentDescription="@string/next_episode"-->
+<!--                    android:src="@drawable/ic_skip_next"-->
+<!--                    app:tint="@android:color/white"/>-->
+
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash; ADD THIS PLAYBACK SPEED INDICATOR &ndash;&gt;-->
+<!--        <TextView-->
+<!--                android:id="@+id/speed_indicator_text"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center_horizontal|top"-->
+<!--                android:layout_marginTop="32dp"-->
+<!--                android:background="@drawable/seek_time_background"-->
+<!--                android:paddingHorizontal="16dp"-->
+<!--                android:paddingVertical="8dp"-->
+<!--                android:text="Speed: 2.0x"-->
+<!--                android:textColor="@android:color/white"-->
+<!--                android:textSize="14sp"-->
+<!--                android:textStyle="bold"-->
+<!--                android:visibility="gone"-->
+<!--                tools:visibility="visible" />-->
+
+<!--    </LinearLayout>-->
+
+<!--    &lt;!&ndash; Volume Control Overlay (Right Side) &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--            android:id="@+id/volume_overlay"-->
+<!--            android:layout_width="120dp"-->
+<!--            android:layout_height="200dp"-->
+<!--            android:layout_gravity="start|center_vertical"-->
+<!--            android:layout_marginEnd="32dp"-->
+<!--            android:background="@drawable/control_overlay_background"-->
+<!--            android:gravity="center"-->
+<!--            android:orientation="vertical"-->
+<!--            android:visibility="gone">-->
+
+<!--        <ImageView-->
+<!--                android:id="@+id/iv_volume_icon"-->
+<!--                android:layout_width="32dp"-->
+<!--                android:layout_height="32dp"-->
+<!--                android:layout_marginBottom="16dp"-->
+<!--                android:src="@drawable/ic_volume_up"-->
+<!--                app:tint="@android:color/white"/>-->
+
+<!--        <ProgressBar-->
+<!--                android:id="@+id/volume_progress"-->
+<!--                style="@android:style/Widget.ProgressBar.Horizontal"-->
+<!--                android:layout_width="120dp"-->
+<!--                android:layout_height="8dp"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:max="100"-->
+<!--                android:progress="75"-->
+<!--                android:progressDrawable="@drawable/vertical_progress_bar"-->
+<!--                android:rotation="270" />-->
+
+<!--        <TextView-->
+<!--                android:id="@+id/tv_volume_value"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="16dp"-->
+<!--                android:text="75%"-->
+<!--                android:textColor="@android:color/white"-->
+<!--                android:textSize="14sp"-->
+<!--                android:textStyle="bold" />-->
+
+<!--    </LinearLayout>-->
+
+<!--    &lt;!&ndash; Brightness Control Overlay (Left Side) &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--            android:id="@+id/brightness_overlay"-->
+<!--            android:layout_width="120dp"-->
+<!--            android:layout_height="200dp"-->
+<!--            android:layout_gravity="end|center_vertical"-->
+<!--            android:layout_marginStart="32dp"-->
+<!--            android:background="@drawable/control_overlay_background"-->
+<!--            android:gravity="center"-->
+<!--            android:orientation="vertical"-->
+<!--            android:visibility="gone">-->
+
+<!--        <ImageView-->
+<!--                android:layout_width="32dp"-->
+<!--                android:layout_height="32dp"-->
+<!--                android:layout_marginBottom="16dp"-->
+<!--                android:src="@drawable/ic_brightness"-->
+<!--                app:tint="@android:color/white"/>-->
+
+<!--        <ProgressBar-->
+<!--                android:id="@+id/brightness_progress"-->
+<!--                style="@android:style/Widget.ProgressBar.Horizontal"-->
+<!--                android:layout_width="120dp"-->
+<!--                android:layout_height="8dp"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:max="100"-->
+<!--                android:progress="50"-->
+<!--                android:progressDrawable="@drawable/vertical_progress_bar"-->
+<!--                android:rotation="270" />-->
+
+<!--        <TextView-->
+<!--                android:id="@+id/tv_brightness_value"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginTop="16dp"-->
+<!--                android:text="50%"-->
+<!--                android:textColor="@android:color/white"-->
+<!--                android:textSize="14sp"-->
+<!--                android:textStyle="bold" />-->
+
+<!--    </LinearLayout>-->
+
+
+
+
+<!--    &lt;!&ndash; Loading Indicator &ndash;&gt;-->
+<!--    <ProgressBar-->
+<!--            android:id="@+id/loading_indicator"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="center"-->
+<!--            android:indeterminateTint="@android:color/white"-->
+<!--            android:visibility="gone" />-->
+
+<!--    &lt;!&ndash; ADD THIS SKIP BUTTON &ndash;&gt;-->
+<!--    <com.google.android.material.button.MaterialButton-->
+<!--            android:id="@+id/btn_skip_intro"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="bottom|end"-->
+<!--            android:layout_margin="24dp"-->
+<!--            android:text="Skip Intro"-->
+<!--            app:icon="@drawable/ic_skip_next"-->
+<!--            android:visibility="gone"-->
+<!--            tools:visibility="visible" />-->
+
+<!--    <FrameLayout-->
+<!--            android:id="@+id/lock_overlay"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:background="#66000000"-->
+<!--            android:visibility="gone"-->
+<!--            tools:visibility="visible">-->
+
+<!--        <ImageButton-->
+<!--                android:id="@+id/btn_unlock"-->
+<!--                android:layout_width="64dp"-->
+<!--                android:layout_height="64dp"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:background="@drawable/control_button_background"-->
+<!--                android:src="@drawable/ic_lock"-->
+<!--                app:tint="@android:color/white" />-->
+
+<!--        <TextView-->
+<!--                android:id="@+id/lock_message_text"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:layout_marginTop="60dp"-->
+<!--                android:background="@drawable/seek_time_background"-->
+<!--                android:paddingHorizontal="16dp"-->
+<!--                android:paddingVertical="8dp"-->
+<!--                android:text="Screen is locked"-->
+<!--                android:textColor="@android:color/white"-->
+<!--                android:visibility="gone" />-->
+<!--    </FrameLayout>-->
+<!--    &lt;!&ndash; REWIND VISUAL FEEDBACK &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--            android:id="@+id/rewind_indicator"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="center_vertical|start"-->
+<!--            android:layout_marginStart="64dp"-->
+<!--            android:gravity="center"-->
+<!--            android:orientation="vertical"-->
+<!--            android:visibility="gone"-->
+<!--            tools:visibility="visible">-->
+
+<!--        <ImageView-->
+<!--                android:layout_width="48dp"-->
+<!--                android:layout_height="48dp"-->
+<!--                android:src="@drawable/replay_10_24px"-->
+<!--                app:tint="@android:color/white" />-->
+
+<!--        <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="-10 seconds"-->
+<!--                android:textColor="@android:color/white" />-->
+<!--    </LinearLayout>-->
+
+<!--    &lt;!&ndash; FORWARD VISUAL FEEDBACK &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--            android:id="@+id/forward_indicator"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="center_vertical|end"-->
+<!--            android:layout_marginEnd="64dp"-->
+<!--            android:gravity="center"-->
+<!--            android:orientation="vertical"-->
+<!--            android:visibility="gone"-->
+<!--            tools:visibility="visible">-->
+
+<!--        <ImageView-->
+<!--                android:layout_width="48dp"-->
+<!--                android:layout_height="48dp"-->
+<!--                android:src="@drawable/forward_10_24px"-->
+<!--                app:tint="@android:color/white" />-->
+
+<!--        <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="+10 seconds"-->
+<!--                android:textColor="@android:color/white" />-->
+<!--    </LinearLayout>-->
+
+<!--</FrameLayout>-->
+
+<!--        &lt;!&ndash;<?xml version="1.0" encoding="utf-8"?>&ndash;&gt;-->
+<!--&lt;!&ndash;<androidx.constraintlayout.widget.ConstraintLayout&ndash;&gt;-->
+<!--&lt;!&ndash;        xmlns:android="http://schemas.android.com/apk/res/android"&ndash;&gt;-->
+<!--&lt;!&ndash;        xmlns:app="http://schemas.android.com/apk/res-auto"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_height="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:background="@android:color/black">&ndash;&gt;-->
+
+<!--&lt;!&ndash;    &lt;!&ndash; Use the new SimplePlayerView from the library &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;    <androidx.media3.ui.PlayerView&ndash;&gt;-->
+<!--&lt;!&ndash;            android:id="@+id/player_view"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_width="0dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_height="0dp"&ndash;&gt;-->
+<!--&lt;!&ndash;            app:layout_constraintBottom_toBottomOf="parent"&ndash;&gt;-->
+<!--&lt;!&ndash;            app:layout_constraintEnd_toEndOf="parent"&ndash;&gt;-->
+<!--&lt;!&ndash;            app:layout_constraintStart_toStartOf="parent"&ndash;&gt;-->
+<!--&lt;!&ndash;            app:layout_constraintTop_toTopOf="parent"&ndash;&gt;-->
+<!--&lt;!&ndash;            app:show_buffering="when_playing"&ndash;&gt;-->
+<!--&lt;!&ndash;            app:use_controller="true" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;</androidx.constraintlayout.widget.ConstraintLayout>&ndash;&gt;-->
+<!--        &lt;!&ndash;<?xml version="1.0" encoding="utf-8"?>&ndash;&gt;-->
+<!--        &lt;!&ndash;<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"&ndash;&gt;-->
+<!--        &lt;!&ndash;                xmlns:app="http://schemas.android.com/apk/res-auto"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_height="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:background="@android:color/black">&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    &lt;!&ndash; Main Player View &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;    <androidx.media3.ui.PlayerView&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/player_view"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_centerInParent="true"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:use_controller="false"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:resize_mode="fit" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    &lt;!&ndash; Subtitle View &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;    <androidx.media3.ui.SubtitleView&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/subtitle_view"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_centerInParent="true" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    &lt;!&ndash; Loading Progress Bar &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;    <ProgressBar&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/progress_bar"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_centerInParent="true"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:visibility="gone" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    &lt;!&ndash; Custom Controls Overlay &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;    <LinearLayout&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/controls_overlay"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_alignParentBottom="true"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:background="@drawable/gradient_overlay"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:orientation="vertical"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:padding="16dp">&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        &lt;!&ndash; Seek Bar &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;        <SeekBar&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:id="@+id/seek_bar"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_marginBottom="8dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:max="100"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:progress="0" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        &lt;!&ndash; Time and Controls Row &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;        <LinearLayout&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:gravity="center_vertical"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:orientation="horizontal">&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            &lt;!&ndash; Current Time &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;            <TextView&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:id="@+id/tv_current_time"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_width="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:text="00:00"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:textColor="@android:color/white"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:textSize="14sp" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            &lt;!&ndash; Spacer &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;            <View&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_width="0dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_height="1dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_weight="1" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            &lt;!&ndash; Play/Pause Button &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;            <ImageButton&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:id="@+id/btn_play_pause"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_width="48dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_height="48dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_marginHorizontal="8dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:background="?android:attr/selectableItemBackgroundBorderless"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:contentDescription="Play/Pause"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:src="@android:drawable/ic_media_play"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    app:tint="@android:color/white"/>&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            &lt;!&ndash; Fullscreen Button &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;            <ImageButton&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:id="@+id/btn_fullscreen"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_width="48dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_height="48dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_marginHorizontal="8dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:background="?android:attr/selectableItemBackgroundBorderless"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:contentDescription="Fullscreen"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:src="@android:drawable/ic_menu_crop"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    app:tint="@android:color/white"/>&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            &lt;!&ndash; Spacer &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;            <View&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_width="0dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_height="1dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_weight="1" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;            &lt;!&ndash; Total Time &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;            <TextView&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:id="@+id/tv_total_time"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_width="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_height="wrap_content"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:text="00:00"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:textColor="@android:color/white"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:textSize="14sp" />&ndash;&gt;-->
+
+<!--        &lt;!&ndash;        </LinearLayout>&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    </LinearLayout>&ndash;&gt;-->
+
+<!--        &lt;!&ndash;    &lt;!&ndash; Center Play Button (for when paused) &ndash;&gt;&ndash;&gt;-->
+<!--        &lt;!&ndash;    <ImageButton&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:id="@+id/btn_center_play"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="80dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="80dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_centerInParent="true"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:background="@drawable/circle_background"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:contentDescription="Play"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:src="@android:drawable/ic_media_play"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:visibility="gone"&ndash;&gt;-->
+<!--        &lt;!&ndash;            app:tint="@android:color/white"/>&ndash;&gt;-->
+
+<!--        &lt;!&ndash;</RelativeLayout>&ndash;&gt;-->

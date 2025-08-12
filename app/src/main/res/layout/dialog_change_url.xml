@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical"
+              android:padding="24dp">
+
+    <!-- Title of the Dialog -->
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Change Base URL"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:layout_marginBottom="16dp"
+            android:focusable="false"/> <!-- Title should not be focusable -->
+
+    <!-- Input field for the URL -->
+    <EditText
+            android:id="@+id/url_input_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="https://www.your-url.com"
+            android:inputType="textUri"
+            android:imeOptions="actionDone"
+            android:nextFocusDown="@id/button_ok" /> <!-- When user presses D-pad down, focus goes to OK button -->
+
+    <!-- A container for the buttons -->
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="20dp"
+            android:gravity="end">
+
+        <!-- Cancel Button -->
+        <Button
+                android:id="@+id/button_cancel"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancel"
+                android:nextFocusUp="@id/url_input_edittext"
+                android:nextFocusRight="@id/button_ok"/> <!-- Navigate to OK button on right press -->
+
+        <!-- OK Button -->
+        <Button
+                android:id="@+id/button_ok"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OK"
+                android:layout_marginStart="12dp"
+                android:nextFocusUp="@id/url_input_edittext"
+                android:nextFocusLeft="@id/button_cancel"/> <!-- Navigate to Cancel button on left press -->
+    </LinearLayout>
+
+</LinearLayout>

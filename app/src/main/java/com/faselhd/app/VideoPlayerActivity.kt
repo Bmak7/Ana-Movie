@@ -33,6 +33,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import android.view.KeyEvent
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.source.MediaSource
 import com.example.myapplication.R
@@ -142,6 +143,7 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     private lateinit var speedIndicatorText: TextView
     private var isOnLongPressSpeedUp = false
+    private var isAutoMode = true // Assume Auto mode by default
 
     private lateinit var lockOverlay: FrameLayout
     private lateinit var btnUnlock: ImageButton
@@ -186,6 +188,9 @@ class VideoPlayerActivity : AppCompatActivity() {
         }
 
         initializeViews()
+
+        // Set an initial value for the resolution text.
+        tvResolution.text = "Auto"
         // Use the data we just retrieved
         tvEpisodeTitle.text = "${currentAnime?.title} - ${currentEpisode?.name}"
 
@@ -283,6 +288,74 @@ class VideoPlayerActivity : AppCompatActivity() {
         }
     }
 
+    // --- NEW: Override dispatchKeyEvent for D-pad handling ---
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Only interested in key down events
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            // Any D-pad interaction should reset the auto-hide timer
+            if (isDpadEvent(event)) {
+                scheduleHideControls()
+            }
+
+            // If locked, only the back button should work
+            if (isLocked) {
+                if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+                    // Allow back press to exit while locked
+                    return super.dispatchKeyEvent(event)
+                }
+                // Consume all other events when locked
+                return true
+            }
+
+            when (event.keyCode) {
+                // If controls are hidden, DPAD_CENTER shows them
+                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                    if (!isControlsVisible) {
+                        showControls()
+                        return true // Consume the event, don't pass it on
+                    }
+                }
+                // Handle dedicated media keys
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                    if (player.isPlaying) player.pause() else player.play()
+                    return true
+                }
+                KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                    playNextEpisode()
+                    return true
+                }
+                KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                    rewind()
+                    return true
+                }
+                KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                    fastForward()
+                    return true
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    // --- NEW: Override onBackPressed for better TV UX ---
+    override fun onBackPressed() {
+        // If controls are visible, the first back press should hide them.
+        if (isControlsVisible) {
+            hideControls()
+        } else {
+            // If controls are already hidden, then exit the activity.
+            super.onBackPressed()
+        }
+    }
+
+    // --- NEW: Helper function to identify D-pad events ---
+    private fun isDpadEvent(event: KeyEvent): Boolean {
+        return event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+    }
+
 
     private fun initializeViews() {
         playerView = findViewById(R.id.player_view)
@@ -359,6 +432,39 @@ class VideoPlayerActivity : AppCompatActivity() {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updatePlayPauseButton()
             }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                super.onTracksChanged(tracks)
+                val mappedTrackInfo = trackSelector.currentMappedTrackInfo ?: return
+
+                var videoRendererIndex = -1
+                for (i in 0 until mappedTrackInfo.rendererCount) {
+                    if (player.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
+                        videoRendererIndex = i
+                        break
+                    }
+                }
+                if (videoRendererIndex == -1) return
+
+                val trackGroups = mappedTrackInfo.getTrackGroups(videoRendererIndex)
+                if (trackGroups.isEmpty) return
+
+                val selectionOverride = trackSelector.parameters.getSelectionOverride(videoRendererIndex, trackGroups)
+
+                // Update our class property
+                isAutoMode = (selectionOverride == null)
+
+                // Now, immediately try to update the full text. This will work if video size is already known.
+                updateResolutionText()
+            }
+
+            // --- (Listener 2) - GET THE ACTUAL PLAYING RESOLUTION ---
+            override fun onVideoSizeChanged(videoSize: VideoSize) {
+                super.onVideoSizeChanged(videoSize)
+
+                // The video size has changed, so we can now reliably update the text.
+                updateResolutionText()
+            }
         })
 
         val isOffline = intent.getBooleanExtra("extra_is_offline", false)
@@ -391,6 +497,27 @@ class VideoPlayerActivity : AppCompatActivity() {
         player.prepare()
         player.play()
         updateProgress()
+    }
+
+    private fun updateResolutionText() {
+        // Get the current video size. If it's unknown, do nothing.
+        val videoSize = player.videoSize
+        if (videoSize.height == 0) return // Height is 0 if resolution is not yet determined
+
+        // Get the playing quality from the height (e.g., "1080p")
+        val playingQuality = "${videoSize.height}p"
+
+        // Use our class property to format the text correctly
+        val displayText = if (isAutoMode) {
+            "Auto ($playingQuality)"
+        } else {
+            playingQuality
+        }
+
+        // Update the UI on the main thread
+        runOnUiThread {
+            tvResolution.text = displayText
+        }
     }
 
     private fun rewind() {
@@ -547,14 +674,14 @@ class VideoPlayerActivity : AppCompatActivity() {
     private fun toggleLock() {
         isLocked = !isLocked
         if (isLocked) {
-            // When locking: hide everything and show only the lock overlay
             hideControls()
             lockOverlay.visibility = View.VISIBLE
-            // Hide the unlock button after a delay
+            // Hide the unlock button after a delay but keep focus
+            btnUnlock.requestFocus()
             hideHandler.postDelayed({ btnUnlock.visibility = View.GONE }, 2000)
         } else {
-            // When unlocking: hide the overlay and show the controls again
             lockOverlay.visibility = View.GONE
+            // When unlocking, immediately show controls and set focus
             showControls()
         }
     }
@@ -870,32 +997,37 @@ class VideoPlayerActivity : AppCompatActivity() {
     }
 
     private fun showControls() {
-        // Show the lock button every time controls are shown.
         btnLock.visibility = View.VISIBLE
 
-        // If the screen is NOT locked, show the other controls too.
         if (!isLocked) {
             topOverlay.visibility = View.VISIBLE
             bottomControls.visibility = View.VISIBLE
             centerControls.visibility = View.VISIBLE
+            // Request focus on the play/pause button, the most common action.
+            btnPlayPause.requestFocus()
+        } else {
+            // If locked, only the unlock button should be focusable
+            btnUnlock.requestFocus()
         }
 
         isControlsVisible = true
-        scheduleHideControls() // Start the auto-hide timer
+        scheduleHideControls()
     }
 
+
     private fun hideControls() {
-        // If the screen is locked, do nothing. We want the lock button to stay visible.
         if (isLocked) return
 
-        // If not locked, hide everything, INCLUDING the lock button.
         topOverlay.visibility = View.GONE
         bottomControls.visibility = View.GONE
         centerControls.visibility = View.GONE
         brightnessOverlay.visibility = View.GONE
         volumeOverlay.visibility = View.GONE
         tvSeekTime.visibility = View.GONE
-        btnLock.visibility = View.GONE // Hide the lock button when controls auto-hide.
+        btnLock.visibility = View.GONE
+
+        // Clear focus from the controls so the D-pad doesn't interact with hidden views
+        playerView.clearFocus()
 
         isControlsVisible = false
         hideHandler.removeCallbacks(hideRunnable)
