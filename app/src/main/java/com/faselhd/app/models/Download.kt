@@ -13,7 +13,8 @@ data class Download(
     var progress: Int = 0,
     var localFilePath: String? = null, // Add this for the final file path
     var timeLeft: String? = "..." ,// Add this for the time remaining
-    var isFinished: Boolean = false // <<<< ADD THIS LINE
+    var isFinished: Boolean = false,
+    val mediaUri: String?
 
 
 )

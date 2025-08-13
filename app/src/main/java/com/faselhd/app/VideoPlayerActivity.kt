@@ -50,6 +50,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.view.WindowManager // Add this import
+import androidx.media3.datasource.DataSource // Make sure this is imported
+import androidx.media3.datasource.cache.CacheKeyFactory // And this one
 import kotlinx.coroutines.withContext
 
 
@@ -66,7 +68,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         // CLEANED UP FUNCTION SIGNATURE
         fun newIntent(
             context: Context,
-            videos: List<Video>,
+            videos: List<Video?>,
             anime: SAnime,
             currentEpisode: SEpisode,
             episodeListForSeason: ArrayList<SEpisode>, // <-- ADD THIS
@@ -487,29 +489,31 @@ class VideoPlayerActivity : AppCompatActivity() {
             }
         })
 
-        val isOffline = intent.getBooleanExtra("extra_is_offline", false)
+
+        val isOffline = intent.getBooleanExtra(EXTRA_IS_OFFLINE, false)
 
         if (isOffline) {
-            // --- OFFLINE PLAYBACK (This part is correct) ---
-            val mediaItem = MediaItem.fromUri(currentEpisode!!.url!!)
-            val dataSourceFactory = DownloadUtil.getReadOnlyCacheDataSourceFactory(this)
-            val mediaSource = HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+            println("dddddfff4344rr anas")
+            // --- OFFLINE PLAYBACK ---
+
+            // **** THIS IS THE CRITICAL FIX ****
+            // The MediaItem MUST be created from the actual media link that was cached,
+            // which we get from the 'videos' list passed in the intent.
+            // DO NOT use currentEpisode.url here.
+            val mediaItem = MediaItem.fromUri(videoList.first().url)
+
+            val offlineDataSourceFactory: DataSource.Factory = DownloadUtil.getOfflineDataSourceFactory(this)
+            val mediaSource = HlsMediaSource.Factory(offlineDataSourceFactory).createMediaSource(mediaItem)
+
             player.setMediaSource(mediaSource)
 
+
         } else {
-            // --- ONLINE STREAMING (This is the corrected part) ---
+            println("dddddfff4344rr amina")
+            // --- ONLINE STREAMING (This part remains the same) ---
             val masterPlaylistUrl = createMasterPlaylist(videoList)
             val mediaItem = MediaItem.fromUri(masterPlaylistUrl)
-
-            // 1. Get your factory that handles HTTP requests and caching.
-            val httpDataSourceFactory = DownloadUtil.getCacheDataSourceFactory(this)
-
-            // 2. Create a DefaultDataSource.Factory. This is the key change.
-            //    It can handle multiple protocols (file://, asset://, and data://).
-            //    We pass your http factory to it, so it knows what to use for network requests.
-            val mainDataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
-
-            // 3. Create the HlsMediaSource with this new, more capable factory.
+            val mainDataSourceFactory = DefaultDataSource.Factory(this, DownloadUtil.getCacheDataSourceFactory(this))
             val mediaSource = HlsMediaSource.Factory(mainDataSourceFactory).createMediaSource(mediaItem)
             player.setMediaSource(mediaSource)
         }

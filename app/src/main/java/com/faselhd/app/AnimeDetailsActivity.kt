@@ -72,6 +72,8 @@ class AnimeDetailsActivity : AppCompatActivity() {
     private lateinit var addToListButton: MaterialButton // Add this
     private var isFavorite = false // Add this to track state
 
+    private lateinit var downloadSeasonButton: MaterialButton // Add this
+
     companion object {
         private const val EXTRA_ANIME = "extra_anime"
         private const val EXTRA_RESUME_EPISODE_URL = "extra_resume_episode_url"
@@ -105,10 +107,81 @@ class AnimeDetailsActivity : AppCompatActivity() {
         initViews()
         setupToolbar()
         setupRecyclerViews()
+        setupDownloadSeasonButton()
         displayAnimeInfo()
         checkIfFavorite()
         setupFavoriteButtonListener()
         loadEpisodes()
+    }
+
+
+    private fun setupDownloadSeasonButton() {
+        downloadSeasonButton.setOnClickListener {
+            // Get the name of the currently selected season from the adapter
+            val selectedSeasonName = seasonAdapter.getSelectedSeason()
+            if (selectedSeasonName == null) {
+                Toast.makeText(this, "Please select a season first", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Get the list of episodes for that season
+            val episodesForSeason = episodesBySeason[selectedSeasonName]
+            if (episodesForSeason.isNullOrEmpty()) {
+                Toast.makeText(this, "No episodes found for this season", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Show a confirmation dialog to the user
+            AlertDialog.Builder(this)
+                .setTitle("Download Season")
+                .setMessage("Are you sure you want to download all ${episodesForSeason.size} episodes for '$selectedSeasonName'?")
+                .setPositiveButton("Download") { dialog, _ ->
+                    queueSeasonForDownload(episodesForSeason.map { it.episode })
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+
+    private fun queueSeasonForDownload(episodes: List<SEpisode>) {
+        lifecycleScope.launch {
+            Toast.makeText(this@AnimeDetailsActivity, "Queueing season for download...", Toast.LENGTH_LONG).show()
+
+            for (episode in episodes) {
+                val existingDownload = db.downloadDao().getDownload(episode.url!!)
+                if (existingDownload != null && existingDownload.downloadState != DownloadState.FAILED) {
+                    continue
+                }
+
+                val workData = workDataOf(
+                    DownloadWorker.KEY_EPISODE_URL to episode.url!!,
+                    DownloadWorker.KEY_VIDEO_URL to null,
+                    DownloadWorker.KEY_EPISODE_NAME to episode.name,
+                    DownloadWorker.KEY_ANIME_TITLE to currentAnime?.title,
+                    DownloadWorker.KEY_THUMBNAIL_URL to currentAnime?.thumbnail_url
+                )
+
+                val downloadWorkRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
+                    .setInputData(workData)
+                    .addTag(episode.url!!)
+                    .build()
+
+                WorkManager.getInstance(this@AnimeDetailsActivity).enqueue(downloadWorkRequest)
+
+                // **** THIS IS THE FIX ****
+                // Create the database entry with a null mediaUri for now.
+                val downloadEntry = Download(
+                    episodeUrl = episode.url!!,
+                    animeTitle = currentAnime?.title ?: "",
+                    episodeName = episode.name,
+                    thumbnailUrl = currentAnime?.thumbnail_url,
+                    downloadState = DownloadState.QUEUED,
+                    mediaUri = null // It's now nullable, so this is valid.
+                )
+                db.downloadDao().upsert(downloadEntry)
+            }
+        }
     }
 
     // *** THIS IS THE CRITICAL FIX ***
@@ -138,6 +211,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
         composeProgress = findViewById(R.id.compose_progress)
         seasonsRecyclerView = findViewById(R.id.seasons_recycler_view)
         addToListButton = findViewById(R.id.btn_add_to_list) // Initialize the new button
+        downloadSeasonButton = findViewById(R.id.download_season_button) // Add this line
     }
 
     private fun setupToolbar() {
@@ -157,10 +231,10 @@ class AnimeDetailsActivity : AppCompatActivity() {
     private fun updateFavoriteButtonUI() {
         if (isFavorite) {
             addToListButton.text = "إزالة من قائمتي"
-            // addToListButton.setIconResource(R.drawable.ic_check) // Example icon change
+             addToListButton.setIconResource(R.drawable.done_all_24px) // Example icon change
         } else {
             addToListButton.text = "أضف إلى قائمتي"
-            // addToListButton.setIconResource(R.drawable.ic_add) // Example icon change
+             addToListButton.setIconResource(R.drawable.add_24px) // Example icon change
         }
     }
 
@@ -171,7 +245,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
                 if (isFavorite) {
                     // It's a favorite, so delete it
                     db.favoriteDao().delete(anime.url!!)
-                    Toast.makeText(this@AnimeDetailsActivity, "Removed from My List", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AnimeDetailsActivity, "تمت إزالته من قائمتي", Toast.LENGTH_SHORT).show()
                 } else {
                     // It's not a favorite, so add it
                     val newFavorite = Favorite(
@@ -180,7 +254,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
                         thumbnailUrl = anime.thumbnail_url
                     )
                     db.favoriteDao().insert(newFavorite)
-                    Toast.makeText(this@AnimeDetailsActivity, "Added to My List", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AnimeDetailsActivity, "تمت إضافته إلى قائمتي", Toast.LENGTH_SHORT).show()
                 }
                 // Toggle the state and update the UI
                 isFavorite = !isFavorite
@@ -282,7 +356,8 @@ class AnimeDetailsActivity : AppCompatActivity() {
                         animeTitle = currentAnime?.title ?: "",
                         episodeName = episode.name,
                         thumbnailUrl = currentAnime?.thumbnail_url,
-                        downloadState = DownloadState.QUEUED
+                        downloadState = DownloadState.QUEUED,
+                        mediaUri = null
                     )
                     db.downloadDao().upsert(downloadEntry)
                 }

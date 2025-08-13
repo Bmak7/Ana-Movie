@@ -122,18 +122,22 @@ class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
     // In DownloadsActivity.kt -> playDownloadedFile()
 
     private fun playDownloadedFile(download: com.faselhd.app.models.Download) {
-        // We need to provide a "Video" object containing the original streaming URL,
-        // which is the same as the episodeUrl.
-        val offlineVideoSource = Video(
-            url = download.episodeUrl,
-            quality = "Downloaded",
-            videoUrl = download.episodeUrl,
-            resolution = "1080x920"
-        )
+        // Here we create the Video object that VideoPlayerActivity will use.
+        // The 'url' property MUST be the mediaUri.
+        val offlineVideoSource = download.mediaUri?.let {
+            Video(
+                url = it, // **** THIS IS THE FIX ****
+                quality = "Downloaded",
+                videoUrl = download.mediaUri, // Can be the same
+                resolution = "N/A"
+            )
+        }
 
+        // The currentEpisode's URL can remain the page URL, as it's just an identifier
+        // for saving progress and is NOT used for playback in offline mode anymore.
         val intent = VideoPlayerActivity.newIntent(
             context = this,
-            videos = listOf(offlineVideoSource), // <-- PASS A LIST WITH ONE ITEM
+            videos = listOf(offlineVideoSource),
             anime = SAnime(title = download.animeTitle, url = download.episodeUrl),
             currentEpisode = SEpisode(name = download.episodeName, url = download.episodeUrl),
             episodeListForSeason = arrayListOf(),
