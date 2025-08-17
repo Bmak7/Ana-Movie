@@ -7,6 +7,8 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,11 +27,12 @@ import android.view.KeyEvent // <-- Make sure this import is present
 import com.faselhd.app.adapters.AnimeAdapter
 import com.faselhd.app.models.AnimeFilterList
 import com.faselhd.app.models.SAnime
-import com.faselhd.app.network.FaselHDSource
+import com.faselhd.app.network.SourceManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.launch
 import com.example.myapplication.R
+import com.faselhd.app.network.AnimeSource
 
 
 class SearchActivity : AppCompatActivity() {
@@ -40,8 +43,13 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var progressIndicator: CircularProgressIndicator
     private lateinit var composeProgress: ComposeView // Add this
 
+    private lateinit var searchTypeRadioGroup: RadioGroup
+    private lateinit var radioMovie: RadioButton
+    private lateinit var radioSeries: RadioButton
+    private lateinit var radioAnime: RadioButton
+
     private lateinit var searchAdapter: AnimeAdapter
-    private val faselHDSource by lazy { FaselHDSource(applicationContext) }
+    private val sourceManager by lazy { SourceManager(applicationContext) }
 
     private var currentQuery = ""
     private var currentPage = 1
@@ -69,6 +77,10 @@ class SearchActivity : AppCompatActivity() {
         searchView = findViewById(R.id.search_view)
         searchRecyclerView = findViewById(R.id.search_recycler_view)
         composeProgress = findViewById(R.id.compose_progress) // Make sure this exists in XM
+        searchTypeRadioGroup = findViewById(R.id.search_type_radio_group)
+        radioMovie = findViewById(R.id.radio_movie)
+        radioSeries = findViewById(R.id.radio_series)
+        radioAnime = findViewById(R.id.radio_anime)
     }
 
     private fun setupToolbar() {
@@ -146,6 +158,16 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
+    private fun getSelectedSearchType(): String {
+        return when (searchTypeRadioGroup.checkedRadioButtonId) {
+            R.id.radio_movie -> "movie"
+            R.id.radio_series -> "series"
+            R.id.radio_anime -> "anime"
+            else -> "movie" // Default to movie
+        }
+    }
+
+
     private fun performSearch(query: String) {
         currentQuery = query
         currentPage = 1
@@ -156,12 +178,12 @@ class SearchActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val searchResults = faselHDSource.fetchSearchAnime(
+                val searchResults = sourceManager.fetchSearchAnime(
                     page = currentPage,
                     query = query,
-                    filters = AnimeFilterList(emptyList())
+                    filters = AnimeFilterList(emptyList()),
+                    type = getSelectedSearchType()
                 )
-
                 searchAdapter.submitList(searchResults.manga)
                 hasNextPage = searchResults.hasNextPage
                 showLoading(false)
@@ -185,12 +207,12 @@ class SearchActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val searchResults = faselHDSource.fetchSearchAnime(
+                val searchResults = sourceManager.fetchSearchAnime(
                     page = currentPage,
                     query = currentQuery,
-                    filters = AnimeFilterList(emptyList())
+                    filters = AnimeFilterList(emptyList()),
+                    type = getSelectedSearchType()
                 )
-
                 val currentList = searchAdapter.currentList.toMutableList()
                 currentList.addAll(searchResults.manga)
                 searchAdapter.submitList(currentList)
@@ -207,11 +229,18 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun openAnimeDetails(anime: SAnime) {
-        val intent = AnimeDetailsActivity.newIntent(this, anime)
+        val source = try {
+            // Convert the string from the database (e.g., "FASEL_HD") back to an AnimeSource enum
+            anime.source?.let { AnimeSource.valueOf(it) }
+        } catch (e: Exception) {
+            // Fallback if the source is missing from an old database entry or is invalid
+            null
+        }
+        val intent = AnimeDetailsActivity.newIntent(this, anime, source)
         startActivity(intent)
     }
 
-//    private fun showLoading(show: Boolean) {
+    //    private fun showLoading(show: Boolean) {
 //        progressIndicator.visibility = if (show) View.VISIBLE else View.GONE
 //    }
     private fun showLoading(show: Boolean) {
@@ -263,7 +292,7 @@ class SearchActivity : AppCompatActivity() {
 //import com.faselhd.app.adapters.AnimeAdapter
 //import com.faselhd.app.models.AnimeFilterList
 //import com.faselhd.app.models.SAnime
-//import com.faselhd.app.network.FaselHDSource
+//import com.faselhd.app.network.SourceManager
 //import com.google.android.material.appbar.MaterialToolbar
 //import com.google.android.material.progressindicator.CircularProgressIndicator
 //import kotlinx.coroutines.launch
@@ -276,7 +305,7 @@ class SearchActivity : AppCompatActivity() {
 //    private lateinit var emptyTextView: TextView
 //
 //    private lateinit var searchAdapter: AnimeAdapter
-//    private val faselHDSource by lazy { FaselHDSource(applicationContext) }
+//    private val sourceManager by lazy { SourceManager(applicationContext) }
 //
 //    companion object {
 //        private const val EXTRA_QUERY = "extra_query"
@@ -361,3 +390,7 @@ class SearchActivity : AppCompatActivity() {
 //        emptyTextView.visibility = if (show) View.VISIBLE else View.GONE
 //    }
 //}
+
+
+
+

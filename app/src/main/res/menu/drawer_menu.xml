@@ -16,6 +16,7 @@
                 android:id="@+id/nav_downloads"
                 android:icon="@drawable/download_2_24px"
                 android:title="التحميلات" />
+
     </group>
 
     <item android:title="الإعددات">

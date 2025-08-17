@@ -17,6 +17,7 @@ import com.example.myapplication.R
 import com.faselhd.app.adapters.AnimeAdapter
 import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.SAnime
+import com.faselhd.app.network.AnimeSource
 import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -55,7 +56,14 @@ class MyListActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         animeAdapter = AnimeAdapter(AnimeAdapter.ViewType.GRID) { anime ->
-            val intent = AnimeDetailsActivity.newIntent(this, anime)
+            val source = try {
+                // Convert the string from the database (e.g., "FASEL_HD") back to an AnimeSource enum
+                anime.source?.let { AnimeSource.valueOf(it) }
+            } catch (e: Exception) {
+                // Fallback if the source is missing from an old database entry or is invalid
+                null
+            }
+            val intent = AnimeDetailsActivity.newIntent(this, anime, source)
             startActivity(intent)
         }
         recyclerView.apply {
@@ -77,13 +85,16 @@ class MyListActivity : AppCompatActivity() {
                     emptyTextView.visibility = View.GONE
                     recyclerView.visibility = View.VISIBLE
 
+                    // When mapping a Favorite to an SAnime, also copy over the source
                     val animeList = favoritesList.map { favorite ->
                         SAnime(
                             url = favorite.animeUrl,
                             title = favorite.title,
-                            thumbnail_url = favorite.thumbnailUrl
+                            thumbnail_url = favorite.thumbnailUrl,
+                            source = favorite.source // <-- THIS IS THE CRITICAL CHANGE
                         )
                     }
+                    println("favorits : ${animeList}")
                     animeAdapter.submitList(animeList)
                 }
             }

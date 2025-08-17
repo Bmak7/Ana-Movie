@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 8,
-    "identityHash": "40b794e2305054e8ce626dbc6e3cd28b",
+    "version": 9,
+    "identityHash": "90a5da3787c07aed485f1eea96c4eb5c",
     "entities": [
       {
         "tableName": "watch_history",
@@ -166,7 +166,7 @@
       },
       {
         "tableName": "favorites",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`animeUrl` TEXT NOT NULL, `title` TEXT, `thumbnailUrl` TEXT, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`animeUrl`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`animeUrl` TEXT NOT NULL, `title` TEXT, `thumbnailUrl` TEXT, `source` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`animeUrl`))",
         "fields": [
           {
             "fieldPath": "animeUrl",
@@ -185,6 +185,12 @@
             "columnName": "thumbnailUrl",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
           },
           {
             "fieldPath": "timestamp",
@@ -206,7 +212,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '40b794e2305054e8ce626dbc6e3cd28b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '90a5da3787c07aed485f1eea96c4eb5c')"
     ]
   }
 }

@@ -142,7 +142,6 @@ class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
             currentEpisode = SEpisode(name = download.episodeName, url = download.episodeUrl),
             episodeListForSeason = arrayListOf(),
             startPosition = 0L,
-            isOffline = true
         )
         startActivity(intent)
     }
@@ -228,7 +227,6 @@ class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
             currentEpisode = SEpisode(name = download.episodeName, url = download.episodeUrl),
             episodeListForSeason = arrayListOf(), // No next episode from downloads screen
             startPosition = 0L,
-            isOffline = true // Important flag
         )
         startActivity(intent)
     }

@@ -132,6 +132,7 @@ import android.os.Parcelable
 import androidx.media3.common.Tracks
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 
 import okhttp3.Headers
 
@@ -142,7 +143,8 @@ data class SAnime(
     var thumbnail_url: String? = null,
     var description: String? = null,
     var genre: String? = null,
-    var status: Int = UNKNOWN
+    var status: Int = UNKNOWN,
+    var source: String? = null
 ) : Parcelable {
     companion object {
         const val UNKNOWN = 0
@@ -183,16 +185,16 @@ data class VideoTrack(
     val trackIndex: Int
 )
 
-@Parcelize // Add this annotation
+
+@Parcelize
 data class Video(
     var url: String,
     var quality: String,
     var videoUrl: String,
-    val resolution: String
-//    var headers: Headers? = null,
-//    var subtitleTracks: List<Track> = emptyList(),
-//    var audioTracks: List<Track> = emptyList()
+    val resolution: String = "", // Assuming resolution might be empty for some videos
+    val headers: Map<String, String>? = null
 ): Parcelable
+
 
 data class MangaPage(
     val manga: List<SAnime>,

@@ -8,4 +8,10 @@
             app:showAsAction="ifRoom"
             />
 
+    <item
+            android:id="@+id/action_change_source"
+            android:icon="@drawable/filter_list_24px"
+            android:title="Change Source"
+            app:showAsAction="never"/>
+
 </menu>

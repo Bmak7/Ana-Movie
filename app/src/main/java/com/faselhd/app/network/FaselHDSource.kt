@@ -273,27 +273,6 @@ class FaselHDSource(private val context: Context)  {
         return episode
     }
 
-//    // ============================ Video Links =============================
-//    suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
-//        val request = Request.Builder()
-//            .url(if (episodeUrl.startsWith("http")) episodeUrl else "$baseUrl$episodeUrl")
-//            .build()
-//        val response = client.newCall(request).execute()
-//        videoListParse(response)
-//    }
-//
-//    private fun videoListParse(response: Response): List<Video> {
-//        val document = Jsoup.parse(response.body!!.string())
-//        val iframe = document.selectFirst("iframe")?.attr("src")?.substringBefore("&img")
-//
-//        return if (!iframe.isNullOrBlank()) {
-//            // For now, return the iframe URL as a video source
-//            // In a real implementation, you'd need to resolve this further
-//            listOf(Video(iframe, "1080p", iframe))
-//        } else {
-//            emptyList()
-//        }
-//    }
 
     // +++ NEW COMPONENTS +++
     private val webViewResolver by lazy { WebViewResolver(context) }
@@ -417,7 +396,7 @@ class FaselHDSource(private val context: Context)  {
     private fun animeDetailsParse(response: Response): SAnime {
         val document = Jsoup.parse(response.body!!.string())
         val anime = SAnime()
-
+        anime.url = response.request.url.toString()
         anime.title = document.select("meta[itemprop=name]").attr("content")
         anime.genre = document.select("span:contains(تصنيف) > a, span:contains(مستوى) > a")
             .joinToString(", ") { it.text() }
@@ -430,6 +409,7 @@ class FaselHDSource(private val context: Context)  {
         }
 
         anime.description = document.select("meta[itemprop=description]").attr("content")
+        println("anime description : ${anime.description}")
         anime.status = parseStatus(
             document.select("span:contains(حالة)").text()
                 .replace("حالة ", "")

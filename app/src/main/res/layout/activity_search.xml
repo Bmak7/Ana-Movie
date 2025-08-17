@@ -41,6 +41,35 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <RadioGroup
+                android:id="@+id/search_type_radio_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp">
+
+            <RadioButton
+                    android:id="@+id/radio_movie"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="أفلام"
+                    android:checked="true" />
+
+            <RadioButton
+                    android:id="@+id/radio_series"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="مسلسلات" />
+
+            <RadioButton
+                    android:id="@+id/radio_anime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="أنمي" />
+        </RadioGroup>
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -124,57 +153,57 @@
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-<!--<?xml version="1.0" encoding="utf-8"?>-->
-<!--<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--                                                     xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--                                                     xmlns:tools="http://schemas.android.com/tools"-->
-<!--                                                     android:layout_width="match_parent"-->
-<!--                                                     android:layout_height="match_parent"-->
-<!--                                                     tools:context="com.faselhd.app.SearchActivity">-->
+        <!--<?xml version="1.0" encoding="utf-8"?>-->
+        <!--<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+        <!--                                                     xmlns:app="http://schemas.android.com/apk/res-auto"-->
+        <!--                                                     xmlns:tools="http://schemas.android.com/tools"-->
+        <!--                                                     android:layout_width="match_parent"-->
+        <!--                                                     android:layout_height="match_parent"-->
+        <!--                                                     tools:context="com.faselhd.app.SearchActivity">-->
 
-<!--    <com.google.android.material.appbar.AppBarLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content">-->
+        <!--    <com.google.android.material.appbar.AppBarLayout-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="wrap_content">-->
 
-<!--        <com.google.android.material.appbar.MaterialToolbar-->
-<!--                android:id="@+id/toolbar"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="?attr/actionBarSize"-->
-<!--                 />-->
+        <!--        <com.google.android.material.appbar.MaterialToolbar-->
+        <!--                android:id="@+id/toolbar"-->
+        <!--                android:layout_width="match_parent"-->
+        <!--                android:layout_height="?attr/actionBarSize"-->
+        <!--                 />-->
 
-<!--    </com.google.android.material.appbar.AppBarLayout>-->
+        <!--    </com.google.android.material.appbar.AppBarLayout>-->
 
-<!--    <FrameLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="match_parent"-->
-<!--            app:layout_behavior="@string/appbar_scrolling_view_behavior">-->
+        <!--    <FrameLayout-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="match_parent"-->
+        <!--            app:layout_behavior="@string/appbar_scrolling_view_behavior">-->
 
-<!--        <androidx.recyclerview.widget.RecyclerView-->
-<!--                android:id="@+id/search_results_recycler_view"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="match_parent"-->
-<!--                android:padding="8dp"-->
-<!--                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"-->
-<!--                app:spanCount="2"-->
-<!--                tools:listitem="@layout/item_anime_grid" />-->
+        <!--        <androidx.recyclerview.widget.RecyclerView-->
+        <!--                android:id="@+id/search_results_recycler_view"-->
+        <!--                android:layout_width="match_parent"-->
+        <!--                android:layout_height="match_parent"-->
+        <!--                android:padding="8dp"-->
+        <!--                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"-->
+        <!--                app:spanCount="2"-->
+        <!--                tools:listitem="@layout/item_anime_grid" />-->
 
-<!--        <com.google.android.material.progressindicator.CircularProgressIndicator-->
-<!--                android:id="@+id/progress_indicator"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_gravity="center"-->
-<!--                android:visibility="gone" />-->
+        <!--        <com.google.android.material.progressindicator.CircularProgressIndicator-->
+        <!--                android:id="@+id/progress_indicator"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_gravity="center"-->
+        <!--                android:visibility="gone" />-->
 
-<!--        <TextView-->
-<!--                android:id="@+id/empty_text_view"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_gravity="center"-->
-<!--                android:text="لا توجد نتائج"-->
-<!--                android:textAppearance="?attr/textAppearanceTitleMedium"-->
-<!--                android:visibility="gone"-->
-<!--                tools:visibility="visible"/>-->
+        <!--        <TextView-->
+        <!--                android:id="@+id/empty_text_view"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_gravity="center"-->
+        <!--                android:text="لا توجد نتائج"-->
+        <!--                android:textAppearance="?attr/textAppearanceTitleMedium"-->
+        <!--                android:visibility="gone"-->
+        <!--                tools:visibility="visible"/>-->
 
-<!--    </FrameLayout>-->
+        <!--    </FrameLayout>-->
 
-<!--</androidx.coordinatorlayout.widget.CoordinatorLayout>-->
+        <!--</androidx.coordinatorlayout.widget.CoordinatorLayout>-->

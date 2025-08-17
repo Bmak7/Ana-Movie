@@ -1,24 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background -->
     <item android:id="@android:id/background">
-        <shape android:shape="rectangle">
-            <corners android:radius="2dp" />
-            <solid android:color="#55FFFFFF" /> <!-- Track background -->
+        <shape>
+            <solid android:color="#40FFFFFF" />
+            <corners android:radius="4dp" />
         </shape>
     </item>
+    <!-- Secondary Progress (Buffer) -->
     <item android:id="@android:id/secondaryProgress">
         <clip>
-            <shape android:shape="rectangle">
-                <corners android:radius="2dp" />
-                <solid android:color="#88FFFFFF" /> <!-- Buffered progress -->
+            <shape>
+                <solid android:color="#60FFFFFF" />
+                <corners android:radius="4dp" />
             </shape>
         </clip>
     </item>
+    <!-- Primary Progress -->
     <item android:id="@android:id/progress">
         <clip>
-            <shape android:shape="rectangle">
-                <corners android:radius="2dp" />
-                <solid android:color="@color/accent_color" /> <!-- Primary progress -->
+            <shape>
+                <solid android:color="#FF4081" />
+                <corners android:radius="4dp" />
             </shape>
         </clip>
     </item>

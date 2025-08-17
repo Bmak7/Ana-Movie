@@ -10,7 +10,7 @@ import com.faselhd.app.models.Download
 import com.faselhd.app.models.Favorite
 import com.faselhd.app.models.WatchHistory
 
-@Database(entities = [WatchHistory::class, Download::class, Favorite::class], version = 8)
+@Database(entities = [WatchHistory::class, Download::class, Favorite::class], version = 10)
 @androidx.room.TypeConverters(com.faselhd.app.db.TypeConverters::class, com.faselhd.app.db.EpisodeListConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -25,7 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Add the new 'isFinished' column to the existing table,
                 // with a default value of 0 (false) for all old rows.
-                db.execSQL("ALTER TABLE watch_history ADD COLUMN isFinished INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE favorites ADD COLUMN source TEXT")
             }
         }
 
@@ -33,7 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Add the new 'animeUrl' column. The default value is an empty string.
-                db.execSQL("ALTER TABLE watch_history ADD COLUMN animeUrl TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE watch_history ADD COLUMN animeUrl TEXT")
             }
         }
 
@@ -71,7 +71,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "anime_app_database"
                 )
-//                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3,MIGRATION_3_4, MIGRATION_5_6)
+//                    .addMigrations(MIGRATION_1_2)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

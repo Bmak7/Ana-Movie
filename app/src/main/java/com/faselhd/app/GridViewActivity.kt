@@ -13,6 +13,7 @@ import com.faselhd.app.adapters.AnimeAdapter
 import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.SAnime
 import com.example.myapplication.R
+import com.faselhd.app.network.AnimeSource
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.flow.collectLatest
@@ -66,8 +67,15 @@ class GridViewActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         animeAdapter = AnimeAdapter(AnimeAdapter.ViewType.GRID) { anime ->
+            val source = try {
+                // Convert the string from the database (e.g., "FASEL_HD") back to an AnimeSource enum
+                anime.source?.let { AnimeSource.valueOf(it) }
+            } catch (e: Exception) {
+                // Fallback if the source is missing from an old database entry or is invalid
+                null
+            }
             // When an item in the grid is clicked, open its details page
-            val intent = AnimeDetailsActivity.newIntent(this, anime)
+            val intent = AnimeDetailsActivity.newIntent(this, anime, source)
             startActivity(intent)
         }
         gridRecyclerView.apply {

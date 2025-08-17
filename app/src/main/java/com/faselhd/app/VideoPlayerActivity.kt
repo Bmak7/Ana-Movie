@@ -3,6 +3,7 @@ package com.faselhd.app
 // CORRECT IMPORT: You need to import AspectRatioFrameLayout to access the constants.
 
 // --- REQUIRED IMPORTS ---
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -14,45 +15,42 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.GestureDetector
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.WindowManager
 import android.widget.*
-import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GestureDetectorCompat
-import androidx.media3.common.*
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
-import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
-import android.view.KeyEvent
-import androidx.media3.datasource.cache.CacheDataSource
-import androidx.media3.exoplayer.source.MediaSource
-import com.example.myapplication.R
-import com.faselhd.app.models.Video
-import kotlin.math.abs
+import androidx.media3.common.*
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
+import com.example.myapplication.R // Ensure this matches your package
 import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.SAnime
 import com.faselhd.app.models.SEpisode
+import com.faselhd.app.models.Video
 import com.faselhd.app.models.WatchHistory
-import com.faselhd.app.utils.DownloadUtil
+import com.faselhd.app.network.AnimeSource
+import com.faselhd.app.network.SourceManager
 import com.faselhd.app.utils.EpisodeSkip
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import android.view.WindowManager // Add this import
-import androidx.media3.datasource.DataSource // Make sure this is imported
-import androidx.media3.datasource.cache.CacheKeyFactory // And this one
-import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
 
 class VideoPlayerActivity : AppCompatActivity() {
@@ -63,128 +61,121 @@ class VideoPlayerActivity : AppCompatActivity() {
         private const val EXTRA_VIDEOS = "extra_videos"
         private const val EXTRA_ANIME = "extra_anime"
         private const val EXTRA_EPISODE = "extra_episode"
+        private const val EXTRA_EPISODE_LIST = "extra_episode_list"
         private const val EXTRA_START_POSITION = "extra_start_position"
-        private const val EXTRA_IS_OFFLINE = "extra_is_offline"
-        // CLEANED UP FUNCTION SIGNATURE
+        private const val EXTRA_SOURCE = "extra_source"
+
         fun newIntent(
             context: Context,
             videos: List<Video?>,
             anime: SAnime,
             currentEpisode: SEpisode,
-            episodeListForSeason: ArrayList<SEpisode>, // <-- ADD THIS
+            episodeListForSeason: ArrayList<SEpisode>,
             startPosition: Long = 0L,
-            isOffline: Boolean = false // <-- ADD THIS NEW PARAMETER
+            source: AnimeSource? = null
         ): Intent {
             return Intent(context, VideoPlayerActivity::class.java).apply {
-                putParcelableArrayListExtra(EXTRA_VIDEOS, ArrayList(videos))
+                putParcelableArrayListExtra(EXTRA_VIDEOS, ArrayList(videos.filterNotNull()))
                 putExtra(EXTRA_ANIME, anime)
                 putExtra(EXTRA_EPISODE, currentEpisode)
-                putParcelableArrayListExtra("extra_episode_list", episodeListForSeason) // <-- ADD THIS
+                putParcelableArrayListExtra(EXTRA_EPISODE_LIST, episodeListForSeason)
                 putExtra(EXTRA_START_POSITION, startPosition)
-                putExtra(EXTRA_IS_OFFLINE, isOffline) // <-- PUT THE NEW EXTRA
+                putExtra(EXTRA_SOURCE, source)
             }
         }
     }
 
+    // Player and UI Components
     private lateinit var playerView: PlayerView
-    private lateinit var player: ExoPlayer
+    private var player: ExoPlayer? = null
     private lateinit var gestureDetector: GestureDetectorCompat
     private lateinit var audioManager: AudioManager
-
     private lateinit var trackSelector: DefaultTrackSelector
-    private lateinit var btnQuality: ImageButton
 
     // UI Elements
+    private lateinit var btnServer: ImageButton // Changed from btnQuality
+    private lateinit var tvServerName: TextView // Changed from tvResolution
     private lateinit var topOverlay: LinearLayout
     private lateinit var centerControls: LinearLayout
     private lateinit var bottomControls: LinearLayout
     private lateinit var brightnessOverlay: LinearLayout
     private lateinit var volumeOverlay: LinearLayout
-
     private lateinit var btnBack: ImageButton
     private lateinit var btnPlayPause: FrameLayout
     private lateinit var ivPlayPause: ImageView
     private lateinit var btnRewind: FrameLayout
     private lateinit var btnFastForward: FrameLayout
     private lateinit var btnLock: ImageButton
-    private lateinit var btnFullscreen: ImageButton
-    private lateinit var btnResize: ImageButton
-    private lateinit var btnSubtitle: ImageButton
+    private lateinit var btnFullscreen: ImageButton // ADDED BACK
+    private lateinit var btnResize: ImageButton // ADDED BACK
+    private lateinit var btnSubtitle: ImageButton // ADDED BACK
     private lateinit var btnNextEpisode: ImageButton
-
-    private lateinit var tvResolution: TextView
     private lateinit var tvEpisodeTitle: TextView
     private lateinit var tvSeekTime: TextView
     private lateinit var tvCurrentTime: TextView
     private lateinit var tvTotalTime: TextView
     private lateinit var seekBar: SeekBar
-    private var seekChange: Long = 0
     private lateinit var brightnessProgress: ProgressBar
     private lateinit var volumeProgress: ProgressBar
+    private lateinit var loadingIndicator: ProgressBar
+    private lateinit var lockOverlay: FrameLayout
+    private lateinit var btnUnlock: ImageButton
+    private lateinit var rewindIndicator: LinearLayout
+    private lateinit var forwardIndicator: LinearLayout
+    private lateinit var speedIndicatorText: TextView
+    private lateinit var btnSkipIntro: MaterialButton
     private lateinit var tvBrightnessValue: TextView
     private lateinit var tvVolumeValue: TextView
     private lateinit var ivVolumeIcon: ImageView
-    private lateinit var loadingIndicator: ProgressBar
+
+    // State variables
+    private var isControlsVisible = true
+    private var isLocked = false
+    private var isFullscreen = true // ADDED BACK
+    private var currentResizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL // ADDED BACK
+    private var currentBrightness = 0.5f
+    private var currentVolume = 0
+    private var maxVolume = 0
+    private var isOnLongPressSpeedUp = false
+    private var seekChange: Long = 0 // ADDED BACK
 
     private val hideHandler = Handler(Looper.getMainLooper())
     private val hideRunnable = Runnable { hideControls() }
 
-    private var isControlsVisible = true
-    private var isLocked = false
-    private var isFullscreen = true
-    // CORRECTED: Use AspectRatioFrameLayout for resize mode constants
-    private var currentResizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-    private var currentBrightness = 0.5f
-    private var currentVolume = 0
-    private var maxVolume = 0
-
-
-
-    private var videoUrl: String = ""
-    private var videoTitle: String = ""
-    private var episodeNumber: String = ""
-
-    private lateinit var speedIndicatorText: TextView
-    private var isOnLongPressSpeedUp = false
-    private var isAutoMode = true // Assume Auto mode by default
-
-    private lateinit var lockOverlay: FrameLayout
-    private lateinit var btnUnlock: ImageButton
-
-    private lateinit var rewindIndicator: LinearLayout
-    private lateinit var forwardIndicator: LinearLayout
-
-    private lateinit var btnSkipIntro: MaterialButton
-    // This will hold our list of video qualities
+    // Data from Intent
     private var videoList: List<Video> = emptyList()
-
-    // vars for Database
-    private val db by lazy { AppDatabase.getDatabase(this) }
-    private var currentAnime: SAnime? = null // We need anime details
-    private var currentEpisode: SEpisode? = null // and episode details
+    private var currentAnime: SAnime? = null
+    private val sourceManager by lazy { SourceManager(applicationContext) } // <-- ADD SOURCEMANAGER
+    private var currentEpisode: SEpisode? = null
     private var seasonEpisodeList: List<SEpisode> = emptyList()
+    private var startPosition: Long = 0L
+    private var specificSource: AnimeSource? = null
 
+    // Database and Skip Times
+    private val db by lazy { AppDatabase.getDatabase(this) }
     private var skipStamps: List<EpisodeSkip.SkipStamp> = emptyList()
     private var currentSkipStamp: EpisodeSkip.SkipStamp? = null
+
+    private var isSeeking = false
+    private var seekStartPosition = 0L
 
 
     // In VideoPlayerActivity.kt -> onCreate() method
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video_player)
-
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
 
-        // Retrieve data using the new, clean keys
+        // Retrieve data
         videoList = intent.getParcelableArrayListExtra(EXTRA_VIDEOS) ?: emptyList()
         currentAnime = intent.getParcelableExtra(EXTRA_ANIME)
-        seasonEpisodeList = intent.getParcelableArrayListExtra("extra_episode_list") ?: emptyList()
         currentEpisode = intent.getParcelableExtra(EXTRA_EPISODE)
-        val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
+        seasonEpisodeList = intent.getParcelableArrayListExtra(EXTRA_EPISODE_LIST) ?: emptyList()
+        startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
+        specificSource = intent.getSerializableExtra(EXTRA_SOURCE) as? AnimeSource
 
-        // Check for essential data
         if (videoList.isEmpty() || currentAnime == null || currentEpisode == null) {
             Toast.makeText(this, "Video source not found", Toast.LENGTH_SHORT).show()
             finish()
@@ -192,58 +183,41 @@ class VideoPlayerActivity : AppCompatActivity() {
         }
 
         initializeViews()
-
-        // Set an initial value for the resolution text.
-        tvResolution.text = "Auto"
-        // Use the data we just retrieved
-        tvEpisodeTitle.text = "${currentAnime?.title} - ${currentEpisode?.name}"
-
-        setupPlayer()
-        setupGestureDetector()
         setupAudioManager()
+        setupGestureDetector()
         setupClickListeners()
         setupSeekBar()
         hideSystemUI()
+        scheduleHideControls() // ADDED BACK
 
-        if (startPosition > 0) {
-            player.seekTo(startPosition)
-        }
-
-        scheduleHideControls()
-
-        val currentIndex = seasonEpisodeList.indexOf(currentEpisode)
-        if (currentIndex == -1 || currentIndex == seasonEpisodeList.size - 1) {
-            btnNextEpisode.visibility = View.GONE
-        }
-
-        // --- NEW: Add the flag here to keep the screen on when activity is created ---
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Show server selection dialog to start playback
+        showSourceSelectionDialog()
     }
 
+
     private fun saveWatchProgress() {
-        if (!::player.isInitialized) return
+        val p = player ?: return
         val anime = currentAnime ?: return
+        println("current anime s ${currentAnime.toString()}")
         val episode = currentEpisode ?: return
-        val position = player.currentPosition
-        val duration = player.duration
+        val position = p.currentPosition
+        val duration = p.duration
 
         if (duration <= 0 || episode.url.isNullOrEmpty()) return
+
+        // **** THIS IS THE KEY CHANGE ****
+        // Determine the correct source to save. Prioritize the one passed via intent.
+        val sourceToSave = specificSource?.displayName ?: sourceManager.getCurrentSourceName()
 
         val progressPercentage = (position * 100) / duration
 
         CoroutineScope(Dispatchers.IO).launch {
             if (progressPercentage > 90) {
                 // --- EPISODE IS FINISHED ---
-                // 1. Delete the record for the episode that was just completed.
-//                db.watchHistoryDao().delete(episode.url!!)
-
-                // 2. Find the next epnextEpisodeisode in the list.
                 val currentIndex = seasonEpisodeList.indexOfFirst { it.url == episode.url }
                 if (currentIndex != -1 && currentIndex < seasonEpisodeList.size - 1) {
                     val nextEpisode = seasonEpisodeList[currentIndex + 1]
 
-                    // 3. Create a NEW "Continue Watching" entry for the NEXT episode.
-                    //    Set its progress to the beginning.
                     val nextEpisodeHistory = WatchHistory(
                         episodeUrl = nextEpisode.url!!, // URL of the next episode
                         animeUrl = anime.url!!,
@@ -255,10 +229,12 @@ class VideoPlayerActivity : AppCompatActivity() {
                         timestamp = System.currentTimeMillis() + 1000, // Slightly later timestamp to ensure it's on top
                         isFinished = false,
                         episodeNumber = nextEpisode.episode_number.toInt(),
-                        seasonEpisodes = seasonEpisodeList
+                        seasonEpisodes = seasonEpisodeList,
+                        source = sourceToSave
                     )
 
-                    // 4. Upsert the new entry for the next episode.
+                    println("next episode :${nextEpisodeHistory.toString()}")
+
                     db.watchHistoryDao().upsert(nextEpisodeHistory)
 
                     val watchHistory = WatchHistory(
@@ -272,19 +248,17 @@ class VideoPlayerActivity : AppCompatActivity() {
                         timestamp = System.currentTimeMillis(),
                         isFinished = true,
                         episodeNumber = episode.episode_number.toInt(),
-                        seasonEpisodes = seasonEpisodeList
+                        seasonEpisodes = seasonEpisodeList,
+                        source = sourceToSave
                     )
+                    println("next next episode :${watchHistory.toString()}")
                     db.watchHistoryDao().upsert(watchHistory)
                 }
-                // If it's the last episode of the season, we do nothing, effectively removing the series
-                // from the "Continue Watching" list because the last episode was deleted and there's no next one to add.
-
             } else {
                 // --- EPISODE IS IN PROGRESS ---
-                // This logic remains the same: save the current progress.
                 val watchHistory = WatchHistory(
                     episodeUrl = episode.url!!,
-                    animeUrl = anime.url!!,
+                    animeUrl = anime.url!! ,
                     animeTitle = anime.title ?: "Unknown Title",
                     animeThumbnailUrl = anime.thumbnail_url,
                     episodeName = episode.name ?: "Unknown Episode",
@@ -293,8 +267,10 @@ class VideoPlayerActivity : AppCompatActivity() {
                     timestamp = System.currentTimeMillis(),
                     isFinished = false,
                     episodeNumber = episode.episode_number.toInt(),
-                    seasonEpisodes = seasonEpisodeList
+                    seasonEpisodes = seasonEpisodeList,
+                    source = sourceToSave
                 )
+                println(" episode :${watchHistory.toString()}")
                 db.watchHistoryDao().upsert(watchHistory)
             }
         }
@@ -305,41 +281,33 @@ class VideoPlayerActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, playerView).let { controller ->
             controller.hide(WindowInsetsCompat.Type.systemBars())
-            // This makes the bars appear temporarily when the user swipes from the edge.
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
     }
 
-    // --- NEW: Override dispatchKeyEvent for D-pad handling ---
+    // --- Override dispatchKeyEvent for D-pad handling ---
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        // Only interested in key down events
         if (event.action == KeyEvent.ACTION_DOWN) {
-            // Any D-pad interaction should reset the auto-hide timer
             if (isDpadEvent(event)) {
                 scheduleHideControls()
             }
 
-            // If locked, only the back button should work
             if (isLocked) {
                 if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-                    // Allow back press to exit while locked
                     return super.dispatchKeyEvent(event)
                 }
-                // Consume all other events when locked
                 return true
             }
 
             when (event.keyCode) {
-                // If controls are hidden, DPAD_CENTER shows them
                 KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                     if (!isControlsVisible) {
                         showControls()
-                        return true // Consume the event, don't pass it on
+                        return true
                     }
                 }
-                // Handle dedicated media keys
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                    if (player.isPlaying) player.pause() else player.play()
+                    player?.let { if (it.isPlaying) it.pause() else it.play() }
                     return true
                 }
                 KeyEvent.KEYCODE_MEDIA_NEXT -> {
@@ -359,18 +327,14 @@ class VideoPlayerActivity : AppCompatActivity() {
         return super.dispatchKeyEvent(event)
     }
 
-    // --- NEW: Override onBackPressed for better TV UX ---
     override fun onBackPressed() {
-        // If controls are visible, the first back press should hide them.
         if (isControlsVisible) {
             hideControls()
         } else {
-            // If controls are already hidden, then exit the activity.
             super.onBackPressed()
         }
     }
 
-    // --- NEW: Helper function to identify D-pad events ---
     private fun isDpadEvent(event: KeyEvent): Boolean {
         return event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
                 event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
@@ -381,398 +345,71 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         playerView = findViewById(R.id.player_view)
-        btnQuality = findViewById(R.id.btn_quality)
+        loadingIndicator = findViewById(R.id.loading_indicator)
         topOverlay = findViewById(R.id.top_overlay)
         centerControls = findViewById(R.id.center_controls)
         bottomControls = findViewById(R.id.bottom_controls)
-        brightnessOverlay = findViewById(R.id.brightness_overlay)
-        volumeOverlay = findViewById(R.id.volume_overlay)
         btnBack = findViewById(R.id.btn_back)
+        tvEpisodeTitle = findViewById(R.id.tv_episode_title)
+        btnServer = findViewById(R.id.btn_quality)
+        tvServerName = findViewById(R.id.tv_resolution)
         btnPlayPause = findViewById(R.id.btn_play_pause)
         ivPlayPause = findViewById(R.id.iv_play_pause)
         btnRewind = findViewById(R.id.btn_rewind)
         btnFastForward = findViewById(R.id.btn_fast_forward)
-        btnLock = findViewById(R.id.btn_lock)
-        btnFullscreen = findViewById(R.id.btn_fullscreen)
-        btnResize = findViewById(R.id.btn_resize)
-        btnSubtitle = findViewById(R.id.btn_subtitle)
-        btnNextEpisode = findViewById(R.id.btn_next_episode)
-        tvResolution = findViewById(R.id.tv_resolution)
-        tvEpisodeTitle = findViewById(R.id.tv_episode_title)
-        tvSeekTime = findViewById(R.id.tv_seek_time)
         tvCurrentTime = findViewById(R.id.tv_current_time)
         tvTotalTime = findViewById(R.id.tv_total_time)
         seekBar = findViewById(R.id.seek_bar)
-        brightnessProgress = findViewById(R.id.brightness_progress)
-        volumeProgress = findViewById(R.id.volume_progress)
         tvBrightnessValue = findViewById(R.id.tv_brightness_value)
         tvVolumeValue = findViewById(R.id.tv_volume_value)
         ivVolumeIcon = findViewById(R.id.iv_volume_icon)
-        loadingIndicator = findViewById(R.id.loading_indicator)
-        btnSkipIntro = findViewById(R.id.btn_skip_intro)
+        btnNextEpisode = findViewById(R.id.btn_next_episode)
+        btnLock = findViewById(R.id.btn_lock)
+        btnFullscreen = findViewById(R.id.btn_fullscreen) // ADDED BACK
+        btnResize = findViewById(R.id.btn_resize) // ADDED BACK
+        btnSubtitle = findViewById(R.id.btn_subtitle) // ADDED BACK
         lockOverlay = findViewById(R.id.lock_overlay)
         btnUnlock = findViewById(R.id.btn_unlock)
-
+        brightnessOverlay = findViewById(R.id.brightness_overlay)
+        brightnessProgress = findViewById(R.id.brightness_progress)
+        volumeOverlay = findViewById(R.id.volume_overlay)
+        volumeProgress = findViewById(R.id.volume_progress)
         rewindIndicator = findViewById(R.id.rewind_indicator)
         forwardIndicator = findViewById(R.id.forward_indicator)
-
         speedIndicatorText = findViewById(R.id.speed_indicator_text)
-    }
+        btnSkipIntro = findViewById(R.id.btn_skip_intro)
+        tvSeekTime = findViewById(R.id.tv_seek_time)
 
-    @OptIn(UnstableApi::class)
-    private fun setupPlayer() {
-        trackSelector = DefaultTrackSelector(this)
-        player = ExoPlayer.Builder(this)
-            .setTrackSelector(trackSelector)
-            .build()
-        playerView.player = player
-        playerView.useController = false
-
-        player.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                super.onPlayerError(error)
-                Log.e("VideoPlayerActivity", "ExoPlayer Error: ", error)
-                Toast.makeText(
-                    this@VideoPlayerActivity,
-                    "Player Error: ${error.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                loadingIndicator.visibility = if (playbackState == Player.STATE_BUFFERING) View.VISIBLE else View.GONE
-                if (playbackState == Player.STATE_READY) {
-                    updatePlayPauseButton()
-                    updateDuration()
-                    fetchSkipTimes()
-                } else if (playbackState == Player.STATE_ENDED) {
-                    // Consider playing the next episode automatically here
-                    playNextEpisode()
-                }
-            }
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                updatePlayPauseButton()
-            }
-
-            override fun onTracksChanged(tracks: Tracks) {
-                super.onTracksChanged(tracks)
-                val mappedTrackInfo = trackSelector.currentMappedTrackInfo ?: return
-
-                var videoRendererIndex = -1
-                for (i in 0 until mappedTrackInfo.rendererCount) {
-                    if (player.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
-                        videoRendererIndex = i
-                        break
-                    }
-                }
-                if (videoRendererIndex == -1) return
-
-                val trackGroups = mappedTrackInfo.getTrackGroups(videoRendererIndex)
-                if (trackGroups.isEmpty) return
-
-                val selectionOverride = trackSelector.parameters.getSelectionOverride(videoRendererIndex, trackGroups)
-
-                // Update our class property
-                isAutoMode = (selectionOverride == null)
-
-                // Now, immediately try to update the full text. This will work if video size is already known.
-                updateResolutionText()
-            }
-
-            // --- (Listener 2) - GET THE ACTUAL PLAYING RESOLUTION ---
-            override fun onVideoSizeChanged(videoSize: VideoSize) {
-                super.onVideoSizeChanged(videoSize)
-
-                // The video size has changed, so we can now reliably update the text.
-                updateResolutionText()
-            }
-        })
-
-
-        val isOffline = intent.getBooleanExtra(EXTRA_IS_OFFLINE, false)
-
-        if (isOffline) {
-            println("dddddfff4344rr anas")
-            // --- OFFLINE PLAYBACK ---
-
-            // **** THIS IS THE CRITICAL FIX ****
-            // The MediaItem MUST be created from the actual media link that was cached,
-            // which we get from the 'videos' list passed in the intent.
-            // DO NOT use currentEpisode.url here.
-            val mediaItem = MediaItem.fromUri(videoList.first().url)
-
-            val offlineDataSourceFactory: DataSource.Factory = DownloadUtil.getOfflineDataSourceFactory(this)
-            val mediaSource = HlsMediaSource.Factory(offlineDataSourceFactory).createMediaSource(mediaItem)
-
-            player.setMediaSource(mediaSource)
-
-
-        } else {
-            println("dddddfff4344rr amina")
-            // --- ONLINE STREAMING (This part remains the same) ---
-            val masterPlaylistUrl = createMasterPlaylist(videoList)
-            val mediaItem = MediaItem.fromUri(masterPlaylistUrl)
-            val mainDataSourceFactory = DefaultDataSource.Factory(this, DownloadUtil.getCacheDataSourceFactory(this))
-            val mediaSource = HlsMediaSource.Factory(mainDataSourceFactory).createMediaSource(mediaItem)
-            player.setMediaSource(mediaSource)
-        }
-
-        player.prepare()
-        player.play()
-        updateProgress()
-    }
-
-    private fun updateResolutionText() {
-        // Get the current video size. If it's unknown, do nothing.
-        val videoSize = player.videoSize
-        if (videoSize.height == 0) return // Height is 0 if resolution is not yet determined
-
-        // Get the playing quality from the height (e.g., "1080p")
-        val playingQuality = "${videoSize.height}p"
-
-        // Use our class property to format the text correctly
-        val displayText = if (isAutoMode) {
-            "Auto ($playingQuality)"
-        } else {
-            playingQuality
-        }
-
-        // Update the UI on the main thread
-        runOnUiThread {
-            tvResolution.text = displayText
-        }
-    }
-
-    private fun rewind() {
-        player.seekTo((player.currentPosition - 10000).coerceAtLeast(0))
-        showSeekIndicator(rewindIndicator)
-    }
-
-    private fun fastForward() {
-        player.seekTo((player.currentPosition + 10000).coerceAtMost(player.duration))
-        showSeekIndicator(forwardIndicator)
-    }
-
-    // Add this new helper function
-    private fun showSeekIndicator(view: View) {
-        view.visibility = View.VISIBLE
-        // You can add animations here for a nicer effect
-        view.animate().alpha(0f).setDuration(800).withEndAction {
-            view.visibility = View.GONE
-            view.alpha = 1f // Reset alpha for next time
-        }.start()
-    }
-
-    // THIS IS THE NEW HELPER FUNCTION
-    // THIS IS THE CORRECTED HELPER FUNCTION
-    private fun createMasterPlaylist(videos: List<Video>): String {
-        val playlistBuilder = StringBuilder()
-        // The master playlist must start with this tag
-        playlistBuilder.append("#EXTM3U\n")
-
-        // Sort videos by quality to ensure a logical order in the playlist
-        val sortedVideos = videos.sortedByDescending {
-            it.quality.filter { char -> char.isDigit() }.toIntOrNull() ?: 0
-        }
-
-        for (video in sortedVideos) {
-            // --- START OF CHANGES ---
-
-            // We need to provide BOTH resolution and an estimated bandwidth
-            val resolution: String
-            val bandwidth: Int
-
-            when {
-                "1080p" in video.quality -> {
-                    resolution = "1920x1080"
-                    bandwidth = 5000000 // 5 Mbps
-                }
-                "720p" in video.quality -> {
-                    resolution = "1280x720"
-                    bandwidth = 2800000 // 2.8 Mbps
-                }
-                "480p" in video.quality -> {
-                    resolution = "854x480"
-                    bandwidth = 1400000 // 1.4 Mbps
-                }
-                "360p" in video.quality -> {
-                    resolution = "640x360"
-                    bandwidth = 800000  // 800 kbps
-                }
-                else -> {
-                    // Have a fallback for unknown qualities
-                    resolution = ""
-                    bandwidth = 500000 // 500 kbps
-                }
-            }
-
-            // This is now the CORRECT format for the tag, with both attributes
-            if (resolution.isNotEmpty()) {
-                playlistBuilder.append("#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth,RESOLUTION=$resolution\n")
-            } else {
-                playlistBuilder.append("#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth\n")
-            }
-
-            // --- END OF CHANGES ---
-
-            // The URL for the stream goes on the next line
-            playlistBuilder.append("${video.url}\n")
-        }
-
-        // This part remains the same, encoding the playlist string for the player
-        return "data:application/x-mpegURL;base64," +
-                android.util.Base64.encodeToString(playlistBuilder.toString().toByteArray(), android.util.Base64.NO_WRAP)
-    }
-    private fun setupClickListeners() {
-        btnBack.setOnClickListener { finish() }
-        btnPlayPause.setOnClickListener {
-            if (player.isPlaying) player.pause() else player.play()
-            scheduleHideControls()
-        }
-        btnRewind.setOnClickListener {
-            rewind()
-            scheduleHideControls()
-        }
-        btnQuality.setOnClickListener {
-            showQualityDialog()
-            scheduleHideControls()
-        }
-        btnFastForward.setOnClickListener {
-            fastForward()
-            scheduleHideControls()
-        }
-
-        btnLock.setOnClickListener { toggleLock() }
-//        btnFullscreen.setOnClickListener {
-//            toggleFullscreen()
-//            scheduleHideControls()
-//        }
-
-
-        // --- MODIFIED: The fullscreen button is no longer needed to enter fullscreen ---
-        btnFullscreen.setOnClickListener {
-            // The activity is always in fullscreen landscape, so this button may not be needed.
-            // You could repurpose it for another feature or remove it.
-            Toast.makeText(this, "Player is always in fullscreen mode", Toast.LENGTH_SHORT).show()
-            scheduleHideControls()
-        }
-
-        btnResize.setOnClickListener {
-            cycleResizeMode()
-            scheduleHideControls()
-        }
-        btnSubtitle.setOnClickListener {
-            Toast.makeText(this, "Subtitle functionality to be implemented", Toast.LENGTH_SHORT).show()
-            scheduleHideControls()
-        }
-        btnNextEpisode.setOnClickListener {
-            playNextEpisode()
-        }
-
-        btnSkipIntro.setOnClickListener {
-            currentSkipStamp?.let {
-                player.seekTo(it.endMs)
-                // Hide the button immediately after skipping
-                btnSkipIntro.visibility = View.GONE
-                currentSkipStamp = null
-            }
-        }
-
-        lockOverlay = findViewById(R.id.lock_overlay)
-        btnUnlock = findViewById(R.id.btn_unlock)
-
-    }
-
-    fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-        if (isLocked) {
-            // If locked, a single tap will briefly show the unlock button
-            btnUnlock.visibility = View.VISIBLE
-            hideHandler.postDelayed({ btnUnlock.visibility = View.GONE }, 2000)
-        } else {
-            toggleControls()
-        }
-        return true
-    }
-
-    private fun toggleLock() {
-        isLocked = !isLocked
-        if (isLocked) {
-            hideControls()
-            lockOverlay.visibility = View.VISIBLE
-            // Hide the unlock button after a delay but keep focus
-            btnUnlock.requestFocus()
-            hideHandler.postDelayed({ btnUnlock.visibility = View.GONE }, 2000)
-        } else {
-            lockOverlay.visibility = View.GONE
-            // When unlocking, immediately show controls and set focus
-            showControls()
-        }
-    }
-
-
-    private fun fetchSkipTimes() {
-        val anime = currentAnime ?: return
-        val episode = currentEpisode ?: return
-        val duration = player.duration
-
-        if (duration <= 0) return
-
-        lifecycleScope.launch {
-            skipStamps = EpisodeSkip.getStamps(
-                anime,
-                episode.episode_number.toInt(),
-                duration
-            )
-        }
-    }
-
-
-    private fun checkSkipButtonVisibility(currentPosition: Long) {
-        if (skipStamps.isEmpty()) return
-
-        // Find if we are currently inside any skip stamp window
-        val activeStamp = skipStamps.find { currentPosition in it.startMs..it.endMs }
-
-        if (activeStamp != null) {
-            // We are inside a skip window
-            if (btnSkipIntro.visibility == View.GONE) {
-                // Show the button and set its text
-                currentSkipStamp = activeStamp
-                btnSkipIntro.text = activeStamp.type.text
-                btnSkipIntro.visibility = View.VISIBLE
-            }
-        } else {
-            // We are outside all skip windows
-            if (btnSkipIntro.visibility == View.VISIBLE) {
-                // Hide the button
-                btnSkipIntro.visibility = View.GONE
-                currentSkipStamp = null
-            }
-        }
-    }
-    private fun playNextEpisode() {
+        tvEpisodeTitle.text = "${currentAnime?.title} - ${currentEpisode?.name}"
         val currentIndex = seasonEpisodeList.indexOf(currentEpisode)
-        if (currentIndex != -1 && currentIndex < seasonEpisodeList.size - 1) {
-            val nextEpisode = seasonEpisodeList[currentIndex + 1]
-
-            // To play the next episode, we essentially just restart the
-            // process of launching AnimeDetailsActivity with a resume signal.
-            // This is the simplest and most robust way.
-            val intent = AnimeDetailsActivity.newIntentWithResume(
-                context = this,
-                anime = currentAnime!!,
-                resumeEpisodeUrl = nextEpisode.url!!
-            )
-            // Add flags to clear the old player from the back stack
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(intent)
-            finish() // Close the current player
-        }
+        btnNextEpisode.visibility = if (currentIndex != -1 && currentIndex < seasonEpisodeList.size - 1) View.VISIBLE else View.GONE
     }
 
+    private fun showSourceSelectionDialog() {
+        if (videoList.size == 1) {
+            initializePlayerForVideo(videoList.first())
+            return
+        }
 
-    @OptIn(UnstableApi::class)
+        val sources = videoList.map { it.quality }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("Select Source")
+            .setItems(sources) { dialog, which ->
+                val selectedVideo = videoList[which]
+                initializePlayerForVideo(selectedVideo)
+                dialog.dismiss()
+            }
+            .setOnCancelListener {
+                if (player == null) {
+                    finish()
+                }
+            }
+            .show()
+    }
+
+    // ADDED BACK: Quality selection dialog for track selection
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun showQualityDialog() {
         val trackSelector = this.trackSelector
         val mappedTrackInfo = trackSelector.currentMappedTrackInfo
@@ -781,10 +418,9 @@ class VideoPlayerActivity : AppCompatActivity() {
             return
         }
 
-        // Find the video renderer index
         var videoRendererIndex = -1
         for (i in 0 until mappedTrackInfo.rendererCount) {
-            if (player.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
+            if (player!!.getRendererType(i) == C.TRACK_TYPE_VIDEO) {
                 videoRendererIndex = i
                 break
             }
@@ -801,10 +437,9 @@ class VideoPlayerActivity : AppCompatActivity() {
             return
         }
 
-        // Prepare dialog options
         val qualityOptions = mutableListOf<String>()
         val trackIndices = mutableListOf<Int>()
-        qualityOptions.add("Auto") // "Auto" is always the first option
+        qualityOptions.add("Auto")
 
         for (i in 0 until trackGroups.length) {
             val group = trackGroups.get(i)
@@ -815,23 +450,19 @@ class VideoPlayerActivity : AppCompatActivity() {
             }
         }
 
-        // Determine currently selected item
         val selectionOverride = trackSelector.parameters.getSelectionOverride(videoRendererIndex, trackGroups)
-        var checkedItem = 0 // Default to "Auto"
+        var checkedItem = 0
         if (selectionOverride != null && selectionOverride.length > 0) {
             checkedItem = trackIndices.indexOf(selectionOverride.tracks[0]) + 1
         }
 
-        // Create and show the dialog
         val builder = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
         builder.setTitle("Select Quality")
         builder.setSingleChoiceItems(qualityOptions.toTypedArray(), checkedItem) { dialog, which ->
             val parametersBuilder = trackSelector.buildUponParameters()
             if (which == 0) {
-                // User selected "Auto"
                 parametersBuilder.clearSelectionOverrides(videoRendererIndex)
             } else {
-                // User selected a specific quality
                 val override = DefaultTrackSelector.SelectionOverride(
                     videoRendererIndex,
                     trackIndices[which - 1]
@@ -848,10 +479,124 @@ class VideoPlayerActivity : AppCompatActivity() {
         builder.create().show()
     }
 
+    @androidx.annotation.OptIn(UnstableApi::class)
+    private fun initializePlayerForVideo(video: Video) {
+        player?.release()
+        player = null
 
+        tvServerName.text = "${video.quality} (Auto)" // Show server name with Auto indicator
 
-    // CORRECTED: Function now uses AspectRatioFrameLayout constants
-    @OptIn(UnstableApi::class)
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+
+        video.headers?.let { headersMap ->
+            httpDataSourceFactory.setDefaultRequestProperties(headersMap)
+        }
+
+        val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
+
+        val mediaItem = MediaItem.fromUri(video.url)
+        val mediaSource = if (video.url.endsWith(".m3u8", ignoreCase = true)) {
+            HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+        } else {
+            ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+        }
+
+        trackSelector = DefaultTrackSelector(this).apply {
+            // Configure for automatic quality selection with adaptive bitrate
+            setParameters(
+                buildUponParameters()
+                    .setAllowMultipleAdaptiveSelections(true)
+                    .setAllowAudioMixedMimeTypeAdaptiveness(true)
+                    .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                    .setAllowVideoNonSeamlessAdaptiveness(true)
+                    .setMaxVideoBitrate(Int.MAX_VALUE) // No bitrate limit for auto mode
+                    .setForceHighestSupportedBitrate(false) // Allow adaptive selection
+            )
+        }
+
+        player = ExoPlayer.Builder(this)
+            .setTrackSelector(trackSelector)
+            .build().apply {
+                setMediaSource(mediaSource)
+                addListener(playerListener)
+                playWhenReady = true
+
+                val seekPosition = if (startPosition != -1L) startPosition else this@VideoPlayerActivity.player?.currentPosition ?: 0L
+                seekTo(seekPosition)
+                startPosition = -1L
+
+                prepare()
+            }
+
+        playerView.player = player
+        playerView.resizeMode = currentResizeMode
+        updateProgress()
+    }
+
+    private val playerListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            loadingIndicator.visibility = if (playbackState == Player.STATE_BUFFERING) View.VISIBLE else View.GONE
+            if (playbackState == Player.STATE_READY) {
+                updatePlayPauseButton()
+                updateDuration()
+                fetchSkipTimes()
+            } else if (playbackState == Player.STATE_ENDED) {
+                playNextEpisode()
+            }
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            updatePlayPauseButton()
+        }
+
+        // ADDED BACK: Track changes listener for quality updates
+        override fun onTracksChanged(tracks: Tracks) {
+            super.onTracksChanged(tracks)
+            updateResolutionDisplay()
+        }
+
+        // ADDED BACK: Video size changed listener
+        override fun onVideoSizeChanged(videoSize: VideoSize) {
+            super.onVideoSizeChanged(videoSize)
+            updateResolutionDisplay()
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            super.onPlayerError(error)
+            Log.e("VideoPlayerActivity", "ExoPlayer Error: ", error)
+            Toast.makeText(
+                this@VideoPlayerActivity,
+                "Player Error: ${error.message}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun rewind() {
+        player?.let { p ->
+            p.seekTo((p.currentPosition - 10000).coerceAtLeast(0))
+            showSeekIndicator(rewindIndicator)
+        }
+    }
+
+    private fun fastForward() {
+        player?.let { p ->
+            p.seekTo((p.currentPosition + 10000).coerceAtMost(p.duration))
+            showSeekIndicator(forwardIndicator)
+        }
+    }
+
+    private fun showSeekIndicator(view: View) {
+        view.visibility = View.VISIBLE
+        view.animate().alpha(0f).setDuration(800).withEndAction {
+            view.visibility = View.GONE
+            view.alpha = 1f
+        }.start()
+    }
+
+    // ADDED BACK: Resize mode cycling
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun cycleResizeMode() {
         currentResizeMode = when (currentResizeMode) {
             AspectRatioFrameLayout.RESIZE_MODE_FIT -> {
@@ -868,57 +613,224 @@ class VideoPlayerActivity : AppCompatActivity() {
             }
             else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
         }
-        // This line is correct, as setResizeMode takes the integer constant
         playerView.resizeMode = currentResizeMode
     }
 
+    private fun setupClickListeners() {
+        btnBack.setOnClickListener { finish() }
+        btnServer.setOnClickListener { showSourceSelectionDialog(); scheduleHideControls() }
+        btnPlayPause.setOnClickListener {
+            player?.let { if (it.isPlaying) it.pause() else it.play() }
+            scheduleHideControls()
+        }
+        btnRewind.setOnClickListener { rewind(); scheduleHideControls() }
+        btnFastForward.setOnClickListener { fastForward(); scheduleHideControls() }
+        btnLock.setOnClickListener { toggleLock() }
+        btnNextEpisode.setOnClickListener { playNextEpisode() }
+        btnUnlock.setOnClickListener { toggleLock() }
+
+        // ADDED BACK: Missing button click listeners
+        btnFullscreen.setOnClickListener {
+            Toast.makeText(this, "Player is always in fullscreen mode", Toast.LENGTH_SHORT).show()
+            scheduleHideControls()
+        }
+        btnResize.setOnClickListener {
+            cycleResizeMode()
+            scheduleHideControls()
+        }
+        btnSubtitle.setOnClickListener {
+            Toast.makeText(this, "Subtitle functionality to be implemented", Toast.LENGTH_SHORT).show()
+            scheduleHideControls()
+        }
+
+        btnSkipIntro.setOnClickListener {
+            currentSkipStamp?.let {
+                player?.seekTo(it.endMs)
+                btnSkipIntro.visibility = View.GONE
+                currentSkipStamp = null
+            }
+        }
+    }
+
+    private fun toggleLock() {
+        isLocked = !isLocked
+        if (isLocked) {
+            hideControls()
+            lockOverlay.visibility = View.VISIBLE
+            btnUnlock.requestFocus()
+            hideHandler.postDelayed({ btnUnlock.visibility = View.GONE }, 2000)
+        } else {
+            lockOverlay.visibility = View.GONE
+            showControls()
+        }
+    }
+
+    private fun fetchSkipTimes() {
+        val anime = currentAnime ?: return
+        val episode = currentEpisode ?: return
+        val duration = player?.duration ?: return
+
+        if (duration <= 0) return
+
+        lifecycleScope.launch {
+            skipStamps = EpisodeSkip.getStamps(
+                anime,
+                episode.episode_number.toInt(),
+                duration
+            )
+        }
+    }
+
+    private fun checkSkipButtonVisibility(currentPosition: Long) {
+        if (skipStamps.isEmpty()) return
+
+        val activeStamp = skipStamps.find { currentPosition in it.startMs..it.endMs }
+
+        if (activeStamp != null) {
+            if (btnSkipIntro.visibility == View.GONE) {
+                currentSkipStamp = activeStamp
+                btnSkipIntro.text = activeStamp.type.text
+                btnSkipIntro.visibility = View.VISIBLE
+            }
+        } else {
+            if (btnSkipIntro.visibility == View.VISIBLE) {
+                btnSkipIntro.visibility = View.GONE
+                currentSkipStamp = null
+            }
+        }
+    }
+
+    private fun playNextEpisode() {
+        // 1. Find the current episode's index in the season list
+        val currentIndex = seasonEpisodeList.indexOfFirst { it.url == currentEpisode?.url }
+
+        // 2. Check if there is a next episode
+        if (currentIndex != -1 && currentIndex < seasonEpisodeList.size - 1) {
+            val nextEpisode = seasonEpisodeList[currentIndex + 1]
+
+            // 3. Launch a coroutine to load the new episode's data
+            lifecycleScope.launch {
+                loadVideoForEpisode(nextEpisode)
+            }
+        } else {
+            // 4. Handle the case where it's the last episode
+            Toast.makeText(this, "You've finished the season!", Toast.LENGTH_SHORT).show()
+            // Optional: you could finish the activity here if you want
+            // finish()
+        }
+    }
+
+    private suspend fun loadVideoForEpisode(episode: SEpisode) {
+        // Show a loading indicator while we fetch the new data
+        loadingIndicator.visibility = View.VISIBLE
+        player?.pause() // Pause the current player
+
+        try {
+            // Fetch the list of video servers/qualities for the new episode
+            val newVideoList = sourceManager.fetchVideoList(episode.url!!, specificSource)
+
+            if (newVideoList.isNotEmpty()) {
+                // Update the activity's state to the new episode
+                currentEpisode = episode
+                videoList = newVideoList
+                startPosition = 0L // Always start the next episode from the beginning
+
+                // Update UI elements
+                updateEpisodeUI()
+
+                // Re-initialize the player with the new video
+                // If there's only one server, play it directly. Otherwise, show the selection dialog.
+                if (videoList.size == 1) {
+                    initializePlayerForVideo(videoList.first())
+                } else {
+                    showSourceSelectionDialog()
+                }
+            } else {
+                Toast.makeText(this, "Could not find video for the next episode.", Toast.LENGTH_LONG).show()
+                loadingIndicator.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error loading next episode: ${e.message}", Toast.LENGTH_LONG).show()
+            loadingIndicator.visibility = View.GONE
+        }
+    }
+
+    private fun updateEpisodeUI() {
+        // Update the title at the top of the player
+        tvEpisodeTitle.text = "${currentAnime?.title} - ${currentEpisode?.name}"
+
+        // Re-check if the "next episode" button should be visible
+        val currentIndex = seasonEpisodeList.indexOfFirst { it.url == currentEpisode?.url }
+        btnNextEpisode.visibility = if (currentIndex != -1 && currentIndex < seasonEpisodeList.size - 1) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+
+        // Clear any old skip intro buttons
+        btnSkipIntro.visibility = View.GONE
+        currentSkipStamp = null
+        skipStamps = emptyList()
+
+        // Reset the seek bar and time displays
+        seekBar.progress = 0
+        tvCurrentTime.text = formatTime(0)
+        tvTotalTime.text = formatTime(0)
+    }
+
+    // ENHANCED: Gesture detector with all features from the original code
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupGestureDetector() {
         gestureDetector = GestureDetectorCompat(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                if (!isLocked) toggleControls()
+                if (isLocked) {
+                    btnUnlock.visibility = View.VISIBLE
+                    hideHandler.postDelayed({ btnUnlock.visibility = View.GONE }, 2000)
+                } else {
+                    toggleControls()
+                }
                 return true
             }
+
             override fun onDoubleTap(e: MotionEvent): Boolean {
                 if (!isLocked) {
                     if (e.x < playerView.width / 2) rewind() else fastForward()
                 }
                 return true
             }
-            // ** ADD HORIZONTAL SEEK LOGIC TO onScroll **
-            override fun onScroll(
-                e1: MotionEvent?,
-                e2: MotionEvent,
-                distanceX: Float,
-                distanceY: Float
-            ): Boolean {
-                if (isLocked || e1 == null) return false
+
+            // ENHANCED: Full scroll implementation with brightness, volume, and seeking
+            override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+                if (isLocked || e1 == null || player == null) return false
 
                 val dx = e2.x - e1.x
                 val dy = e2.y - e1.y
 
                 // Determine if the scroll is more horizontal or vertical
                 if (abs(dx) > abs(dy)) {
+                    // --- START: MODIFIED HORIZONTAL SCROLL LOGIC ---
                     // HORIZONTAL SCROLL (SEEKING)
-                    // Hide other overlays
+                    if (!isSeeking) {
+                        // Capture the starting position at the beginning of the gesture
+                        isSeeking = true
+                        seekStartPosition = player!!.currentPosition
+                    }
+
                     brightnessOverlay.visibility = View.GONE
                     volumeOverlay.visibility = View.GONE
-
-                    // Show the seek time overlay
                     tvSeekTime.visibility = View.VISIBLE
 
-                    // Calculate the seek amount based on scroll distance
-                    val seekAmount = (-distanceX * (player.duration / playerView.width.toFloat())).toLong()
-                    val newPosition = (player.currentPosition + seekAmount).coerceIn(0, player.duration)
-
-                    player.seekTo(newPosition)
-
+                    val duration = player!!.duration
                     val sensitivityMultiplier = 2.0
-                    seekChange = (dx * (player.duration / (playerView.width.toFloat() * sensitivityMultiplier))).toLong()
+                    // Calculate the total offset from the start of the gesture
+                    val seekOffset = (dx * (duration / (playerView.width.toFloat() * sensitivityMultiplier))).toLong()
 
-                    // Calculate the target position
-                    // Update the seek time text to show current time and change
-                    val changeSeconds = seekChange / 1000
-                    val changeSign = if (seekChange >= 0) "+" else "-"
+                    // Calculate the new position based on the start position plus the total offset
+                    val newPosition = (seekStartPosition + seekOffset).coerceIn(0, duration)
+                    player!!.seekTo(newPosition) // Seek to the calculated absolute position
+
+                    val changeSeconds = seekOffset / 1000
+                    val changeSign = if (seekOffset >= 0) "+" else "-"
                     val changeMinutesPart = abs(changeSeconds) / 60
                     val changeSecondsPart = abs(changeSeconds) % 60
 
@@ -926,6 +838,7 @@ class VideoPlayerActivity : AppCompatActivity() {
                     val formattedPosition = formatTime(newPosition)
 
                     tvSeekTime.text = "$formattedChange [$formattedPosition]"
+                    // --- END: MODIFIED HORIZONTAL SCROLL LOGIC ---
 
                 } else {
                     // VERTICAL SCROLL (BRIGHTNESS/VOLUME)
@@ -938,52 +851,38 @@ class VideoPlayerActivity : AppCompatActivity() {
                 return true
             }
 
-            // ** IMPLEMENT onLongPress **
+            // ADDED BACK: Long press for speed up
             override fun onLongPress(e: MotionEvent) {
                 if (isLocked) return
 
-                // Set a flag to indicate we are in "speed up" mode
                 isOnLongPressSpeedUp = true
-
-                // Set player speed to 2x
-                player.setPlaybackParameters(PlaybackParameters(2f))
-
-                // Show UI feedback
+                player?.setPlaybackParameters(PlaybackParameters(2f))
                 speedIndicatorText.text = "Speed: 2.0x"
                 speedIndicatorText.visibility = View.VISIBLE
             }
-
         })
 
-
-        // ** MODIFY onTouchEvent to detect the release **
         playerView.setOnTouchListener { _, event ->
-            // Pass the event to the gesture detector first
             gestureDetector.onTouchEvent(event)
 
-            // Check for the "finger up" or "gesture cancelled" events
+            // Handle touch release events
             if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-                // Check if we were in the "speed up" mode
+                // --- ADD THIS LINE ---
+                isSeeking = false // Reset seek state when the gesture is finished
+
                 if (isOnLongPressSpeedUp) {
-                    // We are no longer in speed up mode
                     isOnLongPressSpeedUp = false
-
-                    // Revert player speed to normal
-                    player.setPlaybackParameters(PlaybackParameters(1f))
-
-                    // Hide the UI feedback
+                    player?.setPlaybackParameters(PlaybackParameters(1f))
                     speedIndicatorText.visibility = View.GONE
                 }
 
-                // Also hide the horizontal seek time indicator if it was visible
+                // Hide seek time indicator after scroll
                 if (tvSeekTime.visibility == View.VISIBLE) {
                     hideHandler.postDelayed({ tvSeekTime.visibility = View.GONE }, 500)
                 }
             }
             true
         }
-
-
     }
 
     private fun setupAudioManager() {
@@ -1003,10 +902,10 @@ class VideoPlayerActivity : AppCompatActivity() {
     private fun setupSeekBar() {
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    val duration = player.duration
+                if (fromUser && player != null) {
+                    val duration = player!!.duration
                     if (duration > 0) {
-                        player.seekTo((progress * duration) / 100)
+                        player!!.seekTo((progress * duration) / 100)
                         updateCurrentTime()
                     }
                 }
@@ -1027,17 +926,14 @@ class VideoPlayerActivity : AppCompatActivity() {
             topOverlay.visibility = View.VISIBLE
             bottomControls.visibility = View.VISIBLE
             centerControls.visibility = View.VISIBLE
-            // Request focus on the play/pause button, the most common action.
             btnPlayPause.requestFocus()
         } else {
-            // If locked, only the unlock button should be focusable
             btnUnlock.requestFocus()
         }
 
         isControlsVisible = true
         scheduleHideControls()
     }
-
 
     private fun hideControls() {
         if (isLocked) return
@@ -1050,7 +946,6 @@ class VideoPlayerActivity : AppCompatActivity() {
         tvSeekTime.visibility = View.GONE
         btnLock.visibility = View.GONE
 
-        // Clear focus from the controls so the D-pad doesn't interact with hidden views
         playerView.clearFocus()
 
         isControlsVisible = false
@@ -1062,58 +957,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         hideHandler.postDelayed(hideRunnable, 3000)
     }
 
-//    private fun toggleLock() {
-//        isLocked = !isLocked
-//        if (isLocked) {
-//            // When locking the screen:
-//            btnLock.setImageResource(R.drawable.ic_lock)
-//            // Hide EVERYTHING except for the lock button itself.
-//            topOverlay.visibility = View.GONE
-//            bottomControls.visibility = View.GONE
-//            centerControls.visibility = View.GONE
-//            brightnessOverlay.visibility = View.GONE
-//            volumeOverlay.visibility = View.GONE
-//            tvSeekTime.visibility = View.GONE
-//            isControlsVisible = false
-//            hideHandler.removeCallbacks(hideRunnable) // Stop the auto-hide timer
-//        } else {
-//            // When unlocking the screen:
-//            btnLock.setImageResource(R.drawable.ic_lock_open)
-//            // Show all the controls again.
-//            showControls()
-//        }
-//    }
-
-    private fun toggleFullscreen() {
-        isFullscreen = !isFullscreen
-        if (isFullscreen) {
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            btnFullscreen.setImageResource(R.drawable.mobile_rotate_24px)
-        } else {
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
-            btnFullscreen.setImageResource(R.drawable.mobile_rotate_24px)
-        }
-    }
-
-//    private fun rewind() {
-//        player.seekTo((player.currentPosition - 10000).coerceAtLeast(0))
-//        showSeekTime("-10s")
-//    }
-//
-//    private fun fastForward() {
-//        player.seekTo((player.currentPosition + 10000).coerceAtMost(player.duration))
-//        showSeekTime("+10s")
-//    }
-
-    private fun showSeekTime(text: String) {
-        tvSeekTime.text = text
-        tvSeekTime.visibility = View.VISIBLE
-        hideHandler.removeCallbacks(hideSeekTime)
-        hideHandler.postDelayed(hideSeekTime, 1000)
-    }
-
-    private val hideSeekTime = Runnable { tvSeekTime.visibility = View.GONE }
-
+    // ADDED BACK: Brightness and volume adjustment functions
     private fun adjustBrightness(deltaY: Float) {
         currentBrightness = (currentBrightness + (deltaY / (playerView.height * 2f))).coerceIn(0f, 1f)
         window.attributes = window.attributes.apply { screenBrightness = currentBrightness }
@@ -1164,36 +1008,59 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     private val hideVolumeOverlay = Runnable { volumeOverlay.visibility = View.GONE }
 
+    // ADDED BACK: Show seek time function
+    private fun showSeekTime(text: String) {
+        tvSeekTime.text = text
+        tvSeekTime.visibility = View.VISIBLE
+        hideHandler.removeCallbacks(hideSeekTime)
+        hideHandler.postDelayed(hideSeekTime, 1000)
+    }
+
+    private val hideSeekTime = Runnable { tvSeekTime.visibility = View.GONE }
+
     private fun updatePlayPauseButton() {
-        ivPlayPause.setImageResource(if (player.isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow_large)
+        player?.let { p ->
+            ivPlayPause.setImageResource(if (p.isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow_large)
+        }
     }
 
     private fun updateProgress() {
-        if (::player.isInitialized) {
-            val duration = player.duration
-            val position = player.currentPosition
-
+        player?.let { p ->
+            val duration = p.duration
+            val position = p.currentPosition
             if (duration > 0) {
                 seekBar.progress = ((position * 100) / duration).toInt()
             }
-            updateCurrentTime()
-
-            // ** CHECK FOR SKIP BUTTON VISIBILITY ON EVERY UPDATE **
+            tvCurrentTime.text = formatTime(position)
             checkSkipButtonVisibility(position)
         }
-
-        // Schedule the next update
-        hideHandler.postDelayed({ updateProgress() }, 500) // Check every 500ms
+        hideHandler.postDelayed({ updateProgress() }, 500)
     }
 
     private fun updateCurrentTime() {
-        tvCurrentTime.text = formatTime(player.currentPosition)
+        player?.let { p ->
+            tvCurrentTime.text = formatTime(p.currentPosition)
+        }
     }
 
     private fun updateDuration() {
-        val duration = player.duration
-        if (duration > 0) {
-            tvTotalTime.text = formatTime(duration)
+        player?.let { p ->
+            val duration = p.duration
+            if (duration > 0) {
+                tvTotalTime.text = formatTime(duration)
+            }
+        }
+    }
+
+    // ADDED BACK: Function to update resolution display
+    private fun updateResolutionDisplay() {
+        player?.let { p ->
+            val videoSize = p.videoSize
+            if (videoSize.height > 0) {
+                val currentQuality = "${videoSize.height}p"
+                val selectedServer = tvServerName.text.toString().split(" ")[0] // Get server name before " (Auto)"
+                tvServerName.text = "$selectedServer (Auto - $currentQuality)"
+            }
         }
     }
 
@@ -1206,33 +1073,22 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        saveWatchProgress() // Save one last time
-        player.release()
+        saveWatchProgress()
+        player?.release()
         hideHandler.removeCallbacksAndMessages(null)
-
-        // --- NEW: Remove the flag when the activity is completely destroyed ---
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
     }
 
     override fun onPause() {
         super.onPause()
         saveWatchProgress()
-        if (::player.isInitialized && player.isPlaying) {
-            player.pause()
-        }
-
-        // --- NEW: Remove the flag when the activity goes to the background ---
+        player?.pause()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onResume() {
         super.onResume()
-        if (::player.isInitialized && !player.isPlaying) {
-            player.play()
-        }
-
-        // --- NEW: Add the flag back when the activity comes to the foreground ---
+        player?.play()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 }

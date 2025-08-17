@@ -15,7 +15,8 @@ data class WatchHistory(
     val timestamp: Long,
     val isFinished: Boolean = false, // <-- ADD THIS NEW FIELD
     val episodeNumber: Int, // <-- ADD THIS
-    val seasonEpisodes: List<SEpisode> // <-- ADD THIS
+    val seasonEpisodes: List<SEpisode>, // <-- ADD THIS
+    val source: String
 )
 
 
