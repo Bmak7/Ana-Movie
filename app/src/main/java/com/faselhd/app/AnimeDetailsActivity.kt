@@ -1,88 +1,94 @@
 package com.faselhd.app
 
+import DetailsFragmentAdapter
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.View
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
-import androidx.annotation.OptIn
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.offline.DownloadRequest
-import androidx.media3.exoplayer.offline.DownloadService
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.faselhd.app.adapters.EpisodeAdapter
-import com.faselhd.app.adapters.SeasonAdapter
+import com.faselhd.app.adapters.EpisodeDetailsAdapter
 import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.*
-import com.faselhd.app.network.SourceManager
-import com.faselhd.app.services.VideoDownloadService
-import com.faselhd.app.workers.DownloadWorker
-import com.google.android.material.appbar.MaterialToolbar
-import com.faselhd.app.models.Favorite
 import com.faselhd.app.network.AnimeSource
-import com.google.android.material.button.MaterialButton // Ensure this is the correct import
+import com.faselhd.app.network.SourceManager
+import com.faselhd.app.workers.DownloadWorker
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import android.widget.ArrayAdapter
+import com.faselhd.app.adapters.EpisodeSelectionAdapter
+import com.faselhd.app.adapters.SelectableEpisode
+
 
 class AnimeDetailsActivity : AppCompatActivity() {
 
-    private lateinit var toolbar: MaterialToolbar
+    // --- Views ---
     private lateinit var animeImage: ImageView
     private lateinit var animeTitle: TextView
     private lateinit var animeDescription: TextView
-    private lateinit var animeGenre: TextView
-    private lateinit var animeStatus: TextView
+    private lateinit var animeRating: TextView
+    private lateinit var animeYear: TextView
+    private lateinit var tagsChipGroup: ChipGroup
     private lateinit var episodesRecyclerView: RecyclerView
-    private lateinit var watchButton: MaterialButton
+    private lateinit var seasonSpinner: Spinner
+    private lateinit var btnPlay: MaterialButton
+    private lateinit var btnDownload: MaterialButton
+    private lateinit var btnBookmark: ImageButton
+    private lateinit var btnShare: ImageButton
+    private lateinit var tabLayout: TabLayout
+    private lateinit var viewPager: ViewPager2
     private lateinit var composeProgress: ComposeView
-    private lateinit var seasonsRecyclerView: RecyclerView
+    private var resumeEpisodeUrl: String? = null // <-- Make sure you have this property
+    private var allEpisodes: List<SEpisode> = emptyList() // <-- And this one
+    private lateinit var episodesProgressBar: ProgressBar
 
-    private lateinit var episodeAdapter: EpisodeAdapter
-    private lateinit var seasonAdapter: SeasonAdapter
+
+    // --- Adapters ---
+    private lateinit var episodeAdapter: EpisodeDetailsAdapter
+    private lateinit var fragmentAdapter: DetailsFragmentAdapter
 
 
+    // --- Utilities ---
     private val sourceManager by lazy { SourceManager(applicationContext) }
     private val db by lazy { AppDatabase.getDatabase(this) }
-
     private var currentAnime: SAnime? = null
-    private var specificSource: AnimeSource? = null // <-- 1. ADD THIS VARIABLE
-    private var allEpisodes: List<SEpisode> = emptyList()
+    private var specificSource: AnimeSource? = null
     private var episodesBySeason: Map<String, List<EpisodeWithHistory>> = emptyMap()
-    private var resumeEpisodeUrl: String? = null
-
-    private lateinit var addToListButton: MaterialButton // Add this
-    private var isFavorite = false // Add this to track state
-
-    private lateinit var downloadSeasonButton: MaterialButton // Add this
+    private var isFavorite = false
 
     companion object {
         private const val EXTRA_ANIME = "extra_anime"
-        private const val EXTRA_RESUME_EPISODE_URL = "extra_resume_episode_url"
         private const val EXTRA_SOURCE = "extra_source"
+        private const val EXTRA_RESUME_EPISODE_URL = "extra_resume_episode_url"
 
+        // The standard way to start this activity
         fun newIntent(context: Context, anime: SAnime, source: AnimeSource?): Intent {
             return Intent(context, AnimeDetailsActivity::class.java).apply {
                 putExtra(EXTRA_ANIME, anime)
@@ -90,11 +96,12 @@ class AnimeDetailsActivity : AppCompatActivity() {
             }
         }
 
+        // THIS IS THE MISSING FUNCTION for "Continue Watching"
         fun newIntentWithResume(context: Context, anime: SAnime, resumeEpisodeUrl: String, source: AnimeSource?): Intent {
             return Intent(context, AnimeDetailsActivity::class.java).apply {
                 putExtra(EXTRA_ANIME, anime)
+                putExtra(EXTRA_SOURCE, source)
                 putExtra(EXTRA_RESUME_EPISODE_URL, resumeEpisodeUrl)
-                putExtra(EXTRA_SOURCE, source) // <-- PASS THE SOURCE
             }
         }
     }
@@ -104,211 +111,299 @@ class AnimeDetailsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_anime_details)
 
         currentAnime = intent.getParcelableExtra(EXTRA_ANIME)
-        resumeEpisodeUrl = intent.getStringExtra(EXTRA_RESUME_EPISODE_URL)
         specificSource = intent.getSerializableExtra(EXTRA_SOURCE) as? AnimeSource
-
+        resumeEpisodeUrl = intent.getStringExtra(EXTRA_RESUME_EPISODE_URL)
         if (currentAnime == null) {
-            finish()
-            return
+            finish(); return
         }
 
         initViews()
         setupToolbar()
-        setupRecyclerViews()
-        setupDownloadSeasonButton()
-        displayAnimeInfo()
-        checkIfFavorite()
-        setupFavoriteButtonListener()
+        setupRecyclerView()
+        setupTabsAndViewPager()
+        setupListeners()
         loadAnimeData()
+        checkIfFavorite()
     }
 
+    private fun initViews() {
+        animeImage = findViewById(R.id.anime_image)
+        animeTitle = findViewById(R.id.anime_title)
+        animeRating = findViewById(R.id.anime_rating)
+        animeYear = findViewById(R.id.anime_year)
+        tagsChipGroup = findViewById(R.id.anime_tags_chip_group)
+        btnPlay = findViewById(R.id.btn_play)
 
-    private fun setupDownloadSeasonButton() {
-        downloadSeasonButton.setOnClickListener {
-            // Get the name of the currently selected season from the adapter
-            val selectedSeasonName = seasonAdapter.getSelectedSeason()
-            if (selectedSeasonName == null) {
-                Toast.makeText(this, "Please select a season first", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+        btnDownload = findViewById(R.id.btn_download)
+        animeDescription = findViewById(R.id.anime_description)
+        episodesRecyclerView = findViewById(R.id.episodes_recycler_view)
+        seasonSpinner = findViewById(R.id.season_spinner)
+        btnBookmark = findViewById(R.id.btn_bookmark)
+        btnShare = findViewById(R.id.btn_share)
+        tabLayout = findViewById(R.id.tab_layout)
+        viewPager = findViewById(R.id.view_pager)
+        composeProgress = findViewById(R.id.compose_progress)
+        episodesProgressBar = findViewById(R.id.episodes_progress_bar)
+    }
 
-            // Get the list of episodes for that season
-            val episodesForSeason = episodesBySeason[selectedSeasonName]
-            if (episodesForSeason.isNullOrEmpty()) {
-                Toast.makeText(this, "No episodes found for this season", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+    private fun setupToolbar() {
+        val toolbar: androidx.appcompat.widget.Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
-            // Show a confirmation dialog to the user
-            AlertDialog.Builder(this)
-                .setTitle("Download Season")
-                .setMessage("Are you sure you want to download all ${episodesForSeason.size} episodes for '$selectedSeasonName'?")
-                .setPositiveButton("Download") { dialog, _ ->
-                    queueSeasonForDownload(episodesForSeason.map { it.episode })
-                    dialog.dismiss()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+        // This tells the Toolbar that it should display a "Home" button (which we've configured as a back arrow)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+
+        // This is the crucial part that makes the button work.
+        // When the navigation icon (the back arrow) is clicked, it calls onBackPressed(),
+        // which is the standard Android behavior for closing an activity.
+        toolbar.setNavigationOnClickListener {
+            onBackPressed()
         }
     }
 
-    private fun queueSeasonForDownload(episodes: List<SEpisode>) {
+    private fun setupRecyclerView() {
+        episodeAdapter = EpisodeDetailsAdapter { episode ->
+            playEpisode(episode) // Connect the click to your existing play logic
+        }
+        episodesRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@AnimeDetailsActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = episodeAdapter
+        }
+    }
+
+    private fun setupTabsAndViewPager() {
+        fragmentAdapter = DetailsFragmentAdapter(this)
+        viewPager.adapter = fragmentAdapter
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> "More Like This"
+                1 -> "Comments" // Example
+                else -> null
+            }
+        }.attach()
+    }
+
+    private fun setupListeners() {
+        btnBookmark.setOnClickListener { handleBookmarkClick() }
+        btnDownload.setOnClickListener {
+            // Check if we have episodes first
+            if (allEpisodes.isNotEmpty()) {
+                showDownloadBottomSheet()
+            } else {
+                Toast.makeText(this, "Episodes not loaded yet.", Toast.LENGTH_SHORT).show()
+            }
+        }
+        btnBookmark.setOnClickListener { handleBookmarkClick() }
+        // TODO: Add listeners for play, download, share
+    }
+
+    private fun showDownloadBottomSheet() {
+        val dialog = BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.bottom_sheet_download, null)
+        dialog.setContentView(view)
+
+        val qualitySpinner: Spinner = view.findViewById(R.id.quality_spinner)
+        val episodesRecyclerView: RecyclerView = view.findViewById(R.id.episodes_download_recycler_view)
+        val btnCancel: MaterialButton = view.findViewById(R.id.btn_cancel)
+        val btnConfirmDownload: MaterialButton = view.findViewById(R.id.btn_confirm_download)
+
+        // Setup RecyclerView with the new adapter
+        val selectionAdapter = EpisodeSelectionAdapter()
+        episodesRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        episodesRecyclerView.adapter = selectionAdapter
+        // Convert your list of SEpisode to a list of SelectableEpisode
+        selectionAdapter.submitList(allEpisodes.map { SelectableEpisode(it) })
+
+        // TODO: Populate qualitySpinner with actual video qualities
+        // For now, a placeholder:
+        val qualities = arrayOf("720p", "480p", "360p")
+        qualitySpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, qualities)
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnConfirmDownload.setOnClickListener {
+            val selectedEpisodes = selectionAdapter.getSelectedEpisodes()
+            if (selectedEpisodes.isEmpty()) {
+                Toast.makeText(this, "Please select at least one episode.", Toast.LENGTH_SHORT).show()
+            } else {
+                // Get selected quality
+                val selectedQuality = qualitySpinner.selectedItem.toString()
+                // Queue the selected episodes for download
+                queueEpisodesForDownload(selectedEpisodes, selectedQuality)
+                dialog.dismiss()
+            }
+        }
+
+        dialog.show()
+    }
+
+    // Add this new function to queue multiple episodes
+    private fun queueEpisodesForDownload(episodes: List<SEpisode>, quality: String) {
+        Toast.makeText(this, "Queueing ${episodes.size} episodes for download...", Toast.LENGTH_LONG).show()
+
         lifecycleScope.launch {
-            Toast.makeText(this@AnimeDetailsActivity, "Queueing season for download...", Toast.LENGTH_LONG).show()
-
             for (episode in episodes) {
-                val existingDownload = db.downloadDao().getDownload(episode.url!!)
-                if (existingDownload != null && existingDownload.downloadState != DownloadState.FAILED) {
-                    continue
-                }
-
+                // Your existing single-download logic can be reused here
+                // We pass 'null' for the videoUrl because the worker will fetch it.
                 val workData = workDataOf(
                     DownloadWorker.KEY_EPISODE_URL to episode.url!!,
-                    DownloadWorker.KEY_VIDEO_URL to null,
+                    DownloadWorker.KEY_VIDEO_URL to null, // Worker will find the best URL or use the quality hint
                     DownloadWorker.KEY_EPISODE_NAME to episode.name,
                     DownloadWorker.KEY_ANIME_TITLE to currentAnime?.title,
                     DownloadWorker.KEY_THUMBNAIL_URL to currentAnime?.thumbnail_url
+                    // TODO: You could pass the selected 'quality' here too
                 )
 
-                val downloadWorkRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
-                    .setInputData(workData)
-                    .addTag(episode.url!!)
-                    .build()
-
+                val downloadWorkRequest = OneTimeWorkRequestBuilder<DownloadWorker>().setInputData(workData).build()
                 WorkManager.getInstance(this@AnimeDetailsActivity).enqueue(downloadWorkRequest)
 
-                // **** THIS IS THE FIX ****
-                // Create the database entry with a null mediaUri for now.
+                // Create the initial database entry
                 val downloadEntry = Download(
                     episodeUrl = episode.url!!,
                     animeTitle = currentAnime?.title ?: "",
                     episodeName = episode.name,
                     thumbnailUrl = currentAnime?.thumbnail_url,
                     downloadState = DownloadState.QUEUED,
-                    mediaUri = null // It's now nullable, so this is valid.
+                    mediaUri = null
                 )
                 db.downloadDao().upsert(downloadEntry)
             }
         }
     }
 
-    // *** THIS IS THE CRITICAL FIX ***
-    // This function is called every time the activity comes back to the foreground.
-    override fun onResume() {
-        super.onResume()
+    // In AnimeDetailsActivity.kt
 
-        // If we have already fetched the episodes from the network...
-        if (allEpisodes.isNotEmpty()) {
-            // ...then we just need to re-process them with the latest data from the database.
-            // This is very fast and doesn't require a network call.
-            lifecycleScope.launch {
-                processAndDisplayEpisodes(allEpisodes)
-            }
-        }
-    }
+    private fun loadAnimeData() {
+        // Show the main loading indicator for the whole screen
+        showLoading(true)
 
-    private fun initViews() {
-        toolbar = findViewById(R.id.toolbar)
-        animeImage = findViewById(R.id.anime_image)
-        animeTitle = findViewById(R.id.anime_title)
-        animeDescription = findViewById(R.id.anime_description)
-        animeGenre = findViewById(R.id.anime_genre)
-        animeStatus = findViewById(R.id.anime_status)
-        episodesRecyclerView = findViewById(R.id.episodes_recycler_view)
-        watchButton = findViewById(R.id.watch_button)
-        composeProgress = findViewById(R.id.compose_progress)
-        seasonsRecyclerView = findViewById(R.id.seasons_recycler_view)
-        addToListButton = findViewById(R.id.btn_add_to_list) // Initialize the new button
-        downloadSeasonButton = findViewById(R.id.download_season_button) // Add this line
-    }
+        // Also show the specific progress bar for the episodes list
+        episodesProgressBar.visibility = View.VISIBLE
+        episodesRecyclerView.visibility = View.INVISIBLE
 
-    private fun setupToolbar() {
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener { onBackPressed() }
-    }
-
-    private fun checkIfFavorite() {
         lifecycleScope.launch {
-            val favorite = db.favoriteDao().getFavoriteByUrl(currentAnime!!.url!!)
-            isFavorite = favorite != null
-            updateFavoriteButtonUI()
-        }
-    }
+            var success = false
+            try {
+                // --- Step 1: Fetch and display the main anime details ---
+                println("current amnie url ${currentAnime!!.url!!}")
+                val detailedAnime = sourceManager.fetchAnimeDetails(currentAnime!!.url!!, specificSource)
+                println("current amnie details ${currentAnime!!.toString()}")
+                currentAnime = detailedAnime
+                populateUiDetails(detailedAnime) // Update title, description, image, etc.
 
-    private fun updateFavoriteButtonUI() {
-        if (isFavorite) {
-            addToListButton.text = "إزالة من قائمتي"
-            addToListButton.setIconResource(R.drawable.done_all_24px) // Example icon change
-        } else {
-            addToListButton.text = "أضف إلى قائمتي"
-            addToListButton.setIconResource(R.drawable.add_24px) // Example icon change
-        }
-    }
+                // --- Step 2: Fetch and display the episode list and seasons ---
+                val episodes = sourceManager.fetchEpisodeList(currentAnime!!.url!!, specificSource)
+                allEpisodes = episodes // Store a copy of the raw episode list
+                processAndDisplayEpisodes(episodes) // This populates the spinner and RecyclerView
 
-    private fun setupFavoriteButtonListener() {
-        addToListButton.setOnClickListener {
-            lifecycleScope.launch {
-                val anime = currentAnime!!
-                // Determine the correct source to save.
-                // Prioritize the specific source passed to this activity, otherwise use the global source.
-                val sourceToSave = (specificSource ?: SourceManager.getSelectedSource(applicationContext)).name
+                // If we reached here, both network calls were successful
+                success = true
 
-                if (isFavorite) {
-                    // It's a favorite, so delete it
-                    db.favoriteDao().delete(anime.url!!)
-                    Toast.makeText(this@AnimeDetailsActivity, "تمت إزالته من قائمتي", Toast.LENGTH_SHORT).show()
-                } else {
-                    // It's not a favorite, so add it
-                    val newFavorite = Favorite(
-                        animeUrl = anime.url ?: "",
-                        title = anime.title,
-                        thumbnailUrl = anime.thumbnail_url,
-                        source = sourceToSave // <-- SAVE THE CORRECT SOURCE
-                    )
-                    db.favoriteDao().insert(newFavorite)
-                    Toast.makeText(this@AnimeDetailsActivity, "تمت إضافته إلى قائمتي", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@AnimeDetailsActivity, "Error loading details: ${e.message}", Toast.LENGTH_LONG).show()
+                println("Error loading details:  ${e.message}")
+            } finally {
+                // --- Step 3: This block runs after the 'try' block, regardless of success or failure ---
+
+                // Hide all loading indicators
+                showLoading(false)
+                episodesProgressBar.visibility = View.GONE
+                episodesRecyclerView.visibility = View.VISIBLE
+
+                // --- Step 4: THE CRITICAL LOGIC ---
+                // If the network calls were successful AND we have a resume URL...
+                if (success && resumeEpisodeUrl != null) {
+                    val urlToPlay = resumeEpisodeUrl!!
+                    // Find the episode object that matches the URL
+                    val episodeToPlay = allEpisodes.find { it.url == urlToPlay }
+
+                    if (episodeToPlay != null) {
+                        // We found it, now call the play function
+                        playEpisode(episodeToPlay)
+                    } else {
+                        // We couldn't find the specific episode, inform the user
+                        Toast.makeText(this@AnimeDetailsActivity, "Could not find the episode to resume.", Toast.LENGTH_SHORT).show()
+                    }
+
+                    // IMPORTANT: Clear the resume URL so it doesn't try to auto-play again
+                    // if the user rotates the screen or comes back to the activity.
+                    resumeEpisodeUrl = null
                 }
-                // Toggle the state and update the UI
-                isFavorite = !isFavorite
-                updateFavoriteButtonUI()
             }
         }
     }
 
-    private fun setupRecyclerViews() {
-        seasonAdapter = SeasonAdapter { seasonName ->
-            val episodesForSeason = episodesBySeason[seasonName] ?: emptyList()
-            episodeAdapter.submitList(episodesForSeason)
-        }
-        seasonsRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@AnimeDetailsActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = seasonAdapter
-        }
+    private fun playEpisode(episode: SEpisode) {
+        episode.url?.let { episodeUrl ->
+            // --- SHOW LOADING INDICATOR ---
+            showLoading(true)
 
-        // *** THIS IS THE CORRECTED INITIALIZATION ***
-        episodeAdapter = EpisodeAdapter(
-            onClick = { episode ->
-                playEpisode(episode)
-            },
-            // We now need the full EpisodeWithHistory object to find its position
-            onDownloadClick = { episode ->
-                // The loading state is already set by the ViewHolder's click listener.
-                // We just need to start the download process.
-                startDownload(episode)
+            lifecycleScope.launch {
+                try {
+                    val seasonName = episode.name?.substringBefore(":")?.trim() ?: "Season 1"
+                    val episodesWithHistoryForSeason = episodesBySeason[seasonName] ?: emptyList()
+                    val episodeListForPlayer = episodesWithHistoryForSeason.map { it.episode }
+
+                    val videos = sourceManager.fetchVideoList(episodeUrl, specificSource)
+                    println("vidoes sss : ${videos.toString()}")
+                    val history = db.watchHistoryDao().getWatchHistoryByEpisodeUrl(episodeUrl)
+
+                    // --- HIDE LOADING (on success before starting next activity) ---
+                    showLoading(false)
+
+                    if (videos.isNotEmpty()) {
+                        val intent = VideoPlayerActivity.newIntent(
+                            context = this@AnimeDetailsActivity,
+                            videos = videos,
+                            anime = currentAnime!!,
+                            currentEpisode = episode,
+                            episodeListForSeason = ArrayList(episodeListForPlayer),
+                            startPosition = history?.lastWatchedPosition ?: 0L,
+                            source = specificSource
+                        )
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this@AnimeDetailsActivity, "Could not find video link", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    // --- HIDE LOADING (on failure) ---
+                    showLoading(false)
+                    Toast.makeText(this@AnimeDetailsActivity, "Error loading video: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
-        )
-
-        episodesRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@AnimeDetailsActivity)
-            adapter = episodeAdapter
-            isNestedScrollingEnabled = false
         }
     }
 
-    // Modify the startDownload function
+    private fun populateUiDetails(anime: SAnime) {
+        animeTitle.text = anime.title
+        animeDescription.text = "Genre: ${anime.genre}\n\n${anime.description}"
+        animeRating.text = "N/A" ?: "N/A"
+        animeYear.text = ">  ${"2022" ?: "2022"}" // Assumes year exists in SAnime
+
+        Glide.with(this).load(anime.thumbnail_url).into(animeImage)
+
+        // Add chips programmatically
+        tagsChipGroup.removeAllViews()
+        addChipToGroup("13+")
+        addChipToGroup("Japan")
+        addChipToGroup("Subtitle")
+    }
+
+    private fun addChipToGroup(text: String) {
+        val chip = Chip(this).apply {
+            this.text = text
+            // Style to match design
+            setChipBackgroundColorResource(android.R.color.transparent)
+            setChipStrokeColorResource(R.color.green_see_all) // You need this color
+            chipStrokeWidth = 3f
+            setTextColor(resources.getColor(R.color.green_see_all, null))
+        }
+        tagsChipGroup.addView(chip)
+    }
+
     private fun startDownload(episode: SEpisode) {
-        lifecycleScope.launch {
+                lifecycleScope.launch {
             try {
                 val videos = sourceManager.fetchVideoList(episode.url!!)
 
@@ -382,200 +477,101 @@ class AnimeDetailsActivity : AppCompatActivity() {
             .create()
             .show()
     }
-    // Ensure displayAnimeInfo can handle being called multiple times
-    private fun displayAnimeInfo() {
-        currentAnime?.let { anime ->
-            // This will now correctly display the fetched details
-            animeTitle.text = anime.title
-            animeDescription.text = anime.description ?: "No description available"
-            animeGenre.text = "Genre: ${anime.genre ?: "Not specified"}"
-            animeStatus.text = "Status: ${getStatusText(anime.status)}"
+    // Inside AnimeDetailsActivity.kt
 
-            Glide.with(this)
-                .load(anime.thumbnail_url)
-                .placeholder(R.drawable.placeholder_anime)
-                .error(R.drawable.placeholder_anime)
-                .into(animeImage)
-
-            watchButton.setOnClickListener {
-                val firstUnwatched = episodeAdapter.currentList.firstOrNull { it.history?.isFinished == false }
-                val episodeToPlay = firstUnwatched?.episode ?: allEpisodes.firstOrNull()
-
-                if (episodeToPlay != null) {
-                    playEpisode(episodeToPlay)
-                } else {
-                    Toast.makeText(this, "No episodes available to watch", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-//    private fun loadAnimeData() {
-//        currentAnime?.url?.let { url ->
-//            showLoading(true)
-//            lifecycleScope.launch {
-//                try {
-//                    // 1. Fetch the full details for the anime
-//                    val detailedAnime = sourceManager.fetchAnimeDetails(url)
-//                    println("aaase3 url= $url" )
-//                    // 2. Update the currentAnime object with the new details
-//                    currentAnime = detailedAnime
-//
-//                    // 3. Now that we have all details, update the UI
-//                    displayAnimeInfo()
-//
-//                    // 4. Proceed to fetch the episode list as before
-//                    val episodesFromNetwork = sourceManager.fetchEpisodeList(url)
-//                    println("majd233 : ${episodesFromNetwork.size}")
-//                    allEpisodes = episodesFromNetwork
-//                    showLoading(false)
-//
-//                    if (allEpisodes.isNotEmpty()) {
-//                        processAndDisplayEpisodes(allEpisodes)
-//                        resumeEpisodeUrl?.let { urlToPlay ->
-//                            val episodeToPlay = allEpisodes.find { it.url == urlToPlay }
-//                            episodeToPlay?.let { playEpisode(it) }
-//                            resumeEpisodeUrl = null
-//                        }
-//                    } else {
-//                        Toast.makeText(this@AnimeDetailsActivity, "No episodes available", Toast.LENGTH_SHORT).show()
-//                    }
-//                } catch (e: Exception) {
-//                    showLoading(false)
-//                    Toast.makeText(this@AnimeDetailsActivity, "Error loading details: ${e.message}", Toast.LENGTH_LONG).show()
-//                }
-//            }
-//        }
-//    }
-
-    // 3. MODIFY THIS FUNCTION
-    private fun loadAnimeData() {
-        currentAnime?.url?.let { url ->
-            showLoading(true)
-            lifecycleScope.launch {
-                try {
-                    // First, fetch the full details (this also needs the specific source)
-                    val detailedAnime = sourceManager.fetchAnimeDetails(url, specificSource) // <-- PASS SOURCE
-                    currentAnime = detailedAnime
-                    println("current anime sss : ${currentAnime.toString()}")
-                    displayAnimeInfo()
-
-                    // Then, fetch the episode list
-                    val episodesFromNetwork = sourceManager.fetchEpisodeList(url, specificSource) // <-- PASS SOURCE
-                    allEpisodes = episodesFromNetwork
-                    showLoading(false)
-
-                    if (allEpisodes.isNotEmpty()) {
-                        processAndDisplayEpisodes(allEpisodes)
-                        resumeEpisodeUrl?.let { urlToPlay ->
-                            val episodeToPlay = allEpisodes.find { it.url == urlToPlay }
-                            episodeToPlay?.let { playEpisode(it) }
-                            resumeEpisodeUrl = null
-                        }
-                    } else {
-                        Toast.makeText(this@AnimeDetailsActivity, "No episodes available", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    showLoading(false)
-                    // (Your fallback logic for resuming directly can also be improved)
-                    if (resumeEpisodeUrl != null) {
-                        Toast.makeText(this@AnimeDetailsActivity, "Couldn't load details, attempting to play directly...", Toast.LENGTH_SHORT).show()
-                        val tempEpisode = SEpisode(url = resumeEpisodeUrl!!, name = "Resume")
-                        playEpisode(tempEpisode)
-                        resumeEpisodeUrl = null
-                    } else {
-                        Toast.makeText(this@AnimeDetailsActivity, "Error loading details: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        }
-    }
-    private suspend fun processAndDisplayEpisodes(allEpisodes: List<SEpisode>) {
+    private suspend fun processAndDisplayEpisodes(episodes: List<SEpisode>) {
+        // 1. Get all watch history from the database at once for efficiency
         val historyMap = db.watchHistoryDao().getAllWatchHistory().first()
             .associateBy { it.episodeUrl }
 
-        val episodesWithHistory = allEpisodes.map { episode ->
+        // 2. Combine the episodes from the network with their matching history from the database.
+        val episodesWithHistory = episodes.map { episode ->
             EpisodeWithHistory(
                 episode = episode,
                 history = historyMap[episode.url]
             )
         }
 
+        // 3. Group the combined 'EpisodeWithHistory' objects by season.
+        // This now produces the correct Map<String, List<EpisodeWithHistory>> type.
         episodesBySeason = episodesWithHistory.groupBy {
-            it.episode.name?.substringBefore(" : ")?.trim() ?: "Season 1"
+            it.episode.name?.substringBefore(":")?.trim() ?: "Season 1"
         }
 
         val seasonNames = episodesBySeason.keys.toList()
-        seasonAdapter.submitList(seasonNames)
 
-        // Find which season is currently selected to maintain the state after refresh
-        val currentlySelectedSeasonName = seasonAdapter.getSelectedSeason() ?: seasonNames.firstOrNull()
-        if (currentlySelectedSeasonName != null) {
-            seasonAdapter.setSelectedSeason(currentlySelectedSeasonName)
-            episodeAdapter.submitList(episodesBySeason[currentlySelectedSeasonName])
-        }
-    }
+        // Setup Spinner with the list of season names
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, seasonNames)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        seasonSpinner.adapter = spinnerAdapter
 
-    private fun playEpisode(episode: SEpisode) {
-        episode.url?.let { episodeUrl ->
-            showLoading(true)
-            lifecycleScope.launch {
-                try {
-                    val seasonName = episode.name?.substringBefore(" : ")?.trim() ?: "Season 1"
-                    val seasonEpisodeList = episodesBySeason[seasonName]?.map { it.episode } ?: emptyList()
-                    val videos = sourceManager.fetchVideoList(episodeUrl, specificSource) // <-- PASS SOURCE
-                    println("shaher2010 ${videos.toString()}")
-//                    println("shaher2019 ${videos[videos.size -2].url}")
-//                    println("shaher2019 ${videos[videos.size -1].url}")
-//                    val newList = listOf(videos[videos.size -1])
-                    println("shaher2020 ${videos.size}")
-                    val history = db.watchHistoryDao().getWatchHistoryByEpisodeUrl(episodeUrl)
-                    showLoading(false)
-
-                    if (videos.isNotEmpty()) {
-                        val intent = VideoPlayerActivity.newIntent(
-                            context = this@AnimeDetailsActivity,
-                            videos = videos,
-                            anime = currentAnime!!,
-                            currentEpisode = episode,
-                            episodeListForSeason = ArrayList(seasonEpisodeList),
-                            startPosition = history?.lastWatchedPosition ?: 0L,
-                            source = specificSource
-                        )
-                        startActivity(intent)
-                    } else {
-                        Toast.makeText(this@AnimeDetailsActivity, "Could not find video link", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    showLoading(false)
-                    println("Error loading video: ${e.message}")
-                    Toast.makeText(this@AnimeDetailsActivity, "Error loading video: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+        seasonSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedSeason = seasonNames[position]
+                episodeAdapter.submitList(episodesBySeason[selectedSeason])
             }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        // Default to showing the first season's episodes when the screen loads
+        if (seasonNames.isNotEmpty()) {
+            episodeAdapter.submitList(episodesBySeason[seasonNames.first()])
         }
     }
 
-    private fun getStatusText(status: Int): String {
-        return when (status) {
-            SAnime.ONGOING -> getString(R.string.status_ongoing)
-            SAnime.COMPLETED -> getString(R.string.status_completed)
-            else -> getString(R.string.status_unknown)
+    private fun checkIfFavorite() {
+        lifecycleScope.launch {
+            val favorite = db.favoriteDao().getFavoriteByUrl(currentAnime!!.url!!)
+            isFavorite = favorite != null
+            updateBookmarkButtonUI()
         }
     }
+
+    private fun handleBookmarkClick() {
+        isFavorite = !isFavorite // Toggle state
+        lifecycleScope.launch {
+            if (isFavorite) {
+                val favorite = Favorite(
+                    animeUrl = currentAnime!!.url!!,
+                    title = currentAnime!!.title,
+                    thumbnailUrl = currentAnime!!.thumbnail_url,
+                    source = (specificSource ?: SourceManager.getSelectedSource(applicationContext)).name
+                )
+                db.favoriteDao().insert(favorite)
+                Toast.makeText(this@AnimeDetailsActivity, "Added to list", Toast.LENGTH_SHORT).show()
+            } else {
+                db.favoriteDao().delete(currentAnime!!.url!!)
+                Toast.makeText(this@AnimeDetailsActivity, "Removed from list", Toast.LENGTH_SHORT).show()
+            }
+            updateBookmarkButtonUI()
+        }
+    }
+
+    private fun updateBookmarkButtonUI() {
+        if (isFavorite) {
+            btnBookmark.setImageResource(R.drawable.bookmark_check_24px) // Filled icon
+        } else {
+            btnBookmark.setImageResource(R.drawable.bookmark_24px) // Border icon
+        }
+    }
+
 
     private fun showLoading(show: Boolean) {
         if (show) {
             composeProgress.visibility = View.VISIBLE
             composeProgress.setContent {
+                // Use your app's MaterialTheme for consistent styling
                 MaterialTheme {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier.size(100.dp)
                     ) {
+                        // This is the circular progress indicator
                         CircularProgressIndicator(
                             modifier = Modifier.size(64.dp),
+                            // Use your theme's primary color for a consistent look
                             color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 4.dp,
+                            strokeWidth = 4.dp
                         )
                     }
                 }
@@ -585,529 +581,3 @@ class AnimeDetailsActivity : AppCompatActivity() {
         }
     }
 }
-
-
-
-//package com.faselhd.app
-//
-//import android.content.Context
-//import android.content.Intent
-//import android.net.Uri
-//import android.os.Bundle
-//import android.view.View
-//import android.widget.ImageView
-//import android.widget.TextView
-//import android.widget.Toast
-//import androidx.annotation.OptIn
-//import androidx.appcompat.app.AlertDialog
-//import androidx.appcompat.app.AppCompatActivity
-//import androidx.compose.foundation.layout.Box
-//import androidx.compose.foundation.layout.padding
-//import androidx.compose.foundation.layout.size
-//import androidx.compose.material3.CircularProgressIndicator
-//import androidx.compose.material3.MaterialTheme
-//import androidx.compose.material3.Text
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.platform.ComposeView
-//import androidx.compose.ui.unit.dp
-//import androidx.lifecycle.lifecycleScope
-//import androidx.media3.common.util.UnstableApi
-//import androidx.media3.exoplayer.offline.DownloadRequest
-//import androidx.media3.exoplayer.offline.DownloadService
-//import androidx.recyclerview.widget.LinearLayoutManager
-//import androidx.recyclerview.widget.RecyclerView
-//import androidx.work.OneTimeWorkRequestBuilder
-//import androidx.work.WorkManager
-//import androidx.work.workDataOf
-//import com.bumptech.glide.Glide
-//import com.example.myapplication.R
-//import com.faselhd.app.adapters.EpisodeAdapter
-//import com.faselhd.app.adapters.SeasonAdapter
-//import com.faselhd.app.db.AppDatabase
-//import com.faselhd.app.models.*
-//import com.faselhd.app.network.FaselHDSource
-//import com.faselhd.app.services.VideoDownloadService
-//import com.faselhd.app.workers.DownloadWorker
-//import com.google.android.material.appbar.MaterialToolbar
-//import com.faselhd.app.models.Favorite
-//import com.google.android.material.button.MaterialButton // Ensure this is the correct import
-//import kotlinx.coroutines.flow.first
-//import kotlinx.coroutines.launch
-//
-//class AnimeDetailsActivity : AppCompatActivity() {
-//
-//    private lateinit var toolbar: MaterialToolbar
-//    private lateinit var animeImage: ImageView
-//    private lateinit var animeTitle: TextView
-//    private lateinit var animeDescription: TextView
-//    private lateinit var animeGenre: TextView
-//    private lateinit var animeStatus: TextView
-//    private lateinit var episodesRecyclerView: RecyclerView
-//    private lateinit var watchButton: MaterialButton
-//    private lateinit var composeProgress: ComposeView
-//    private lateinit var seasonsRecyclerView: RecyclerView
-//
-//    private lateinit var episodeAdapter: EpisodeAdapter
-//    private lateinit var seasonAdapter: SeasonAdapter
-//
-//    private val faselHDSource by lazy { FaselHDSource(applicationContext) }
-//    private val db by lazy { AppDatabase.getDatabase(this) }
-//
-//    private var currentAnime: SAnime? = null
-//    private var allEpisodes: List<SEpisode> = emptyList()
-//    private var episodesBySeason: Map<String, List<EpisodeWithHistory>> = emptyMap()
-//    private var resumeEpisodeUrl: String? = null
-//
-//    private lateinit var addToListButton: MaterialButton // Add this
-//    private var isFavorite = false // Add this to track state
-//
-//    private lateinit var downloadSeasonButton: MaterialButton // Add this
-//
-//    companion object {
-//        private const val EXTRA_ANIME = "extra_anime"
-//        private const val EXTRA_RESUME_EPISODE_URL = "extra_resume_episode_url"
-//
-//        fun newIntent(context: Context, anime: SAnime): Intent {
-//            return Intent(context, AnimeDetailsActivity::class.java).apply {
-//                putExtra(EXTRA_ANIME, anime)
-//            }
-//        }
-//
-//        fun newIntentWithResume(context: Context, anime: SAnime, resumeEpisodeUrl: String): Intent {
-//            return Intent(context, AnimeDetailsActivity::class.java).apply {
-//                putExtra(EXTRA_ANIME, anime)
-//                putExtra(EXTRA_RESUME_EPISODE_URL, resumeEpisodeUrl)
-//            }
-//        }
-//    }
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContentView(R.layout.activity_anime_details)
-//
-//        currentAnime = intent.getParcelableExtra(EXTRA_ANIME)
-//        resumeEpisodeUrl = intent.getStringExtra(EXTRA_RESUME_EPISODE_URL)
-//
-//        if (currentAnime == null) {
-//            finish()
-//            return
-//        }
-//
-//        initViews()
-//        setupToolbar()
-//        setupRecyclerViews()
-//        setupDownloadSeasonButton()
-//        displayAnimeInfo()
-//        checkIfFavorite()
-//        setupFavoriteButtonListener()
-//        loadAnimeData()
-//    }
-//
-//
-//    private fun setupDownloadSeasonButton() {
-//        downloadSeasonButton.setOnClickListener {
-//            // Get the name of the currently selected season from the adapter
-//            val selectedSeasonName = seasonAdapter.getSelectedSeason()
-//            if (selectedSeasonName == null) {
-//                Toast.makeText(this, "Please select a season first", Toast.LENGTH_SHORT).show()
-//                return@setOnClickListener
-//            }
-//
-//            // Get the list of episodes for that season
-//            val episodesForSeason = episodesBySeason[selectedSeasonName]
-//            if (episodesForSeason.isNullOrEmpty()) {
-//                Toast.makeText(this, "No episodes found for this season", Toast.LENGTH_SHORT).show()
-//                return@setOnClickListener
-//            }
-//
-//            // Show a confirmation dialog to the user
-//            AlertDialog.Builder(this)
-//                .setTitle("Download Season")
-//                .setMessage("Are you sure you want to download all ${episodesForSeason.size} episodes for '$selectedSeasonName'?")
-//                .setPositiveButton("Download") { dialog, _ ->
-//                    queueSeasonForDownload(episodesForSeason.map { it.episode })
-//                    dialog.dismiss()
-//                }
-//                .setNegativeButton("Cancel", null)
-//                .show()
-//        }
-//    }
-//
-//    private fun queueSeasonForDownload(episodes: List<SEpisode>) {
-//        lifecycleScope.launch {
-//            Toast.makeText(this@AnimeDetailsActivity, "Queueing season for download...", Toast.LENGTH_LONG).show()
-//
-//            for (episode in episodes) {
-//                val existingDownload = db.downloadDao().getDownload(episode.url!!)
-//                if (existingDownload != null && existingDownload.downloadState != DownloadState.FAILED) {
-//                    continue
-//                }
-//
-//                val workData = workDataOf(
-//                    DownloadWorker.KEY_EPISODE_URL to episode.url!!,
-//                    DownloadWorker.KEY_VIDEO_URL to null,
-//                    DownloadWorker.KEY_EPISODE_NAME to episode.name,
-//                    DownloadWorker.KEY_ANIME_TITLE to currentAnime?.title,
-//                    DownloadWorker.KEY_THUMBNAIL_URL to currentAnime?.thumbnail_url
-//                )
-//
-//                val downloadWorkRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
-//                    .setInputData(workData)
-//                    .addTag(episode.url!!)
-//                    .build()
-//
-//                WorkManager.getInstance(this@AnimeDetailsActivity).enqueue(downloadWorkRequest)
-//
-//                // **** THIS IS THE FIX ****
-//                // Create the database entry with a null mediaUri for now.
-//                val downloadEntry = Download(
-//                    episodeUrl = episode.url!!,
-//                    animeTitle = currentAnime?.title ?: "",
-//                    episodeName = episode.name,
-//                    thumbnailUrl = currentAnime?.thumbnail_url,
-//                    downloadState = DownloadState.QUEUED,
-//                    mediaUri = null // It's now nullable, so this is valid.
-//                )
-//                db.downloadDao().upsert(downloadEntry)
-//            }
-//        }
-//    }
-//
-//    // *** THIS IS THE CRITICAL FIX ***
-//    // This function is called every time the activity comes back to the foreground.
-//    override fun onResume() {
-//        super.onResume()
-//
-//        // If we have already fetched the episodes from the network...
-//        if (allEpisodes.isNotEmpty()) {
-//            // ...then we just need to re-process them with the latest data from the database.
-//            // This is very fast and doesn't require a network call.
-//            lifecycleScope.launch {
-//                processAndDisplayEpisodes(allEpisodes)
-//            }
-//        }
-//    }
-//
-//    private fun initViews() {
-//        toolbar = findViewById(R.id.toolbar)
-//        animeImage = findViewById(R.id.anime_image)
-//        animeTitle = findViewById(R.id.anime_title)
-//        animeDescription = findViewById(R.id.anime_description)
-//        animeGenre = findViewById(R.id.anime_genre)
-//        animeStatus = findViewById(R.id.anime_status)
-//        episodesRecyclerView = findViewById(R.id.episodes_recycler_view)
-//        watchButton = findViewById(R.id.watch_button)
-//        composeProgress = findViewById(R.id.compose_progress)
-//        seasonsRecyclerView = findViewById(R.id.seasons_recycler_view)
-//        addToListButton = findViewById(R.id.btn_add_to_list) // Initialize the new button
-//        downloadSeasonButton = findViewById(R.id.download_season_button) // Add this line
-//    }
-//
-//    private fun setupToolbar() {
-//        setSupportActionBar(toolbar)
-//        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-//        toolbar.setNavigationOnClickListener { onBackPressed() }
-//    }
-//
-//    private fun checkIfFavorite() {
-//        lifecycleScope.launch {
-//            val favorite = db.favoriteDao().getFavoriteByUrl(currentAnime!!.url!!)
-//            isFavorite = favorite != null
-//            updateFavoriteButtonUI()
-//        }
-//    }
-//
-//    private fun updateFavoriteButtonUI() {
-//        if (isFavorite) {
-//            addToListButton.text = "إزالة من قائمتي"
-//             addToListButton.setIconResource(R.drawable.done_all_24px) // Example icon change
-//        } else {
-//            addToListButton.text = "أضف إلى قائمتي"
-//             addToListButton.setIconResource(R.drawable.add_24px) // Example icon change
-//        }
-//    }
-//
-//    private fun setupFavoriteButtonListener() {
-//        addToListButton.setOnClickListener {
-//            lifecycleScope.launch {
-//                val anime = currentAnime!!
-//                if (isFavorite) {
-//                    // It's a favorite, so delete it
-//                    db.favoriteDao().delete(anime.url!!)
-//                    Toast.makeText(this@AnimeDetailsActivity, "تمت إزالته من قائمتي", Toast.LENGTH_SHORT).show()
-//                } else {
-//                    // It's not a favorite, so add it
-//                    val newFavorite = Favorite(
-//                        animeUrl = anime.url!!,
-//                        title = anime.title,
-//                        thumbnailUrl = anime.thumbnail_url
-//                    )
-//                    db.favoriteDao().insert(newFavorite)
-//                    Toast.makeText(this@AnimeDetailsActivity, "تمت إضافته إلى قائمتي", Toast.LENGTH_SHORT).show()
-//                }
-//                // Toggle the state and update the UI
-//                isFavorite = !isFavorite
-//                updateFavoriteButtonUI()
-//            }
-//        }
-//    }
-//
-//    private fun setupRecyclerViews() {
-//        seasonAdapter = SeasonAdapter { seasonName ->
-//            val episodesForSeason = episodesBySeason[seasonName] ?: emptyList()
-//            episodeAdapter.submitList(episodesForSeason)
-//        }
-//        seasonsRecyclerView.apply {
-//            layoutManager = LinearLayoutManager(this@AnimeDetailsActivity, LinearLayoutManager.HORIZONTAL, false)
-//            adapter = seasonAdapter
-//        }
-//
-//        // *** THIS IS THE CORRECTED INITIALIZATION ***
-//        episodeAdapter = EpisodeAdapter(
-//            onClick = { episode ->
-//                playEpisode(episode)
-//            },
-//            // We now need the full EpisodeWithHistory object to find its position
-//            onDownloadClick = { episode ->
-//                // The loading state is already set by the ViewHolder's click listener.
-//                // We just need to start the download process.
-//                startDownload(episode)
-//            }
-//        )
-//
-//        episodesRecyclerView.apply {
-//            layoutManager = LinearLayoutManager(this@AnimeDetailsActivity)
-//            adapter = episodeAdapter
-//            isNestedScrollingEnabled = false
-//        }
-//    }
-//
-//    // Modify the startDownload function
-//    private fun startDownload(episode: SEpisode) {
-//        lifecycleScope.launch {
-//            try {
-//                val videos = faselHDSource.fetchVideoList(episode.url!!)
-//                // NETWORK CALL IS DONE - HIDE LOADING AND SHOW DIALOG
-//                hideDownloadIndicatorFor(episode) // <-- New helper function
-//                if (videos.isEmpty()) {
-//                    Toast.makeText(this@AnimeDetailsActivity, "Could not find any video links.", Toast.LENGTH_SHORT).show()
-//                    return@launch
-//                }
-//                showDownloadQualityDialog(episode, videos)
-//            } catch (e: Exception) {
-//                // NETWORK CALL FAILED - HIDE LOADING AND SHOW ERROR
-//                hideDownloadIndicatorFor(episode) // <-- New helper function
-//                Toast.makeText(this@AnimeDetailsActivity, "Failed to get video list: ${e.message}", Toast.LENGTH_SHORT).show()
-//            }
-//        }
-//    }
-//
-//    // *** ADD THIS NEW HELPER FUNCTION ***
-//    private fun hideDownloadIndicatorFor(episode: SEpisode) {
-//        // Find the item in the adapter's current list
-//        val position = episodeAdapter.currentList.indexOfFirst { it.episode.url == episode.url }
-//        if (position != -1) {
-//            // Get the ViewHolder for that position
-//            val viewHolder = episodesRecyclerView.findViewHolderForAdapterPosition(position) as? EpisodeAdapter.ViewHolder
-//            // Tell the ViewHolder to hide the loading indicator
-//            viewHolder?.setDownloadingState(false)
-//        }
-//    }
-//
-//    // Add this function back
-//    private fun showDownloadQualityDialog(episode: SEpisode, videos: List<Video>) {
-//        val qualityOptions = videos.map { it.quality }.toTypedArray()
-//
-//        AlertDialog.Builder(this)
-//            .setTitle("Select Download Quality")
-//            .setItems(qualityOptions) { dialog, which ->
-//                val selectedVideo = videos[which]
-//                Toast.makeText(this, "Queueing download for: ${episode.name} (${selectedVideo.quality})", Toast.LENGTH_SHORT).show()
-//
-//                val workData = workDataOf(
-//                    DownloadWorker.KEY_EPISODE_URL to episode.url!!,
-//                    DownloadWorker.KEY_VIDEO_URL to selectedVideo.url, // The specific quality HLS URL
-//                    DownloadWorker.KEY_EPISODE_NAME to episode.name,
-//                    DownloadWorker.KEY_ANIME_TITLE to currentAnime?.title,
-//                    DownloadWorker.KEY_THUMBNAIL_URL to currentAnime?.thumbnail_url
-//                )
-//
-//                val downloadWorkRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
-//                    .setInputData(workData)
-//                    .addTag(episode.url!!)
-//                    .build()
-//
-//                WorkManager.getInstance(this).enqueue(downloadWorkRequest)
-//
-//                lifecycleScope.launch {
-//                    val downloadEntry = Download(
-//                        episodeUrl = episode.url!!,
-//                        animeTitle = currentAnime?.title ?: "",
-//                        episodeName = episode.name,
-//                        thumbnailUrl = currentAnime?.thumbnail_url,
-//                        downloadState = DownloadState.QUEUED,
-//                        mediaUri = null
-//                    )
-//                    db.downloadDao().upsert(downloadEntry)
-//                }
-//                dialog.dismiss()
-//            }
-//            .setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
-//            .create()
-//            .show()
-//    }
-//    // Ensure displayAnimeInfo can handle being called multiple times
-//    private fun displayAnimeInfo() {
-//        currentAnime?.let { anime ->
-//            // This will now correctly display the fetched details
-//            animeTitle.text = anime.title
-//            animeDescription.text = anime.description ?: "No description available"
-//            animeGenre.text = "Genre: ${anime.genre ?: "Not specified"}"
-//            animeStatus.text = "Status: ${getStatusText(anime.status)}"
-//
-//            Glide.with(this)
-//                .load(anime.thumbnail_url)
-//                .placeholder(R.drawable.placeholder_anime)
-//                .error(R.drawable.placeholder_anime)
-//                .into(animeImage)
-//
-//            watchButton.setOnClickListener {
-//                val firstUnwatched = episodeAdapter.currentList.firstOrNull { it.history?.isFinished == false }
-//                val episodeToPlay = firstUnwatched?.episode ?: allEpisodes.firstOrNull()
-//
-//                if (episodeToPlay != null) {
-//                    playEpisode(episodeToPlay)
-//                } else {
-//                    Toast.makeText(this, "No episodes available to watch", Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//        }
-//    }
-//
-//    private fun loadAnimeData() {
-//        currentAnime?.url?.let { url ->
-//            showLoading(true)
-//            lifecycleScope.launch {
-//                try {
-//                    // 1. Fetch the full details for the anime
-//                    val detailedAnime = faselHDSource.fetchAnimeDetails(url)
-//
-//                    // 2. Update the currentAnime object with the new details
-//                    currentAnime = detailedAnime
-//
-//                    // 3. Now that we have all details, update the UI
-//                    displayAnimeInfo()
-//
-//                    // 4. Proceed to fetch the episode list as before
-//                    val episodesFromNetwork = faselHDSource.fetchEpisodeList(url)
-//                    allEpisodes = episodesFromNetwork
-//                    showLoading(false)
-//
-//                    if (allEpisodes.isNotEmpty()) {
-//                        processAndDisplayEpisodes(allEpisodes)
-//                        resumeEpisodeUrl?.let { urlToPlay ->
-//                            val episodeToPlay = allEpisodes.find { it.url == urlToPlay }
-//                            episodeToPlay?.let { playEpisode(it) }
-//                            resumeEpisodeUrl = null
-//                        }
-//                    } else {
-//                        Toast.makeText(this@AnimeDetailsActivity, "No episodes available", Toast.LENGTH_SHORT).show()
-//                    }
-//                } catch (e: Exception) {
-//                    showLoading(false)
-//                    Toast.makeText(this@AnimeDetailsActivity, "Error loading details: ${e.message}", Toast.LENGTH_LONG).show()
-//                }
-//            }
-//        }
-//    }
-//
-//    private suspend fun processAndDisplayEpisodes(allEpisodes: List<SEpisode>) {
-//        val historyMap = db.watchHistoryDao().getAllWatchHistory().first()
-//            .associateBy { it.episodeUrl }
-//
-//        val episodesWithHistory = allEpisodes.map { episode ->
-//            EpisodeWithHistory(
-//                episode = episode,
-//                history = historyMap[episode.url]
-//            )
-//        }
-//
-//        episodesBySeason = episodesWithHistory.groupBy {
-//            it.episode.name?.substringBefore(" : ")?.trim() ?: "Season 1"
-//        }
-//
-//        val seasonNames = episodesBySeason.keys.toList()
-//        seasonAdapter.submitList(seasonNames)
-//
-//        // Find which season is currently selected to maintain the state after refresh
-//        val currentlySelectedSeasonName = seasonAdapter.getSelectedSeason() ?: seasonNames.firstOrNull()
-//        if (currentlySelectedSeasonName != null) {
-//            seasonAdapter.setSelectedSeason(currentlySelectedSeasonName)
-//            episodeAdapter.submitList(episodesBySeason[currentlySelectedSeasonName])
-//        }
-//    }
-//
-//    private fun playEpisode(episode: SEpisode) {
-//        episode.url?.let { episodeUrl ->
-//            showLoading(true)
-//            lifecycleScope.launch {
-//                try {
-//                    val seasonName = episode.name?.substringBefore(" : ")?.trim() ?: "Season 1"
-//                    val seasonEpisodeList = episodesBySeason[seasonName]?.map { it.episode } ?: emptyList()
-//                    val videos = faselHDSource.fetchVideoList(episodeUrl)
-//                    val history = db.watchHistoryDao().getWatchHistoryByEpisodeUrl(episodeUrl)
-//                    showLoading(false)
-//
-//                    if (videos.isNotEmpty()) {
-//                        val intent = VideoPlayerActivity.newIntent(
-//                            context = this@AnimeDetailsActivity,
-//                            videos = videos,
-//                            anime = currentAnime!!,
-//                            currentEpisode = episode,
-//                            episodeListForSeason = ArrayList(seasonEpisodeList),
-//                            startPosition = history?.lastWatchedPosition ?: 0L
-//                        )
-//                        startActivity(intent)
-//                    } else {
-//                        Toast.makeText(this@AnimeDetailsActivity, "Could not find video link", Toast.LENGTH_SHORT).show()
-//                    }
-//                } catch (e: Exception) {
-//                    showLoading(false)
-//                    Toast.makeText(this@AnimeDetailsActivity, "Error loading video: ${e.message}", Toast.LENGTH_LONG).show()
-//                }
-//            }
-//        }
-//    }
-//
-//    private fun getStatusText(status: Int): String {
-//        return when (status) {
-//            SAnime.ONGOING -> getString(R.string.status_ongoing)
-//            SAnime.COMPLETED -> getString(R.string.status_completed)
-//            else -> getString(R.string.status_unknown)
-//        }
-//    }
-//
-//    private fun showLoading(show: Boolean) {
-//        if (show) {
-//            composeProgress.visibility = View.VISIBLE
-//            composeProgress.setContent {
-//                MaterialTheme {
-//                    Box(
-//                        contentAlignment = Alignment.Center,
-//                        modifier = Modifier.size(100.dp)
-//                    ) {
-//                        CircularProgressIndicator(
-//                            modifier = Modifier.size(64.dp),
-//                            color = MaterialTheme.colorScheme.primary,
-//                            strokeWidth = 4.dp,
-//                        )
-//                    }
-//                }
-//            }
-//        } else {
-//            composeProgress.visibility = View.GONE
-//        }
-//    }
-//}
-//

@@ -1,209 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                     xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                     xmlns:tools="http://schemas.android.com/tools"
-                                                     android:layout_width="match_parent"
-                                                     android:layout_height="match_parent"
-                                                     android:fitsSystemWindows="true"
-                                                     tools:context="com.faselhd.app.SearchActivity">
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="?attr/colorSurface"
+        tools:context="com.faselhd.app.SearchActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Top Search Bar and Filter Button -->
+    <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fitsSystemWindows="true">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:title="البحث"
-                app:subtitleTextColor="#2F2546"
-                android:textColor="#2F2546"
-                app:titleTextColor="@color/md_theme_dark_onPrimary" />
-
-        <!-- Search View Container -->
         <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
+                android:layout_weight="1"
                 app:cardCornerRadius="28dp"
-                app:cardElevation="2dp">
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
             <androidx.appcompat.widget.SearchView
                     android:id="@+id/search_view"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
+                    app:queryHint="Search anime..."
                     app:iconifiedByDefault="false"
-                    app:queryHint="ابحث عن الأنمي..."
                     app:searchIcon="@drawable/ic_search"
-                    app:closeIcon="@drawable/ic_close" />
+                    app:queryBackground="@android:color/transparent" />
 
         </com.google.android.material.card.MaterialCardView>
 
-        <RadioGroup
-                android:id="@+id/search_type_radio_group"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp">
+        <ImageButton
+                android:id="@+id/filter_button"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/filter_list_24px"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_marginStart="8dp"
+                android:contentDescription="Filter search options"/>
 
-            <RadioButton
-                    android:id="@+id/radio_movie"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="أفلام"
-                    android:checked="true" />
+    </LinearLayout>
 
-            <RadioButton
-                    android:id="@+id/radio_series"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="مسلسلات" />
-
-            <RadioButton
-                    android:id="@+id/radio_anime"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="أنمي" />
-        </RadioGroup>
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.core.widget.NestedScrollView
+    <!-- Content Area: This FrameLayout will show one of its children at a time -->
+    <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+            android:layout_height="match_parent">
 
+        <!-- 1. Initial State: Top Searches -->
         <LinearLayout
+                android:id="@+id/top_searches_layout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_height="match_parent"
+                android:orientation="vertical">
 
-            <!-- Search Results -->
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Top Searches"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    android:textStyle="bold"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginBottom="8dp"/>
+
             <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/search_recycler_view"
+                    android:id="@+id/top_searches_recycler_view"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    tools:listitem="@layout/item_anime_grid" />
+                    android:layout_height="match_parent"
+                    tools:listitem="@layout/item_top_search"/>
+        </LinearLayout>
 
-            <!-- Empty State -->
-            <LinearLayout
-                    android:id="@+id/empty_state"
-                    android:layout_width="match_parent"
+
+        <!-- 2. Search Results State -->
+        <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/search_results_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                tools:listitem="@layout/item_anime_grid"/>
+
+        <!-- 3. Not Found State -->
+        <LinearLayout
+                android:id="@+id/not_found_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+            <ImageView
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:src="@drawable/ic_not_found_illustration"
+                    android:contentDescription=""/>
+
+            <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="64dp"
+                    android:text="Not Found"
+                    android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                    android:textColor="@color/green_see_all"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp"/>
+
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sorry, the keyword you entered could not be found. Try to check again or search with other keywords."
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:gravity="center"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                <ImageView
-                        android:layout_width="120dp"
-                        android:layout_height="120dp"
-                        android:alpha="0.5"
-                        android:src="@drawable/ic_search"
-                        app:tint="@color/md_theme_dark_onSurfaceVariant"/>
-
-                <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="ابحث عن الأنمي المفضل لديك"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:textColor="@color/md_theme_dark_onSurfaceVariant"
-                        app:startIconTint="?attr/colorPrimary"
-                        app:endIconTint="?attr/colorOnSurfaceVariant"
-                        app:hintTextColor="?attr/colorOnSurfaceVariant"/>
-
-                <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="استخدم شريط البحث أعلاه للعثور على المحتوى"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="@color/md_theme_dark_onSurfaceVariant" />
-
-            </LinearLayout>
+                    android:layout_marginHorizontal="32dp"
+                    android:layout_marginTop="8dp"/>
 
         </LinearLayout>
 
-    </androidx.core.widget.NestedScrollView>
-
-    <!-- Loading Progress -->
-    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                 android:layout_width="match_parent"
-                 android:layout_height="match_parent">
-
+        <!-- Loading Indicator -->
         <androidx.compose.ui.platform.ComposeView
                 android:id="@+id/compose_progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:visibility="gone"
-                android:background="@drawable/circle_background"
-                android:elevation="8dp"
-                android:outlineAmbientShadowColor="#404D4B4B"
-                android:outlineSpotShadowColor="#404D4B4B"
-                android:padding="16dp"/>
+                android:visibility="gone"/>
+
     </FrameLayout>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
-
-        <!--<?xml version="1.0" encoding="utf-8"?>-->
-        <!--<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-        <!--                                                     xmlns:app="http://schemas.android.com/apk/res-auto"-->
-        <!--                                                     xmlns:tools="http://schemas.android.com/tools"-->
-        <!--                                                     android:layout_width="match_parent"-->
-        <!--                                                     android:layout_height="match_parent"-->
-        <!--                                                     tools:context="com.faselhd.app.SearchActivity">-->
-
-        <!--    <com.google.android.material.appbar.AppBarLayout-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content">-->
-
-        <!--        <com.google.android.material.appbar.MaterialToolbar-->
-        <!--                android:id="@+id/toolbar"-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="?attr/actionBarSize"-->
-        <!--                 />-->
-
-        <!--    </com.google.android.material.appbar.AppBarLayout>-->
-
-        <!--    <FrameLayout-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="match_parent"-->
-        <!--            app:layout_behavior="@string/appbar_scrolling_view_behavior">-->
-
-        <!--        <androidx.recyclerview.widget.RecyclerView-->
-        <!--                android:id="@+id/search_results_recycler_view"-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="match_parent"-->
-        <!--                android:padding="8dp"-->
-        <!--                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"-->
-        <!--                app:spanCount="2"-->
-        <!--                tools:listitem="@layout/item_anime_grid" />-->
-
-        <!--        <com.google.android.material.progressindicator.CircularProgressIndicator-->
-        <!--                android:id="@+id/progress_indicator"-->
-        <!--                android:layout_width="wrap_content"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_gravity="center"-->
-        <!--                android:visibility="gone" />-->
-
-        <!--        <TextView-->
-        <!--                android:id="@+id/empty_text_view"-->
-        <!--                android:layout_width="wrap_content"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_gravity="center"-->
-        <!--                android:text="لا توجد نتائج"-->
-        <!--                android:textAppearance="?attr/textAppearanceTitleMedium"-->
-        <!--                android:visibility="gone"-->
-        <!--                tools:visibility="visible"/>-->
-
-        <!--    </FrameLayout>-->
-
-        <!--</androidx.coordinatorlayout.widget.CoordinatorLayout>-->
+</LinearLayout>

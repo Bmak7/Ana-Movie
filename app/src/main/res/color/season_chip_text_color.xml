@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Text color when the button IS selected -->
+    <item android:color="?attr/colorOnPrimary" android:state_selected="true" />
+    <!-- Default text color when the button is NOT selected -->
+    <item android:color="?attr/colorOnSurfaceVariant" />
+</selector>

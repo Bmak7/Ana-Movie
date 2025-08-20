@@ -217,6 +217,12 @@ class FaselHDSource(private val context: Context)  {
 
 
     suspend fun fetchEpisodeList(animeUrl: String): List<SEpisode> = withContext(Dispatchers.IO) {
+//
+        val request2 = Request.Builder()
+            .url(if (animeUrl.startsWith("http")) animeUrl else "$baseUrl$animeUrl")
+            .build()
+        val response2 = client.newCall(request2).execute()
+
         val request = Request.Builder()
             .url(if (animeUrl.startsWith("http")) animeUrl else "$baseUrl$animeUrl")
             .build()
@@ -270,6 +276,23 @@ class FaselHDSource(private val context: Context)  {
         val seasonTitle = element.ownerDocument()?.select("div.seasonDiv.active > div.title")?.text() ?: ""
         episode.name = "$seasonTitle : ${element.text()}"
         episode.episode_number = element.text().replace("الحلقة ", "").toFloatOrNull() ?: -1f
+
+        // Add thumbnail URL from the anime's thumbnail
+        val animeThumbnail = element.ownerDocument()?.select("div.posterImg img.poster")?.attr("src")
+        episode.thumbnailUrl = animeThumbnail ?: ""
+
+        return episode
+    }
+
+    private fun episodeExtract(element: Element): SEpisode {
+        val episode = SEpisode()
+        episode.setUrlWithoutDomain(element.select("span#liskSh").text())
+        episode.name = "مشاهدة"
+
+        // Add thumbnail URL from the anime's thumbnail
+        val animeThumbnail = element.ownerDocument()?.select("div.posterImg img.poster")?.attr("src")
+        episode.thumbnailUrl = animeThumbnail ?: ""
+
         return episode
     }
 

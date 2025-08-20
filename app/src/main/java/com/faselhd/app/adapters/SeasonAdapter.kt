@@ -68,15 +68,8 @@ class SeasonAdapter(
         fun bind(seasonName: String, isSelected: Boolean) {
             button.text = seasonName
             // Manually change the style for selection since buttons don't have a 'checked' state
-            if (isSelected) {
-                // Use a "contained" style for the selected button
-                button.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.md_theme_light_primary))
-                button.setTextColor(ContextCompat.getColor(itemView.context, R.color.md_theme_light_onPrimary))
-            } else {
-                // Use a "text" or "outlined" style for unselected buttons
-                button.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.md_theme_light_surface))
-                button.setTextColor(ContextCompat.getColor(itemView.context, R.color.md_theme_light_onSurface))
-            }
+            button.isSelected = isSelected
+
         }
     }
 }

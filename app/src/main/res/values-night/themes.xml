@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ======================================================= -->
+    <!--     BASE APPLICATION THEME (DARK)                       -->
+    <!-- ======================================================= -->
+    <style name="Theme.MyApplication" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- M3 Color Palette -->
+        <item name="colorPrimary">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/onPrimary_dark</item>
+        <item name="colorPrimaryContainer">@color/primaryContainer_dark</item>
+        <item name="colorOnPrimaryContainer">@color/onPrimaryContainer_dark</item>
+        <item name="colorSecondary">@color/secondary_dark</item>
+        <item name="colorOnSecondary">@color/onSecondary_dark</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/onError</item>
+        <item name="android:colorBackground">@color/background_dark</item>
+        <item name="colorOnBackground">@color/onBackground_dark</item>
+        <item name="colorSurface">@color/surface_dark</item>
+        <item name="colorOnSurface">@color/onSurface_dark</item>
+        <item name="colorSurfaceVariant">@color/surfaceVariant_dark</item>
+        <item name="colorOnSurfaceVariant">@color/onSurfaceVariant_dark</item>
+        <item name="colorOutline">@color/outline_dark</item>
+
+        <!-- System Bar Styling for Edge-to-Edge Display -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item> <!-- Icons are light on dark status bar -->
+    </style>
+
+
+    <!-- ======================================================= -->
+    <!--     SPECIFIC COMPONENT & WIDGET STYLES (DARK OVERRIDES) -->
+    <!-- ======================================================= -->
+
+    <!-- Style for Bottom Navigation Bar in Dark Mode -->
+    <style name="Widget.App.BottomNavigationView" parent="Widget.Material3.BottomNavigationView">
+        <item name="android:background">@color/bottom_nav_background_dark</item>
+        <item name="itemIconTint">@color/bottom_nav_item_color</item>
+        <item name="itemTextColor">@color/bottom_nav_item_color</item>
+    </style>
+
+    <!-- Style for Chips (like in AnimeDetails) in Dark Mode -->
+    <style name="Widget.App.Chip" parent="Widget.Material3.Chip.Assist">
+        <item name="chipBackgroundColor">@android:color/transparent</item>
+        <item name="chipStrokeColor">@color/primary_dark</item>
+        <item name="chipStrokeWidth">1.5dp</item>
+        <item name="android:textColor">@color/primary_dark</item>
+    </style>
+
+</resources>

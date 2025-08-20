@@ -1,0 +1,51 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="240dp"
+        android:height="240dp"
+        android:viewportWidth="240"
+        android:viewportHeight="240">
+
+    <!-- Document/List outline -->
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#00C853"
+            android:strokeWidth="6"
+            android:strokeLineJoin="round"
+            android:pathData="M60,40h120a10,10 0 0 1 10,10v160a10,10 0 0 1 -10,10H60a10,10 0 0 1 -10,-10V50a10,10 0 0 1 10,-10z" />
+
+    <!-- Horizontal empty lines -->
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#00E676"
+            android:strokeWidth="5"
+            android:pathData="M75,80h90M75,110h90M75,140h90" />
+
+    <!-- Sad face in the middle -->
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFC107"
+            android:strokeWidth="5"
+            android:pathData="M95,180 a25,20 0 0 0 50,0" />
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFC107"
+            android:strokeWidth="8"
+            android:strokeLineCap="round"
+            android:pathData="M110,165 l0,0" />
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFC107"
+            android:strokeWidth="8"
+            android:strokeLineCap="round"
+            android:pathData="M130,165 l0,0" />
+
+    <!-- Decorative sparkles -->
+    <path
+            android:fillColor="#B2FF59"
+            android:pathData="M30,60a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"/>
+    <path
+            android:fillColor="#B2FF59"
+            android:pathData="M190,50a5,5 0 1,0 10,0a5,5 0 1,0 -10,0"/>
+    <path
+            android:fillColor="#B2FF59"
+            android:pathData="M200,140a4,4 0 1,0 8,0a4,4 0 1,0 -8,0"/>
+</vector>

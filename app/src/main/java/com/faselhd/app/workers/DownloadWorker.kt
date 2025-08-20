@@ -17,7 +17,9 @@ import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.Download
 import com.faselhd.app.models.DownloadState
 import com.faselhd.app.network.FaselHDSource
+import com.faselhd.app.network.SourceManager
 import com.faselhd.app.utils.M3u8Helper
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -32,6 +34,7 @@ class DownloadWorker(
     private val db = AppDatabase.getDatabase(context)
     private val faselHDSource = FaselHDSource(context) // **** 2. ADD THIS INSTANCE ****
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val sourceManager by lazy { SourceManager(applicationContext) }
 
     companion object {
         const val KEY_EPISODE_URL = "key_episode_url"
@@ -41,6 +44,7 @@ class DownloadWorker(
         const val KEY_THUMBNAIL_URL = "key_thumbnail_url"
         const val NOTIFICATION_CHANNEL_ID = "download_channel"
         const val NOTIFICATION_CHANNEL_NAME = "Downloads"
+        const val KEY_HEADERS_JSON = "key_headers_json"
     }
 
     override suspend fun doWork(): Result {
@@ -50,6 +54,10 @@ class DownloadWorker(
         val animeTitle = inputData.getString(KEY_ANIME_TITLE) ?: "Anime"
         val thumbnailUrl = inputData.getString(KEY_THUMBNAIL_URL)
         val notificationId = episodeUrl.hashCode()
+        val headersJson = inputData.getString(KEY_HEADERS_JSON)
+        val headers = headersJson?.let {
+            Gson().fromJson(it, Map::class.java) as? Map<String, String>
+        } ?: emptyMap()
 
 
 
@@ -71,7 +79,7 @@ class DownloadWorker(
                     // Now we pass the text directly and tell the notification to be indeterminate.
                     updateNotification(notificationId, episodeName, "Finding video link...", 0, true)
 
-                    val videos = faselHDSource.fetchVideoList(episodeUrl)
+                    val videos = sourceManager.fetchVideoList(episodeUrl)
                     if (videos.isNotEmpty()) {
                         videoUrl = videos.first().url
                     } else {

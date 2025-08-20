@@ -172,6 +172,7 @@ data class SEpisode(
     var url: String? = null,
     var name: String? = null,
     var episode_number: Float = -1f,
+    var thumbnailUrl: String? = null,
     var date_upload: Long = 0
 ): Parcelable {
     fun setUrlWithoutDomain(url: String) {
@@ -209,7 +210,7 @@ abstract class AnimeFilter(val name: String) {
     abstract class Select<T>(name: String, val values: Array<T>, var state: Int = 0) : AnimeFilter(name)
 }
 
-class AnimeFilterList(val filters: List<AnimeFilter>) {
+class AnimeFilterList(val filters: List<Any>) {
     val isEmpty: Boolean get() = filters.isEmpty()
 
     inline fun <reified T : AnimeFilter> find(): T? {

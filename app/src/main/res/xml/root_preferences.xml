@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.preference.PreferenceCategory
+            app:title="General Settings">
+
+        <ListPreference
+                app:key="source_preference"
+                app:title="Video Source"
+                app:summary="Select the source for anime content"
+                app:useSimpleSummaryProvider="true"
+                app:icon="@drawable/ic_source"/>
+
+        <ListPreference
+                app:key="theme_preference"
+                app:title="App Theme"
+                app:summary="Choose between light, dark, or system default"
+                app:useSimpleSummaryProvider="true"
+                app:icon="@drawable/routine_24px"
+                app:entries="@array/theme_entries"
+                app:entryValues="@array/theme_values"
+                app:defaultValue="SYSTEM"/> <!-- Default to following the system theme -->
+
+    </androidx.preference.PreferenceCategory>
+
+
+
+</androidx.preference.PreferenceScreen>

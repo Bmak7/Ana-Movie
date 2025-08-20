@@ -1,0 +1,56 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="240dp"
+        android:height="240dp"
+        android:viewportWidth="240"
+        android:viewportHeight="240">
+
+    <!-- Magnifying glass handle -->
+    <path
+            android:fillColor="#00E676"
+            android:pathData="M160,160 l40,40 a10,10 0 0 1 -14,14 l-40,-40z"/>
+
+    <!-- Magnifying glass circle -->
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#00E676"
+            android:strokeWidth="10"
+            android:pathData="M100,100
+                          m-60,0
+                          a60,60 0 1,0 120,0
+                          a60,60 0 1,0 -120,0" />
+
+    <!-- Sad face inside -->
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#00C853"
+            android:strokeWidth="6"
+            android:strokeLineCap="round"
+            android:pathData="M80,105 a20,15 0 0 1 40,0" />
+
+    <!-- Left eye -->
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#00C853"
+            android:strokeWidth="8"
+            android:strokeLineCap="round"
+            android:pathData="M75,80 l0,0" />
+
+    <!-- Right eye -->
+    <path
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#00C853"
+            android:strokeWidth="8"
+            android:strokeLineCap="round"
+            android:pathData="M125,80 l0,0" />
+
+    <!-- Decorative small circles (sparkle style) -->
+    <path
+            android:fillColor="#B2FF59"
+            android:pathData="M30,60 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0"/>
+    <path
+            android:fillColor="#B2FF59"
+            android:pathData="M180,40 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"/>
+    <path
+            android:fillColor="#B2FF59"
+            android:pathData="M200,120 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"/>
+</vector>

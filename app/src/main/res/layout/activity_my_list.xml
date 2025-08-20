@@ -1,55 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<androidx.constraintlayout.widget.ConstraintLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="?attr/colorSurface"
         tools:context="com.faselhd.app.MyListActivity">
 
+    <!-- Top Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:id="@+id/app_bar_layout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
         <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:title="قائمتي"/>
-
+                app:title="My List"
+                app:navigationIcon="@drawable/ic_logo"
+                app:menu="@menu/my_list_menu"/> <!-- We will create this menu for the search icon -->
     </com.google.android.material.appbar.AppBarLayout>
 
+    <!-- Content Area -->
     <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintTop_toBottomOf="@id/app_bar_layout"
+            app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Shimmer Loading Placeholder -->
+        <com.facebook.shimmer.ShimmerFrameLayout
+                android:id="@+id/shimmer_my_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:shimmer_auto_start="true"
+                app:shimmer_base_color="?attr/shimmerPlaceholderColor">
+            <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2"
+                    android:paddingHorizontal="8dp"
+                    android:orientation="horizontal">
+                <!-- Include multiple shimmer items to fill the screen -->
+                <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
+                <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
+                <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
+            </GridLayout>
+        </com.facebook.shimmer.ShimmerFrameLayout>
+
+        <!-- RecyclerView for the list of favorites -->
         <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/my_list_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="8dp"
+                android:visibility="gone"
+                android:clipToPadding="false"
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="2"
                 tools:listitem="@layout/item_anime_grid"/>
 
-        <ProgressBar
-                android:id="@+id/progress_indicator"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone"/>
-
-        <TextView
-                android:id="@+id/empty_text_view"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="Your list is empty. Add shows to see them here."
-                android:textAppearance="?attr/textAppearanceTitleMedium"
+        <!-- Empty State Layout -->
+        <LinearLayout
+                android:id="@+id/empty_state_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
                 android:visibility="gone"
-                tools:visibility="visible"/>
+                tools:visibility="visible">
 
+            <ImageView
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:src="@drawable/ic_empty_list_illustration"
+                    android:contentDescription="Empty list illustration"/>
+
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Your List is Empty"
+                    android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp"/>
+
+            <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="It seems that you haven't added\nany anime to the list"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="center"
+                    android:layout_marginHorizontal="32dp"
+                    android:layout_marginTop="8dp"/>
+        </LinearLayout>
     </FrameLayout>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <!-- Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_navigation"
+            style="@style/Widget.App.BottomNavigationView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:menu="@menu/bottom_nav_menu"
+            app:labelVisibilityMode="labeled"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

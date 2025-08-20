@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <!-- The main background image for the slider item -->
+    <ImageView
+            android:id="@+id/slider_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            tools:src="@tools:sample/backgrounds/scenic"/>
+
+    <!-- A gradient overlay to make the text more readable -->
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/gradient_overlay_dark" />
+
+    <!-- The content (title, genre, buttons) that appears over the image -->
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="bottom"
+            android:padding="24dp">
+
+        <TextView
+                android:id="@+id/featured_anime_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="Demon Slayer: Kimetsu ..."
+                android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                android:textColor="@android:color/white"
+                android:textStyle="bold" />
+
+        <TextView
+                android:id="@+id/featured_anime_genre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="Action, Shounen, Martial Arts, Adventure, ..."
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="@android:color/white"
+                android:layout_marginTop="4dp"/>
+
+        <!-- CORRECTED VERSION -->
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp">
+
+            <!-- The "Play" button with the standard style -->
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_play"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Play"
+                    app:icon="@drawable/ic_play_arrow"
+                    app:backgroundTint="@color/green_play_button"
+                    android:textColor="@android:color/white"/>
+
+            <!-- The "My List" button with the standard outlined style -->
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_my_list"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="My List"
+                    app:icon="@drawable/add_24px"
+                    app:strokeColor="@android:color/white"
+                    android:textColor="@android:color/white"
+                    android:layout_marginStart="12dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

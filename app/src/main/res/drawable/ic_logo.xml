@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="200dp"
+        android:height="200dp"
+        android:viewportWidth="200"
+        android:viewportHeight="200">
+
+    <!-- Chevron / Arrow-like shape -->
+    <path
+            android:fillColor="#00E676"
+            android:pathData="M60,50
+                          Q70,30 100,30
+                          Q130,30 140,50
+                          L120,90
+                          Q110,70 100,70
+                          Q90,70 80,90
+                          Z" />
+
+    <!-- Circle -->
+    <path
+            android:fillColor="#00E676"
+            android:pathData="M100,120
+                          a20,20 0 1,0 0.0001,0" />
+</vector>

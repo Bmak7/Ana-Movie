@@ -208,8 +208,15 @@ class MyCimaSource(private val context: Context) {
     private fun movieEpisode(element: Element): List<SEpisode> =
         newEpisodeFromElement(element, type = "movie").let(::listOf)
 
-    private fun mSeriesEpisode(element: Element): SEpisode =
-        newEpisodeFromElement(element, type = "mSeries")
+    private fun mSeriesEpisode(element: Element): SEpisode {
+        val episode = newEpisodeFromElement(element, type = "mSeries")
+        // Additional thumbnail handling if needed
+        if (episode.thumbnailUrl.isNullOrEmpty()) {
+            episode.thumbnailUrl = element.selectFirst("span.BG--GridItem")?.attr("data-lazy-style")
+                ?.substringAfter("--image:url(")?.substringBefore(");") ?: ""
+        }
+        return episode
+    }
 
     private fun newEpisodeFromElement(
         element: Element,
@@ -232,6 +239,15 @@ class MyCimaSource(private val context: Context) {
             "series" -> "$seNum.${element.text().let(::getNumberFromEpsString)}".toFloat()
             else -> 1F
         }
+
+        // Add thumbnail URL
+        episode.thumbnailUrl = when (type) {
+            "series" -> element.ownerDocument()?.selectFirst("meta[property=og:image]")?.attr("content") ?: ""
+            "mSeries" -> element.selectFirst("span.BG--GridItem")?.attr("data-lazy-style")
+                ?.substringAfter("--image:url(")?.substringBefore(");") ?: ""
+            else -> element.ownerDocument()?.selectFirst("meta[property=og:image]")?.attr("content") ?: ""
+        }
+
         return episode
     }
 

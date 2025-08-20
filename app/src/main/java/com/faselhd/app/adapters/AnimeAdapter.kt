@@ -18,31 +18,68 @@ class AnimeAdapter(
     private val onItemClick: (SAnime) -> Unit
 ) : ListAdapter<SAnime, AnimeAdapter.AnimeViewHolder>(AnimeDiffCallback()) {
 
+    // 1. Expanded the enum to include the new view types
     enum class ViewType {
-        HORIZONTAL, GRID
+        HORIZONTAL,
+        GRID,
+        TOP_HIT,
+        NEW_RELEASE
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AnimeViewHolder {
+        // 2. Inflate the correct layout based on the adapter's viewType
         val layoutId = when (this.viewType) {
             ViewType.HORIZONTAL -> R.layout.item_anime_horizontal
             ViewType.GRID -> R.layout.item_anime_grid
+            ViewType.TOP_HIT -> R.layout.item_top_hit
+            ViewType.NEW_RELEASE -> R.layout.item_new_release
         }
 
         val view = LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
-        return AnimeViewHolder(view)
+        // Pass the viewType to the ViewHolder so it knows which views to find
+        return AnimeViewHolder(view, this.viewType)
     }
 
     override fun onBindViewHolder(holder: AnimeViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        // Pass the position to bind for ranking in TOP_HIT
+        holder.bind(getItem(position), position)
     }
 
-    inner class AnimeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val animeImage: ImageView = itemView.findViewById(R.id.anime_image)
-        private val animeTitle: TextView = itemView.findViewById(R.id.anime_title)
-        private val animeGenre: TextView = itemView.findViewById(R.id.anime_genre)
-        private val animeStatus: TextView = itemView.findViewById(R.id.anime_status)
+    // 3. The ViewHolder is now more flexible
+    inner class AnimeViewHolder(itemView: View, viewType: ViewType) : RecyclerView.ViewHolder(itemView) {
+
+        // --- Declare all possible views from all layouts as nullable ---
+        // This prevents crashes if a view doesn't exist in a particular layout.
+        private val animeImage: ImageView? = itemView.findViewById(R.id.anime_image)
+
+        // Views for HORIZONTAL/GRID
+        private var animeTitle: TextView? = null
+        private var animeGenre: TextView? = null
+        private var animeStatus: TextView? = null
+
+        // Views for TOP_HIT/NEW_RELEASE
+        private var animeRating: TextView? = null
+
+        // View for TOP_HIT only
+        private var animeRank: TextView? = null
 
         init {
+            // --- Find views based on the layout type ---
+            when (viewType) {
+                ViewType.HORIZONTAL, ViewType.GRID -> {
+                    animeTitle = itemView.findViewById(R.id.anime_title)
+                    animeGenre = itemView.findViewById(R.id.anime_genre)
+                    animeStatus = itemView.findViewById(R.id.anime_status)
+                }
+                ViewType.TOP_HIT -> {
+                    animeRank = itemView.findViewById(R.id.anime_rank)
+                    animeRating = itemView.findViewById(R.id.anime_rating)
+                }
+                ViewType.NEW_RELEASE -> {
+                    animeRating = itemView.findViewById(R.id.anime_rating)
+                }
+            }
+
             itemView.setOnClickListener {
                 val position = adapterPosition
                 if (position != RecyclerView.NO_POSITION) {
@@ -51,24 +88,38 @@ class AnimeAdapter(
             }
         }
 
-        fun bind(anime: SAnime) {
-            animeTitle.text = anime.title ?: "عنوان غير متوفر"
-            animeGenre.text = anime.genre ?: "نوع غير محدد"
-
-            // Set status
-            animeStatus.text = when (anime.status) {
-                SAnime.ONGOING -> itemView.context.getString(R.string.status_ongoing)
-                SAnime.COMPLETED -> itemView.context.getString(R.string.status_completed)
-                else -> itemView.context.getString(R.string.status_unknown)
-            }
-
-            // Load image with Glide
+        // 4. The bind method now handles the logic for all layouts
+        fun bind(anime: SAnime, position: Int) {
+            // Load image (common to all layouts)
             Glide.with(itemView.context)
                 .load(anime.thumbnail_url)
-                .placeholder(R.drawable.placeholder_anime)
+                .placeholder(R.drawable.placeholder_anime) // Consider creating different placeholders for different aspect ratios
                 .error(R.drawable.placeholder_anime)
                 .transition(DrawableTransitionOptions.withCrossFade())
-                .into(animeImage)
+                .into(animeImage!!) // Assuming every layout will have an anime_image
+
+            // Bind data based on the specific layout
+            when (viewType) {
+                ViewType.HORIZONTAL -> {
+                    animeTitle?.text = anime.title ?: "No Title"
+                    animeGenre?.text = anime.genre ?: "No Genre"
+                    // ... (status logic)
+                }
+                ViewType.GRID -> {
+                    // BIND DATA FOR GRID
+                    animeTitle?.text = anime.title ?: "No Title"
+                    animeRating?.text = "N/A" ?: "N/A" // Use rating from your SAnime model
+                }
+                ViewType.TOP_HIT -> {
+                    animeRank?.text = (position + 1).toString()
+                    // Note: You may need to add a `rating` field to your SAnime model
+                    animeRating?.text =  "9.8" // Placeholder
+                }
+                ViewType.NEW_RELEASE -> {
+                    // Note: You may need to add a `rating` field to your SAnime model
+                    animeRating?.text =  "9.5" // Placeholder
+                }
+            }
         }
     }
 
@@ -82,4 +133,3 @@ class AnimeAdapter(
         }
     }
 }
-

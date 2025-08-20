@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize") // ✅ Add this line (no version needed)
     kotlin("kapt")
+    kotlin("plugin.serialization") version "1.9.21"
 }
 
 android {
@@ -14,8 +15,8 @@ android {
         minSdk = 26
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
-        versionCode = 6
-        versionName = "2.2.3"
+        versionCode = 7
+        versionName = "2.2.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -99,6 +100,7 @@ dependencies {
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.8.1")
+    implementation("androidx.media3:media3-datasource-okhttp:1.8.0")
 
     // Compose tooling/debug
     debugImplementation("androidx.compose.ui:ui-tooling")
@@ -136,6 +138,7 @@ dependencies {
     // WorkManager
     val workVersion = "2.9.0"
     implementation("androidx.work:work-runtime-ktx:$workVersion")
+    implementation("androidx.preference:preference-ktx:1.2.1")
 
     // Room database
     val roomVersion = "2.6.1"
@@ -147,6 +150,13 @@ dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+
+    implementation("dev.datlag.jsunpacker:jsunpacker:1.0.1")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+
+    implementation("uy.kohesive.injekt:injekt-core:1.16.1")
+
 
     // Testing
     testImplementation("junit:junit:4.13.2")

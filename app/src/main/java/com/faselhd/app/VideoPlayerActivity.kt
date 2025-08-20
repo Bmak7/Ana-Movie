@@ -46,11 +46,14 @@ import com.faselhd.app.models.WatchHistory
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.SourceManager
 import com.faselhd.app.utils.EpisodeSkip
+import com.faselhd.app.utils.NetworkUtils
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import androidx.media3.datasource.okhttp.OkHttpDataSource
+
 
 
 class VideoPlayerActivity : AppCompatActivity() {
@@ -127,6 +130,7 @@ class VideoPlayerActivity : AppCompatActivity() {
     private lateinit var tvBrightnessValue: TextView
     private lateinit var tvVolumeValue: TextView
     private lateinit var ivVolumeIcon: ImageView
+
 
     // State variables
     private var isControlsVisible = true
@@ -479,22 +483,95 @@ class VideoPlayerActivity : AppCompatActivity() {
         builder.create().show()
     }
 
+    // In VideoPlayerActivity.kt
+
+
+//    @androidx.annotation.OptIn(UnstableApi::class)
+//    private fun initializePlayerForVideo(video: Video) {
+//        player?.release()
+//        player = null
+//
+//        tvServerName.text = "${video.quality} (Auto)"
+//
+//        // --- START OF THE FIX ---
+//
+//        // 1. Get the "unsafe" client that trusts all certificates
+//        val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
+//
+//        // 2. Create an ExoPlayer data source factory that uses our unsafe client
+//        val dataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
+//
+//        // 3. Add the required headers (like the Referer) to the factory
+//        video.headers?.let { headersMap ->
+//            dataSourceFactory.setDefaultRequestProperties(headersMap)
+//        }
+//
+//        // --- END OF THE FIX ---
+//
+//        val mediaItem = MediaItem.fromUri(video.url)
+//        val mediaSource = if (video.url.endsWith(".m3u8", ignoreCase = true)) {
+//            HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+//        } else {
+//            ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+//        }
+//
+//        trackSelector = DefaultTrackSelector(this).apply {
+//            setParameters(
+//                buildUponParameters()
+//                    .setAllowMultipleAdaptiveSelections(true)
+//                    .setMaxVideoBitrate(Int.MAX_VALUE)
+//                    .setForceHighestSupportedBitrate(false)
+//            )
+//        }
+//
+//        player = ExoPlayer.Builder(this)
+//            .setTrackSelector(trackSelector)
+//            .build().apply {
+//                setMediaSource(mediaSource)
+//                addListener(playerListener)
+//                playWhenReady = true
+//                // Correctly handle seek position
+//                seekTo(startPosition)
+//                startPosition = 0L // Reset start position after seeking
+//                prepare()
+//            }
+//
+//        playerView.player = player
+//        playerView.resizeMode = currentResizeMode
+//        updateProgress()
+//    }
+
     @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializePlayerForVideo(video: Video) {
         player?.release()
         player = null
 
-        tvServerName.text = "${video.quality} (Auto)" // Show server name with Auto indicator
+        // Set server name with quality indicator
+        tvServerName.text = "${video.quality} (Auto)"
 
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+        // Create data source factory with proper SSL handling and headers
+        val dataSourceFactory = if (video.url.startsWith("https")) {
+            // Use unsafe client for HTTPS to handle self-signed certificates
+            val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
+            val okHttpDataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
 
-        video.headers?.let { headersMap ->
-            httpDataSourceFactory.setDefaultRequestProperties(headersMap)
+            video.headers?.let { headersMap ->
+                okHttpDataSourceFactory.setDefaultRequestProperties(headersMap)
+            }
+            DefaultDataSource.Factory(this, okHttpDataSourceFactory)
+        } else {
+            // Use standard HTTP for non-HTTPS URLs
+            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+
+            video.headers?.let { headersMap ->
+                httpDataSourceFactory.setDefaultRequestProperties(headersMap)
+            }
+            DefaultDataSource.Factory(this, httpDataSourceFactory)
         }
 
-        val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
-
+        // Create media item and appropriate media source
         val mediaItem = MediaItem.fromUri(video.url)
         val mediaSource = if (video.url.endsWith(".m3u8", ignoreCase = true)) {
             HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
@@ -502,8 +579,8 @@ class VideoPlayerActivity : AppCompatActivity() {
             ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
         }
 
+        // Configure track selector for optimal playback
         trackSelector = DefaultTrackSelector(this).apply {
-            // Configure for automatic quality selection with adaptive bitrate
             setParameters(
                 buildUponParameters()
                     .setAllowMultipleAdaptiveSelections(true)
@@ -515,6 +592,7 @@ class VideoPlayerActivity : AppCompatActivity() {
             )
         }
 
+        // Initialize and configure player
         player = ExoPlayer.Builder(this)
             .setTrackSelector(trackSelector)
             .build().apply {
@@ -522,13 +600,15 @@ class VideoPlayerActivity : AppCompatActivity() {
                 addListener(playerListener)
                 playWhenReady = true
 
-                val seekPosition = if (startPosition != -1L) startPosition else this@VideoPlayerActivity.player?.currentPosition ?: 0L
+                // Handle seek position properly
+                val seekPosition = if (startPosition != -1L) startPosition else 0L
                 seekTo(seekPosition)
-                startPosition = -1L
+                startPosition = -1L // Reset after seeking
 
                 prepare()
             }
 
+        // Configure player view
         playerView.player = player
         playerView.resizeMode = currentResizeMode
         updateProgress()

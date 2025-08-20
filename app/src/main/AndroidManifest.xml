@@ -40,16 +40,18 @@
             android:required="false" />
 
     <application
+            android:name="com.faselhd.app.MyApplication"
             android:allowBackup="true"
             android:dataExtractionRules="@xml/data_extraction_rules"
             android:fullBackupContent="@xml/backup_rules"
             android:icon="@mipmap/ic_launcher"
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
-            android:theme="@style/Theme.FaselHD"
+            android:theme="@style/Theme.MyApplication"
             android:usesCleartextTraffic="true"
             tools:targetApi="31"
             android:requestLegacyExternalStorage="true">
+
         <service
                 android:name="com.faselhd.app.services.VideoDownloadService"
                 android:foregroundServiceType="dataSync"
@@ -58,52 +60,53 @@
         <activity
                 android:name="com.faselhd.app.MainActivity"
                 android:exported="true"
-                android:theme="@style/Theme.FaselHD">
+                android:theme="@style/Theme.MyApplication">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.faselhd.app.BrowseActivity" />
-
 
         <activity
                 android:name="com.faselhd.app.VideoPlayerActivity"
                 android:exported="false"
                 android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
-                android:theme="@style/Theme.FaselHD.VideoPlayer" />
+                android:theme="@style/Theme.MyApplication.VideoPlayer" />
 
         <activity
                 android:name="com.faselhd.app.GridViewActivity"
-                android:exported="false" />
+                android:exported="false"
+                android:theme="@style/Theme.MyApplication" /> <!-- ADDED THEME -->
 
         <activity
                 android:name="com.faselhd.app.MyListActivity"
-                android:exported="false" />
-
-
-        <!--        <activity-->
-<!--                android:name="com.faselhd.app.VideoPlayerActivityEnhanced"-->
-<!--                android:configChanges="orientation|screenSize|keyboardHidden|screenLayout"-->
-<!--                android:supportsPictureInPicture="true"-->
-<!--                android:theme="@style/Theme.VideoPlayer.Fullscreen"-->
-<!--                android:exported="false" />-->
+                android:exported="false"
+                android:theme="@style/Theme.MyApplication" /> <!-- ADDED THEME -->
+        <activity
+                android:name="com.faselhd.app.SeeAllActivity"
+                android:exported="false"
+                android:theme="@style/Theme.MyApplication" /> <!-- ADDED THEME -->
+        <activity
+                android:name="com.faselhd.app.SettingsActivity"
+                android:exported="false"
+                android:theme="@style/Theme.MyApplication" /> <!-- ADDED THEME -->
 
         <activity
                 android:name="com.faselhd.app.AnimeDetailsActivity"
                 android:exported="false"
-                android:theme="@style/Theme.FaselHD" />
+                android:theme="@style/Theme.MyApplication" />
 
         <activity
                 android:name="com.faselhd.app.SearchActivity"
                 android:exported="false"
-                android:theme="@style/Theme.FaselHD"
+                android:theme="@style/Theme.MyApplication"
                 android:windowSoftInputMode="adjustResize" />
-        <activity android:name="com.faselhd.app.CloudflareActivity"
-                  android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+
         <activity
                 android:name="com.faselhd.app.DownloadsActivity"
-                android:exported="false" />
+                android:exported="false"
+                android:theme="@style/Theme.MyApplication" /> <!-- ADDED THEME -->
+
         <provider
                 android:name="androidx.core.content.FileProvider"
                 android:authorities="${applicationId}.provider"
