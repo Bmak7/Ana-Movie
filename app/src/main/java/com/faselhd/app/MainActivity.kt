@@ -1,5 +1,6 @@
 package com.faselhd.app
 
+import com.faselhd.app.widgets.GridSpacingItemDecoration
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -102,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         shimmerTopHits = findViewById(R.id.shimmer_top_hits)
         shimmerNewEpisodes = findViewById(R.id.shimmer_new_episodes)
         shimmerLatestUpdates = findViewById(R.id.shimmer_latest_updates)
+
     }
 
     private fun setupSeeAllButtons() {
@@ -187,6 +189,30 @@ class MainActivity : AppCompatActivity() {
             // Important: Disable nested scrolling for the grid to make the whole page scroll smoothly
             isNestedScrollingEnabled = false
         }
+
+        latestAdapter = AnimeAdapter(AnimeAdapter.ViewType.GRID) { anime ->
+            openAnimeDetails(anime)
+        }
+        latestRecyclerView.apply {
+            // CHANGE THIS from 2 to 3
+            layoutManager = GridLayoutManager(this@MainActivity, 3)
+            adapter = latestAdapter
+            isNestedScrollingEnabled = false
+
+            // --- UPDATE THE SPACING DECORATION ---
+
+            // CHANGE THIS from 2 to 3
+            val spanCount = 3
+            val spacing = resources.getDimensionPixelSize(R.dimen.grid_spacing)
+            val includeEdge = true
+
+            if (itemDecorationCount == 0) {
+                // The spanCount variable is now correctly passed as 3
+                addItemDecoration(GridSpacingItemDecoration(spanCount, spacing, includeEdge))
+            }
+        }
+
+
     }
 
     private fun setupBottomNavigation() {
@@ -199,6 +225,11 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_my_list -> {
                     // Launch your MyListActivity
                     startActivity(Intent(this, MyListActivity::class.java))
+                    true
+                }
+                R.id.nav_search -> { // Assuming you add a 'nav_search' ID to your menu
+                    val intent = ParentSearchActivity.newIntent(this)
+                    startActivity(intent)
                     true
                 }
                 R.id.nav_download -> {

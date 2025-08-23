@@ -45,27 +45,26 @@
             <GridLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:columnCount="2"
-                    android:paddingHorizontal="8dp"
-                    android:orientation="horizontal">
-                <!-- Include multiple shimmer items to fill the screen -->
-                <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
-                <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
-                <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
-            </GridLayout>
-        </com.facebook.shimmer.ShimmerFrameLayout>
+                    android:columnCount="3"
+            android:paddingHorizontal="8dp"
+            android:orientation="horizontal">
+            <!-- We have 6 items, which makes a nice 3x2 grid for the shimmer -->
+            <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
+            <include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/><include layout="@layout/item_anime_shimmer_grid"/>
+        </GridLayout>
+    </com.facebook.shimmer.ShimmerFrameLayout>
 
         <!-- RecyclerView for the list of favorites -->
         <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/my_list_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="8dp"
-                android:visibility="gone"
-                android:clipToPadding="false"
-                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                app:spanCount="2"
-                tools:listitem="@layout/item_anime_grid"/>
+                android:padding="0dp"
+        android:visibility="gone"
+        android:clipToPadding="false"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="3"
+        tools:listitem="@layout/item_anime_grid"/>
 
         <!-- Empty State Layout -->
         <LinearLayout

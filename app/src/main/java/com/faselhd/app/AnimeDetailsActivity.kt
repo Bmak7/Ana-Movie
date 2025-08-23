@@ -90,6 +90,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
 
         // The standard way to start this activity
         fun newIntent(context: Context, anime: SAnime, source: AnimeSource?): Intent {
+
             return Intent(context, AnimeDetailsActivity::class.java).apply {
                 putExtra(EXTRA_ANIME, anime)
                 putExtra(EXTRA_SOURCE, source)
@@ -291,7 +292,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
                 println("current amnie details ${currentAnime!!.toString()}")
                 currentAnime = detailedAnime
                 populateUiDetails(detailedAnime) // Update title, description, image, etc.
-
+                println("anime sssource: ${specificSource}")
                 // --- Step 2: Fetch and display the episode list and seasons ---
                 val episodes = sourceManager.fetchEpisodeList(currentAnime!!.url!!, specificSource)
                 allEpisodes = episodes // Store a copy of the raw episode list
@@ -370,6 +371,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
                     // --- HIDE LOADING (on failure) ---
                     showLoading(false)
                     Toast.makeText(this@AnimeDetailsActivity, "Error loading video: ${e.message}", Toast.LENGTH_LONG).show()
+                    println("Error loading video: ${e.message}")
                 }
             }
         }

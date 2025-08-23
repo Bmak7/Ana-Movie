@@ -16,6 +16,7 @@ import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.SAnime
 import com.faselhd.app.network.AnimeSource
 import com.facebook.shimmer.ShimmerFrameLayout
+import com.faselhd.app.widgets.GridSpacingItemDecoration
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.flow.collectLatest
@@ -95,8 +96,18 @@ class MyListActivity : AppCompatActivity() {
             startActivity(intent)
         }
         recyclerView.apply {
-            layoutManager = GridLayoutManager(this@MyListActivity, 2)
+            // --- CHANGE 1: Update the span count to 3 ---
+            val spanCount = 3
+            layoutManager = GridLayoutManager(this@MyListActivity, spanCount)
             adapter = animeAdapter
+
+            // --- CHANGE 2: Add the GridSpacingItemDecoration ---
+            val spacing = resources.getDimensionPixelSize(R.dimen.grid_spacing) // Uses your existing 8dp dimen
+
+            // Add the decoration only if it doesn't already exist
+            if (itemDecorationCount == 0) {
+                addItemDecoration(GridSpacingItemDecoration(spanCount, spacing, true))
+            }
         }
     }
 
@@ -115,6 +126,13 @@ class MyListActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_my_list -> true // Already here
+
+                R.id.nav_search -> { // Assuming you add a 'nav_search' ID to your menu
+                    val intent = ParentSearchActivity.newIntent(this)
+                    startActivity(intent)
+                    true
+                }
+
                 R.id.nav_download -> {
                     startActivity(Intent(this, DownloadsActivity::class.java))
                     true

@@ -14,6 +14,7 @@
     <string name="popular_anime">أحدث المسلسلات</string>
     <string name="latest_updates">آخر التحديثات</string>
     <string name="trending_now">الأكثر رواجاً الآن</string>
+    <string name="audio_track">audio track</string>
     
     <!-- Search -->
     <string name="search_hint">ابحث عن الأنمي...</string>

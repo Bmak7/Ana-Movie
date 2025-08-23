@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="120dp"
+        android:height="160dp"
+        android:viewportWidth="120"
+        android:viewportHeight="160">
+
+    <!-- Background rectangle -->
+    <path
+            android:fillColor="#E0E0E0"
+            android:pathData="M0,0h120v160h-120z" />
+
+    <!-- Page icon -->
+    <path
+            android:fillColor="#B0B0B0"
+            android:pathData="M20,20h80v120h-80z" />
+
+    <!-- Corner folded effect -->
+    <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M80,20l20,20h-20z" />
+</vector>

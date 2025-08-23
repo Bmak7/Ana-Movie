@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import com.faselhd.app.widgets.GridSpacingItemDecoration
 
 
 class SearchActivity : AppCompatActivity() {
@@ -95,8 +96,19 @@ class SearchActivity : AppCompatActivity() {
         // Adapter for Search Results (grid)
         searchResultsAdapter = AnimeAdapter(AnimeAdapter.ViewType.GRID) { anime -> openAnimeDetails(anime) }
         searchResultsRecyclerView.apply {
-            layoutManager = GridLayoutManager(this@SearchActivity, 2)
+            // 1. Define the span count and spacing for a 3-column grid.
+            val spanCount = 3
+            val spacing = resources.getDimensionPixelSize(R.dimen.grid_spacing) // Uses your existing 8dp dimen
+
+            // 2. Set the GridLayoutManager with the new span count.
+            layoutManager = GridLayoutManager(this@SearchActivity, spanCount)
             adapter = searchResultsAdapter
+
+            // 3. Add the GridSpacingItemDecoration to handle spacing perfectly.
+            // This check prevents adding the decorator more than once.
+            if (itemDecorationCount == 0) {
+                addItemDecoration(GridSpacingItemDecoration(spanCount, spacing, true))
+            }
         }
     }
 

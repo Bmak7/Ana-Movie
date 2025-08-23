@@ -16,7 +16,7 @@ import com.example.myapplication.R
 import com.faselhd.app.db.AppDatabase
 import com.faselhd.app.models.Download
 import com.faselhd.app.models.DownloadState
-import com.faselhd.app.network.FaselHDSource
+import com.faselhd.app.network.sources.FaselHDSource
 import com.faselhd.app.network.SourceManager
 import com.faselhd.app.utils.M3u8Helper
 import com.google.gson.Gson

@@ -144,7 +144,8 @@ data class SAnime(
     var description: String? = null,
     var genre: String? = null,
     var status: Int = UNKNOWN,
-    var source: String? = null
+    var source: String? = null,
+    var isManga: Boolean = false
 ) : Parcelable {
     companion object {
         const val UNKNOWN = 0
@@ -193,9 +194,16 @@ data class Video(
     var quality: String,
     var videoUrl: String,
     val resolution: String = "", // Assuming resolution might be empty for some videos
-    val headers: Map<String, String>? = null
+    val headers: Map<String, String>? = null,
+    val subtitles: List<Subtitle>? = null
 ): Parcelable
 
+
+@Parcelize
+data class Subtitle(
+    val url: String,
+    val lang: String
+) : Parcelable
 
 data class MangaPage(
     val manga: List<SAnime>,

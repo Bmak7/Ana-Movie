@@ -82,7 +82,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:visibility="gone"
-                tools:listitem="@layout/item_anime_grid"/>
+                android:clipToPadding="false"
+                app:spanCount="3"
+                tools:listitem="@layout/item_anime_grid"
+                tools:visibility="visible"/>
 
         <!-- 3. Not Found State -->
         <LinearLayout

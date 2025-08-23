@@ -1,4 +1,4 @@
-package com.faselhd.app.network
+package com.faselhd.app.network.sources
 
 import android.content.Context
 import com.faselhd.app.models.AnimeFilterList
@@ -6,6 +6,7 @@ import com.faselhd.app.models.MangaPage
 import com.faselhd.app.models.SAnime
 import com.faselhd.app.models.SEpisode
 import com.faselhd.app.models.Video
+import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.extractors.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -176,13 +177,21 @@ class OkAnimeSource(private val context: Context) {
         val response = client.newCall(request).execute()
         val document = Jsoup.parse(response.body!!.string(), animeUrl)
 
-        document.select("div.row div.episode-card div.anime-title a").map {
+        // ========= MODIFICATION START =========
+
+        // Extract the main anime title to use as the "season" name for grouping.
+        val animeNameAsSeason = document.selectFirst("div.author-info-title > h1")?.text() ?: "الموسم 1"
+
+        return@withContext document.select("div.row div.episode-card div.anime-title a").map {
             SEpisode().apply {
                 url = it.attr("href").substringAfter(baseUrl)
-                name = it.text()
+                // Format the name consistently: "Anime Title : Episode Title"
+                name = "$animeNameAsSeason : ${it.text()}"
                 episode_number = it.text().substringAfterLast(" ").toFloatOrNull() ?: 0f
             }
-        }.reversed() // Reverse to show latest episodes first
+        } // The site lists oldest first, so we reverse to show the latest on top.
+
+        // ========= MODIFICATION END =========
     }
 
     // ============================ Video Links =============================

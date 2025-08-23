@@ -10,7 +10,7 @@ import com.faselhd.app.models.Download
 import com.faselhd.app.models.Favorite
 import com.faselhd.app.models.WatchHistory
 
-@Database(entities = [WatchHistory::class, Download::class, Favorite::class], version = 10)
+@Database(entities = [WatchHistory::class, Download::class, Favorite::class], version = 12)
 @androidx.room.TypeConverters(com.faselhd.app.db.TypeConverters::class, com.faselhd.app.db.EpisodeListConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 

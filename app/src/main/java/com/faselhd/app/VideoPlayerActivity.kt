@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -53,7 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.media3.datasource.okhttp.OkHttpDataSource
-
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 
 
 class VideoPlayerActivity : AppCompatActivity() {
@@ -162,6 +163,9 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     private var isSeeking = false
     private var seekStartPosition = 0L
+
+    private lateinit var btnAudioTrack: ImageButton // <-- ADD THIS
+
 
 
     // In VideoPlayerActivity.kt -> onCreate() method
@@ -372,6 +376,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         btnFullscreen = findViewById(R.id.btn_fullscreen) // ADDED BACK
         btnResize = findViewById(R.id.btn_resize) // ADDED BACK
         btnSubtitle = findViewById(R.id.btn_subtitle) // ADDED BACK
+        btnAudioTrack = findViewById(R.id.btn_audio_track)
         lockOverlay = findViewById(R.id.lock_overlay)
         btnUnlock = findViewById(R.id.btn_unlock)
         brightnessOverlay = findViewById(R.id.brightness_overlay)
@@ -469,7 +474,7 @@ class VideoPlayerActivity : AppCompatActivity() {
             } else {
                 val override = DefaultTrackSelector.SelectionOverride(
                     videoRendererIndex,
-                    trackIndices[which - 1]
+                    trackIndices[0]
                 )
                 parametersBuilder.setSelectionOverride(
                     videoRendererIndex,
@@ -541,79 +546,175 @@ class VideoPlayerActivity : AppCompatActivity() {
 //        updateProgress()
 //    }
 
+//    @androidx.annotation.OptIn(UnstableApi::class)
+//    private fun initializePlayerForVideo(video: Video) {
+//        player?.release()
+//        player = null
+//
+//        tvServerName.text = "${video.quality} (Auto)"
+//
+//        val dataSourceFactory = if (video.url.startsWith("https")) {
+//            val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
+//            val okHttpDataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
+//                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+//            video.headers?.let { okHttpDataSourceFactory.setDefaultRequestProperties(it) }
+//            DefaultDataSource.Factory(this, okHttpDataSourceFactory)
+//        } else {
+//            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+//                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+//            video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
+//            DefaultDataSource.Factory(this, httpDataSourceFactory)
+//        }
+//
+//        // ========= MODIFICATION START =========
+//
+//        // 1. Build subtitle configurations from the video's subtitle list
+//        val subtitleConfigurations = video.subtitles?.mapNotNull { subtitle ->
+//            val subtitleUri = Uri.parse(subtitle.url)
+//            val mimeType = when {
+//                subtitle.url.endsWith(".vtt", true) -> MimeTypes.TEXT_VTT
+//                subtitle.url.endsWith(".srt", true) -> MimeTypes.APPLICATION_SUBRIP
+//                else -> MimeTypes.TEXT_VTT // Default to VTT if extension is unknown
+//            }
+//            MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+//                .setMimeType(mimeType)
+//                .setLanguage(subtitle.lang)
+//                .setSelectionFlags(C.SELECTION_FLAG_DEFAULT) // Attempt to enable by default
+//                .build()
+//        } ?: emptyList()
+//
+//        // 2. Build the MediaItem with the main video URI and the subtitle configurations
+//        val mediaItem = MediaItem.Builder()
+//            .setUri(video.url)
+//            .setSubtitleConfigurations(subtitleConfigurations)
+//            .build()
+//
+//        // ========= MODIFICATION END =========
+//
+//        // ========= MODIFICATION START =========
+//// Use .contains() for a more robust check against URLs with query parameters
+//        val mediaSource = if (video.url.contains(".m3u8", ignoreCase = true)) {
+//            HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+//        } else {
+//            ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+//        }
+//// ========= MODIFICATION END =========
+//
+//        trackSelector = DefaultTrackSelector(this).apply {
+//            setParameters(
+//                buildUponParameters()
+//                    .setAllowMultipleAdaptiveSelections(true)
+//                    .setMaxVideoBitrate(Int.MAX_VALUE)
+//                    .setForceHighestSupportedBitrate(false)
+//            )
+//        }
+//
+//        player = ExoPlayer.Builder(this)
+//            .setTrackSelector(trackSelector)
+//            .build().apply {
+//                setMediaSource(mediaSource)
+//                addListener(playerListener)
+//                playWhenReady = true
+//                seekTo(if (startPosition != -1L) startPosition else 0L)
+//                startPosition = -1L
+//                prepare()
+//            }
+//
+//        playerView.player = player
+//        playerView.resizeMode = currentResizeMode
+//        updateProgress()
+//    }
+
+    // In VideoPlayerActivity.kt
+
     @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializePlayerForVideo(video: Video) {
         player?.release()
         player = null
 
-        // Set server name with quality indicator
         tvServerName.text = "${video.quality} (Auto)"
 
-        // Create data source factory with proper SSL handling and headers
+        // 1. This part remains the same. We still need to create our custom data source
+        //    with the unsafe client and the required headers.
         val dataSourceFactory = if (video.url.startsWith("https")) {
-            // Use unsafe client for HTTPS to handle self-signed certificates
             val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
             val okHttpDataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
                 .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-
-            video.headers?.let { headersMap ->
-                okHttpDataSourceFactory.setDefaultRequestProperties(headersMap)
-            }
+            video.headers?.let { okHttpDataSourceFactory.setDefaultRequestProperties(it) }
             DefaultDataSource.Factory(this, okHttpDataSourceFactory)
         } else {
-            // Use standard HTTP for non-HTTPS URLs
             val httpDataSourceFactory = DefaultHttpDataSource.Factory()
                 .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-
-            video.headers?.let { headersMap ->
-                httpDataSourceFactory.setDefaultRequestProperties(headersMap)
-            }
+            video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
             DefaultDataSource.Factory(this, httpDataSourceFactory)
         }
 
-        // Create media item and appropriate media source
-        val mediaItem = MediaItem.fromUri(video.url)
-        val mediaSource = if (video.url.endsWith(".m3u8", ignoreCase = true)) {
-            HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
-        } else {
-            ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
-        }
+        // 2. This part for building subtitle configurations also remains the same.
+        val subtitleConfigurations = video.subtitles?.mapNotNull { subtitle ->
+            val subtitleUri = Uri.parse(subtitle.url)
+            val mimeType = when {
+                subtitle.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
+                subtitle.url.contains(".srt", true) -> MimeTypes.APPLICATION_SUBRIP
+                else -> null // Let ExoPlayer try to infer if extension is unknown
+            }
+            if (mimeType != null) {
+                MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+                    .setMimeType(mimeType)
+                    .setLanguage(subtitle.lang)
+                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                    .build()
+            } else {
+                null
+            }
+        } ?: emptyList()
 
-        // Configure track selector for optimal playback
+        val mediaItem = MediaItem.Builder()
+            .setUri(video.url)
+            .setSubtitleConfigurations(subtitleConfigurations)
+            .build()
+
+        // ========= MODIFICATION START =========
+
+        // 3. THE KEY FIX: Create a DefaultMediaSourceFactory and provide our
+        //    custom dataSourceFactory. This factory will now be used to create the
+        //    MediaSource for the video AND to load the subtitle files, ensuring
+        //    they both get the correct headers.
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+
+        // 4. We no longer need the HlsMediaSource vs ProgressiveMediaSource if/else block.
+        //    The DefaultMediaSourceFactory handles this for us.
+
         trackSelector = DefaultTrackSelector(this).apply {
             setParameters(
                 buildUponParameters()
                     .setAllowMultipleAdaptiveSelections(true)
-                    .setAllowAudioMixedMimeTypeAdaptiveness(true)
-                    .setAllowVideoMixedMimeTypeAdaptiveness(true)
-                    .setAllowVideoNonSeamlessAdaptiveness(true)
-                    .setMaxVideoBitrate(Int.MAX_VALUE) // No bitrate limit for auto mode
-                    .setForceHighestSupportedBitrate(false) // Allow adaptive selection
+                    .setMaxVideoBitrate(Int.MAX_VALUE)
+                    .setForceHighestSupportedBitrate(false)
             )
         }
 
-        // Initialize and configure player
+        // 5. Build the player, telling it to use our new MediaSourceFactory.
         player = ExoPlayer.Builder(this)
             .setTrackSelector(trackSelector)
+            .setMediaSourceFactory(mediaSourceFactory) // <-- INJECT THE FACTORY HERE
             .build().apply {
-                setMediaSource(mediaSource)
+                // Instead of setting the mediaSource, we set the mediaItem directly.
+                // The factory will handle the rest.
+                setMediaItem(mediaItem)
                 addListener(playerListener)
                 playWhenReady = true
-
-                // Handle seek position properly
                 val seekPosition = if (startPosition != -1L) startPosition else 0L
                 seekTo(seekPosition)
-                startPosition = -1L // Reset after seeking
-
+                startPosition = -1L
                 prepare()
             }
 
-        // Configure player view
+        // ========= MODIFICATION END =========
+
         playerView.player = player
         playerView.resizeMode = currentResizeMode
         updateProgress()
     }
-
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
             loadingIndicator.visibility = if (playbackState == Player.STATE_BUFFERING) View.VISIBLE else View.GONE
@@ -708,8 +809,6 @@ class VideoPlayerActivity : AppCompatActivity() {
         btnLock.setOnClickListener { toggleLock() }
         btnNextEpisode.setOnClickListener { playNextEpisode() }
         btnUnlock.setOnClickListener { toggleLock() }
-
-        // ADDED BACK: Missing button click listeners
         btnFullscreen.setOnClickListener {
             Toast.makeText(this, "Player is always in fullscreen mode", Toast.LENGTH_SHORT).show()
             scheduleHideControls()
@@ -718,10 +817,19 @@ class VideoPlayerActivity : AppCompatActivity() {
             cycleResizeMode()
             scheduleHideControls()
         }
+
+        // ========= MODIFICATION START =========
         btnSubtitle.setOnClickListener {
-            Toast.makeText(this, "Subtitle functionality to be implemented", Toast.LENGTH_SHORT).show()
+            showSubtitleSelectionDialog()
             scheduleHideControls()
         }
+        // ========= MODIFICATION END =========
+
+        btnAudioTrack.setOnClickListener {
+            showAudioTrackSelectionDialog()
+            scheduleHideControls()
+        }
+
 
         btnSkipIntro.setOnClickListener {
             currentSkipStamp?.let {
@@ -731,6 +839,191 @@ class VideoPlayerActivity : AppCompatActivity() {
             }
         }
     }
+
+
+    // ========= ADD THIS ENTIRE NEW FUNCTION =========
+    @androidx.annotation.OptIn(UnstableApi::class)
+    private fun showAudioTrackSelectionDialog() {
+        val mappedTrackInfo = trackSelector.currentMappedTrackInfo
+        val playerInstance = player
+
+        if (mappedTrackInfo == null || playerInstance == null) {
+            Toast.makeText(this, "Player not ready", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // 1. Find the renderer index for AUDIO tracks
+        var audioRendererIndex = -1
+        for (i in 0 until mappedTrackInfo.rendererCount) {
+            if (playerInstance.getRendererType(i) == C.TRACK_TYPE_AUDIO) {
+                audioRendererIndex = i
+                break
+            }
+        }
+
+        if (audioRendererIndex == -1) {
+            Toast.makeText(this, "No alternate audio tracks available", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val trackGroups = mappedTrackInfo.getTrackGroups(audioRendererIndex)
+        if (trackGroups.isEmpty) {
+            Toast.makeText(this, "No alternate audio tracks available", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // 2. Build the list of available audio options
+        val options = mutableListOf<Pair<String, DefaultTrackSelector.SelectionOverride?>>()
+        var checkedItem = 0 // Default to the first track
+
+        for (groupIndex in 0 until trackGroups.length) {
+            val group = trackGroups.get(groupIndex)
+            for (trackIndex in 0 until group.length) {
+                val format = group.getFormat(trackIndex)
+                // Use language name or label, provide a fallback
+                val displayName = format.label ?: format.language ?: "Track ${options.size + 1}"
+                options.add(displayName to DefaultTrackSelector.SelectionOverride(groupIndex, trackIndex))
+            }
+        }
+
+        // 3. Determine the currently selected item
+        val currentTracks = playerInstance.currentTracks
+        for (trackGroup in currentTracks.groups) {
+            if (trackGroup.type == C.TRACK_TYPE_AUDIO && trackGroup.isSelected) {
+                for (i in 0 until trackGroup.length) {
+                    if (trackGroup.isTrackSelected(i)) {
+                        val selectedFormat = trackGroup.getTrackFormat(i)
+                        val currentIndex = options.indexOfFirst {
+                            val override = it.second
+                            if (override != null) {
+                                val group = trackGroups.get(override.groupIndex)
+                                val format = group.getFormat(override.tracks[0])
+                                format == selectedFormat
+                            } else false
+                        }
+                        if (currentIndex != -1) {
+                            checkedItem = currentIndex
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
+        val displayNames = options.map { it.first }.toTypedArray()
+
+        // 4. Show the selection dialog
+        AlertDialog.Builder(this)
+            .setTitle("Audio Track")
+            .setSingleChoiceItems(displayNames, checkedItem) { dialog, which ->
+                val (_, override) = options[which]
+                if (override != null) {
+                    val parametersBuilder = trackSelector.buildUponParameters()
+                        .setSelectionOverride(audioRendererIndex, trackGroups, override)
+                    trackSelector.parameters = parametersBuilder.build()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+    // In VideoPlayerActivity.kt
+
+    @androidx.annotation.OptIn(UnstableApi::class)
+    private fun showSubtitleSelectionDialog() {
+        val mappedTrackInfo = trackSelector.currentMappedTrackInfo
+        val playerInstance = player
+
+        // Ensure we have the necessary components to proceed
+        if (mappedTrackInfo == null || playerInstance == null) {
+            Toast.makeText(this, "Player not ready", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // 1. Find the renderer index for text tracks (subtitles)
+        var textRendererIndex = -1
+        for (i in 0 until mappedTrackInfo.rendererCount) {
+            if (playerInstance.getRendererType(i) == C.TRACK_TYPE_TEXT) {
+                textRendererIndex = i
+                break
+            }
+        }
+
+        if (textRendererIndex == -1) {
+            Toast.makeText(this, "No subtitles available", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val trackGroups = mappedTrackInfo.getTrackGroups(textRendererIndex)
+        if (trackGroups.isEmpty) {
+            Toast.makeText(this, "No subtitles available", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // 2. Build the list of available subtitle options for the dialog
+        val options = mutableListOf<Pair<String, DefaultTrackSelector.SelectionOverride?>>()
+        options.add("Off" to null) // First option is always to disable subtitles
+
+        for (groupIndex in 0 until trackGroups.length) {
+            val group = trackGroups.get(groupIndex)
+            for (trackIndex in 0 until group.length) {
+                val format = group.getFormat(trackIndex)
+                val displayName = format.label ?: format.language ?: "Subtitle ${options.size}"
+                options.add(displayName to DefaultTrackSelector.SelectionOverride(groupIndex, trackIndex))
+            }
+        }
+
+        // 3. Determine the currently selected item to pre-check it in the dialog
+        var checkedItem = 0 // Default to "Off"
+        val currentTracks = playerInstance.currentTracks
+        for (trackGroup in currentTracks.groups) {
+            // Find the subtitle track group that is currently selected
+            if (trackGroup.type == C.TRACK_TYPE_TEXT && trackGroup.isSelected) {
+                for (i in 0 until trackGroup.length) {
+                    if (trackGroup.isTrackSelected(i)) {
+                        val selectedFormat = trackGroup.getTrackFormat(i)
+                        // Find the corresponding option in our list by matching the format
+                        for (j in 1 until options.size) { // Start from 1 to skip "Off"
+                            val override = options[j].second!!
+                            val group = trackGroups.get(override.groupIndex)
+                            val format = group.getFormat(override.tracks[0])
+                            if (format == selectedFormat) {
+                                checkedItem = j
+                                break
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
+        val displayNames = options.map { it.first }.toTypedArray()
+
+        // 4. Show the selection dialog
+        AlertDialog.Builder(this)
+            .setTitle("Subtitles")
+            .setSingleChoiceItems(displayNames, checkedItem) { dialog, which ->
+                val (_, override) = options[which]
+                val parametersBuilder = trackSelector.buildUponParameters()
+                if (override == null) {
+                    // User selected "Off", so disable the text renderer
+                    parametersBuilder.setRendererDisabled(textRendererIndex, true)
+                        .clearSelectionOverrides(textRendererIndex)
+                } else {
+                    // User selected a specific subtitle track
+                    parametersBuilder
+                        .setRendererDisabled(textRendererIndex, false)
+                        .setSelectionOverride(textRendererIndex, trackGroups, override)
+                }
+                trackSelector.parameters = parametersBuilder.build()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+    // ========= END OF NEW FUNCTION =========
+
 
     private fun toggleLock() {
         isLocked = !isLocked
@@ -783,7 +1076,7 @@ class VideoPlayerActivity : AppCompatActivity() {
     private fun playNextEpisode() {
         // 1. Find the current episode's index in the season list
         val currentIndex = seasonEpisodeList.indexOfFirst { it.url == currentEpisode?.url }
-
+        saveWatchProgress()
         // 2. Check if there is a next episode
         if (currentIndex != -1 && currentIndex < seasonEpisodeList.size - 1) {
             val nextEpisode = seasonEpisodeList[currentIndex + 1]
@@ -798,6 +1091,7 @@ class VideoPlayerActivity : AppCompatActivity() {
             // Optional: you could finish the activity here if you want
             // finish()
         }
+
     }
 
     private suspend fun loadVideoForEpisode(episode: SEpisode) {

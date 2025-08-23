@@ -286,6 +286,20 @@
                     android:nextFocusRight="@id/btn_subtitle"/>
 
             <ImageButton
+                    android:id="@+id/btn_audio_track"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/audio_track"
+                    android:src="@drawable/music_note_24px"
+                    app:tint="@android:color/white"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/seek_bar"
+                    android:nextFocusLeft="@id/btn_quality"
+                    android:nextFocusRight="@id/btn_subtitle"/>
+
+            <ImageButton
                     android:id="@+id/btn_subtitle"
                     android:layout_width="48dp"
                     android:layout_height="48dp"

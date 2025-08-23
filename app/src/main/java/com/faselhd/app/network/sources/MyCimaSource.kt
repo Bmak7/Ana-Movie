@@ -1,21 +1,16 @@
-package com.faselhd.app.network
+package com.faselhd.app.network.sources
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import com.faselhd.app.models.*
 import com.faselhd.app.network.extractors.UqloadExtractor
 import com.faselhd.app.network.extractors.VidBomExtractor
-import com.faselhd.app.utils.PlaylistUtils
 import com.faselhd.app.utils.Tls12SocketFactory
-import com.faselhd.app.utils.WebViewResolver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.io.IOException
 import java.util.*
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
@@ -186,18 +181,23 @@ class MyCimaSource(private val context: Context) {
         } else {
             val seasonsList = document.select(seasonsListSelector())
             if (seasonsList.isNullOrEmpty()) {
-                document.select(episodeListSelector()).map(::newEpisodeFromElement)
+                // Single season - reverse the episode order
+                document.select(episodeListSelector())
+                    .reversed() // Reverse the episodes order
+                    .map(::newEpisodeFromElement)
             } else {
                 seasonsList.reversed().flatMap { season ->
                     val seNum = season.text().let(::getNumberFromEpsString)
                     if (season.hasClass("selected")) {
                         document.select(episodeListSelector())
+                            .reversed() // Reverse the episodes order for current season
                             .map { newEpisodeFromElement(it, seNum) }
                     } else {
                         val seasonDoc =
                             client.newCall(Request.Builder().url(season.absUrl("href")).build())
                                 .execute().let { Jsoup.parse(it.body!!.string()) }
                         seasonDoc.select(episodeListSelector())
+                            .reversed() // Reverse the episodes order for other seasons
                             .map { newEpisodeFromElement(it, seNum) }
                     }
                 }
@@ -252,7 +252,6 @@ class MyCimaSource(private val context: Context) {
     }
 
     private fun getNumberFromEpsString(epsStr: String): String = epsStr.filter { it.isDigit() }
-
     // ============================== Video Links ==============================
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
         val request = Request.Builder()

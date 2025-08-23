@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Use a CardView for better styling and elevation -->
+<com.google.android.material.card.MaterialCardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp">
+
+    <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <ImageView
+            android:id="@+id/anime_thumbnail"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+    android:scaleType="centerCrop"
+    tools:src="@tools:sample/backgrounds/scenic" />
+
+    <TextView
+            android:id="@+id/anime_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textAppearance="?attr/textAppearanceBody2"
+            tools:text="Fullmetal Alchemist: Brotherhood" />
+
+    </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>

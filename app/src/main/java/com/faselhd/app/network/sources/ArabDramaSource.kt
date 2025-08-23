@@ -1,4 +1,4 @@
-package com.faselhd.app.network
+package com.faselhd.app.network.sources
 
 import android.content.Context
 import android.util.Base64
@@ -8,11 +8,10 @@ import com.faselhd.app.models.MangaPage
 import com.faselhd.app.models.SAnime
 import com.faselhd.app.models.SEpisode
 import com.faselhd.app.models.Video
+import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.extractors.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

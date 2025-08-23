@@ -12,6 +12,7 @@
                 android:id="@+id/nav_my_list"
                 android:icon="@drawable/playlist_add_check_24px"
         android:title="قائمتي" />
+
         <item
                 android:id="@+id/nav_downloads"
                 android:icon="@drawable/download_2_24px"

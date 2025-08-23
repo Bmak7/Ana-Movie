@@ -15,8 +15,8 @@ android {
         minSdk = 26
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
-        versionCode = 7
-        versionName = "2.2.4"
+        versionCode = 8
+        versionName = "2.2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -157,8 +157,12 @@ dependencies {
 
     implementation("uy.kohesive.injekt:injekt-core:1.16.1")
 
+    implementation("io.github.chrisbanes:PhotoView:2.3.0")
 
-    // Testing
+
+
+
+            // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")

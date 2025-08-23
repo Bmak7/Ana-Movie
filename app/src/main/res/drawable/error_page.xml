@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="120dp"
+        android:height="160dp"
+        android:viewportWidth="120"
+        android:viewportHeight="160">
+
+    <!-- Background -->
+    <path
+            android:fillColor="#FFCDD2"
+    android:pathData="M0,0h120v160h-120z" />
+
+    <!-- Page rectangle -->
+    <path
+            android:fillColor="#F44336"
+    android:pathData="M20,20h80v120h-80z" />
+
+    <!-- Folded corner -->
+    <path
+            android:fillColor="#E57373"
+            android:pathData="M80,20l20,20h-20z" />
+
+    <!-- Error "X" symbol -->
+    <path
+            android:fillColor="#FFFFFF"
+            android:strokeWidth="6"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M45,70 L75,100 M75,70 L45,100" />
+</vector>

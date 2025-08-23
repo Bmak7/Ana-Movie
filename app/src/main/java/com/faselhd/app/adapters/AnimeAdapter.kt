@@ -55,7 +55,7 @@ class AnimeAdapter(
         // Views for HORIZONTAL/GRID
         private var animeTitle: TextView? = null
         private var animeGenre: TextView? = null
-        private var animeStatus: TextView? = null
+//        private var animeStatus: TextView? = null
 
         // Views for TOP_HIT/NEW_RELEASE
         private var animeRating: TextView? = null
@@ -69,7 +69,7 @@ class AnimeAdapter(
                 ViewType.HORIZONTAL, ViewType.GRID -> {
                     animeTitle = itemView.findViewById(R.id.anime_title)
                     animeGenre = itemView.findViewById(R.id.anime_genre)
-                    animeStatus = itemView.findViewById(R.id.anime_status)
+//                    animeStatus = itemView.findViewById(R.id.anime_status)
                 }
                 ViewType.TOP_HIT -> {
                     animeRank = itemView.findViewById(R.id.anime_rank)

@@ -1,4 +1,4 @@
-package com.faselhd.app.network
+package com.faselhd.app.network.sources
 
 import android.content.Context
 import android.util.Base64
@@ -8,6 +8,7 @@ import com.faselhd.app.models.MangaPage
 import com.faselhd.app.models.SAnime
 import com.faselhd.app.models.SEpisode
 import com.faselhd.app.models.Video
+import com.faselhd.app.network.AnimeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -278,13 +279,22 @@ class ArabAnimeSource(private val context: Context) {
         val showData = document.selectFirst("div#data")?.text()?.decodeBase64() ?: return@withContext emptyList()
         val episodesJson = json.decodeFromString<ShowItem>(showData)
 
-        episodesJson.EPS.map {
+        // ========= MODIFICATION START =========
+
+        // Get the main anime name to use as the "season" name. Provide a fallback.
+        val animeNameAsSeason = episodesJson.show.firstOrNull()?.anime_name ?: "الموسم 1"
+
+        return@withContext episodesJson.EPS.map {
             SEpisode().apply {
-                name = it.episode_name
+                // Format the name to be "Anime Name : Episode Name"
+                // This allows the UI to group all episodes under the anime's title.
+                name = "$animeNameAsSeason : ${it.episode_name}"
                 episode_number = it.episode_number.toFloat()
                 url = it.`info-src`
             }
-        }.reversed()
+        }
+
+        // ========= MODIFICATION END =========
     }
 
     // ============================ Video Links =============================

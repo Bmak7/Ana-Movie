@@ -13,9 +13,19 @@
             android:title="My List" />
 
     <item
+            android:id="@+id/nav_search"
+            android:icon="@drawable/ic_search"
+            android:title="Search" />
+
+    <item
             android:id="@+id/nav_download"
             android:icon="@drawable/ic_download"
             android:title="Download" />
+
+<!--    <item-->
+<!--            android:id="@+id/nav_manga"-->
+<!--            android:icon="@drawable/bookmark_24px"-->
+<!--            android:title="Manga" />-->
 
     <item
             android:id="@+id/nav_settings"

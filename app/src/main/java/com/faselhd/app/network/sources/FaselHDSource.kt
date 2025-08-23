@@ -1,8 +1,7 @@
-package com.faselhd.app.network
+package com.faselhd.app.network.sources
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import com.faselhd.app.models.*
 import com.faselhd.app.utils.PlaylistUtils
 import com.faselhd.app.utils.Tls12SocketFactory
@@ -10,11 +9,9 @@ import com.faselhd.app.utils.WebViewResolver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
-import okhttp3.internal.userAgent
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.io.IOException
 import java.util.*
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory

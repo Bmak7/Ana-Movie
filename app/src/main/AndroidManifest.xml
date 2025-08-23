@@ -103,6 +103,12 @@
                 android:windowSoftInputMode="adjustResize" />
 
         <activity
+                android:name="com.faselhd.app.ParentSearchActivity"
+                android:exported="false"
+                android:theme="@style/Theme.MyApplication"
+                android:windowSoftInputMode="adjustResize" />
+
+        <activity
                 android:name="com.faselhd.app.DownloadsActivity"
                 android:exported="false"
                 android:theme="@style/Theme.MyApplication" /> <!-- ADDED THEME -->
