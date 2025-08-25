@@ -219,7 +219,7 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun openAnimeDetails(anime: SAnime) {
-        val intent = AnimeDetailsActivity.newIntent(this, anime, null)
+        val intent = AnimeDetailsActivity.newIntent(this, anime, SourceManager.getSelectedSource(applicationContext))
         startActivity(intent)
     }
 

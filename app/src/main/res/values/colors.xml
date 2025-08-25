@@ -65,4 +65,48 @@
     <color name="error">#F44336</color>
     <color name="onError">#FFFFFF</color>
 
+    <!-- Shimmer placeholder colors for light theme -->
+    <color name="shimmer_placeholder_color">#E0E0E0</color>
+    <color name="shimmer_base_color">#F0F0F0</color>
+    <color name="shimmer_highlight_color">#FFFFFF</color>
+
+    <!-- Shimmer placeholder colors for dark theme -->
+    <color name="shimmer_placeholder_color_dark">#2A2A2A</color>
+    <color name="shimmer_base_color_dark">#1E1E1E</color>
+    <color name="shimmer_highlight_color_dark">#3A3A3A</color>
+
+<!--    &lt;!&ndash; Existing colors &ndash;&gt;-->
+<!--    <color name="green_see_all">#4CAF50</color>-->
+<!--    <color name="green_play_button">#2E7D32</color>-->
+<!--    <color name="yellow_star">#FFB300</color>-->
+
+    <!-- Enhanced colors for better UX -->
+    <color name="loading_overlay">#80000000</color>
+    <color name="success_green">#4CAF50</color>
+    <color name="error_red">#F44336</color>
+    <color name="warning_orange">#FF9800</color>
+
+    <!-- Surface colors -->
+    <color name="surface_elevated">#F5F5F5</color>
+    <color name="surface_variant">#E0E0E0</color>
+
+    <!-- Text colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_disabled">#BDBDBD</color>
+
+    <!-- Border and divider colors -->
+    <color name="divider_color">#E0E0E0</color>
+    <color name="border_color">#CCCCCC</color>
+
+    <!-- State colors -->
+    <color name="pressed_state">#E8F5E8</color>
+    <color name="focused_state">#C8E6C9</color>
+
+    <!-- Gradient colors -->
+    <color name="gradient_start">#00000000</color>
+    <color name="gradient_end">#88000000</color>
+
+
+
 </resources>

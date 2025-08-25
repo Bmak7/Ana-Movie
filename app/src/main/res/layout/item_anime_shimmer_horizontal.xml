@@ -1,13 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="wrap_content"
+              android:layout_width="140dp"
               android:layout_height="wrap_content"
               android:orientation="vertical"
-              android:paddingHorizontal="4dp">
+              android:layout_marginStart="4dp"
+              android:layout_marginEnd="4dp">
 
-    <!-- This View has NO background attribute -->
+    <!-- Poster placeholder -->
     <View
-            android:layout_width="150dp"
-            android:layout_height="220dp"/>
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="@color/shimmer_placeholder_color"
+            android:layout_marginBottom="8dp"/>
+
+    <!-- Title placeholder -->
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="14dp"
+            android:background="@color/shimmer_placeholder_color"
+            android:layout_marginBottom="4dp"/>
+
+    <!-- Subtitle/Episode placeholder -->
+    <View
+            android:layout_width="80dp"
+            android:layout_height="12dp"
+            android:background="@color/shimmer_placeholder_color"/>
 
 </LinearLayout>

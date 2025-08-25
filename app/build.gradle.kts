@@ -15,8 +15,8 @@ android {
         minSdk = 26
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.2.5"
+        versionCode = 9
+        versionName = "2.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -159,6 +159,7 @@ dependencies {
 
     implementation("io.github.chrisbanes:PhotoView:2.3.0")
 
+    implementation("com.airbnb.android:lottie:6.4.0")
 
 
 

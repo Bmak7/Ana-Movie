@@ -128,12 +128,14 @@ class EgyDeadSource(private val context: Context) {
                 // Get season name (e.g., "مسلسل The Walking Dead الموسم الحادي عشر")
                 val seasonName = seasonDoc.select("div.infoBox div.singleTitle").text()
 
+                val thumbinalEpi = document.select("div.infoBox div.single-thumbnail img").attr("src")
                 // Get episodes and reverse their order
                 val seasonEpisodes = seasonDoc.select("div.EpsList li a").map {
                     SEpisode().apply {
                         url = it.attr("href")
                         name = "$seasonName : ${it.text()}"
                         episode_number = it.text().filter { c -> c.isDigit() }.toFloatOrNull() ?: 0f
+                        thumbnailUrl = thumbinalEpi
                     }
                 }.reversed() // Reverse the order of episodes within this season
 
@@ -143,13 +145,14 @@ class EgyDeadSource(private val context: Context) {
             // --- SINGLE-SEASON SHOWS ---
             // Get the title of the current page, which serves as the season name
             val seasonName = document.select("div.infoBox div.singleTitle").text()
-
+            val thumbinalEpi = document.select("div.infoBox div.single-thumbnail img").attr("src")
             // Get episodes and reverse their order
             val seasonEpisodes = document.select("div.EpsList li a").map {
                 SEpisode().apply {
                     url = it.attr("href")
                     name = "$seasonName : ${it.text()}"
                     episode_number = it.text().filter { c -> c.isDigit() }.toFloatOrNull() ?: 0f
+                    thumbnailUrl = thumbinalEpi
                 }
             }.reversed() // Reverse the order of episodes within this season
 
@@ -161,6 +164,7 @@ class EgyDeadSource(private val context: Context) {
                     url = animeUrl
                     name = document.select("div.infoBox div.singleTitle").text() // Use movie title as name
                     episode_number = 1f
+                    thumbnailUrl  = document.select("div.infoBox div.single-thumbnail img").attr("src")
                 }
             )
         }

@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.util.Log
 import android.view.GestureDetector
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -55,7 +54,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-
+import androidx.media3.common.MimeTypes
+import java.io.File
+import android.util.Log
 
 class VideoPlayerActivity : AppCompatActivity() {
 
@@ -191,6 +192,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         }
 
         initializeViews()
+        handleOfflineContentSetup()
         setupAudioManager()
         setupGestureDetector()
         setupClickListeners()
@@ -392,6 +394,129 @@ class VideoPlayerActivity : AppCompatActivity() {
         tvEpisodeTitle.text = "${currentAnime?.title} - ${currentEpisode?.name}"
         val currentIndex = seasonEpisodeList.indexOf(currentEpisode)
         btnNextEpisode.visibility = if (currentIndex != -1 && currentIndex < seasonEpisodeList.size - 1) View.VISIBLE else View.GONE
+    }
+
+    private fun handleAudioOnlyContent() {
+        // Hide video-specific controls when playing audio files
+        btnResize.visibility = View.GONE
+
+        // You might want to show a static image or album art for audio files
+        // This could be implemented by checking if the content is audio-only
+        // and displaying a placeholder image
+    }
+
+    private fun handleOfflineContentSetup() {
+        // Check if this is offline content
+        val firstVideo = videoList.firstOrNull()
+        if (firstVideo != null) {
+            val isLocalFile = firstVideo.url.startsWith("file://") ||
+                    firstVideo.url.startsWith("content://") ||
+                    firstVideo.url.startsWith("/") ||
+                    File(firstVideo.url).exists()
+
+            if (isLocalFile) {
+                Log.d("VideoPlayerActivity", "Setting up for offline playback")
+
+                // Disable server selection for offline content
+                btnServer.isEnabled = false
+                btnServer.alpha = 0.5f
+
+                // Disable next episode button if no episode list
+                if (seasonEpisodeList.isEmpty()) {
+                    btnNextEpisode.visibility = View.GONE
+                }
+
+                // Handle audio-only content
+                if (isAudioFile(firstVideo.url)) {
+                    handleAudioOnlyContent()
+                    Toast.makeText(this, "Playing audio file", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+
+
+
+    // Method to check if current content is audio-only
+    private fun isCurrentContentAudioOnly(): Boolean {
+        val currentVideo = videoList.firstOrNull()
+        return currentVideo?.let { isAudioFile(it.url) } ?: false
+    }
+
+
+    private val enhancedPlayerListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            loadingIndicator.visibility = if (playbackState == Player.STATE_BUFFERING) View.VISIBLE else View.GONE
+
+            when (playbackState) {
+                Player.STATE_READY -> {
+                    updatePlayPauseButton()
+                    updateDuration()
+
+                    // Only fetch skip times for online content
+                    val firstVideo = videoList.firstOrNull()
+                    val isOffline = firstVideo?.url?.let { url ->
+                        url.startsWith("file://") || url.startsWith("content://") ||
+                                url.startsWith("/") || File(url).exists()
+                    } ?: false
+
+                    if (!isOffline) {
+                        fetchSkipTimes()
+                    } else {
+                        Log.d("VideoPlayerActivity", "Skipping online features for offline content")
+                    }
+                }
+                Player.STATE_ENDED -> {
+                    if (seasonEpisodeList.isNotEmpty()) {
+                        playNextEpisode()
+                    } else {
+                        // For offline content without episode list, just finish
+                        Toast.makeText(this@VideoPlayerActivity, "Playback completed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                Player.STATE_BUFFERING -> {
+                    Log.d("VideoPlayerActivity", "Buffering offline content")
+                }
+            }
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            updatePlayPauseButton()
+        }
+
+        override fun onTracksChanged(tracks: Tracks) {
+            super.onTracksChanged(tracks)
+            updateResolutionDisplay()
+        }
+
+        override fun onVideoSizeChanged(videoSize: VideoSize) {
+            super.onVideoSizeChanged(videoSize)
+            updateResolutionDisplay()
+
+            // Handle audio-only content (no video track)
+            if (videoSize.width == 0 && videoSize.height == 0) {
+                handleAudioOnlyContent()
+            }
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            super.onPlayerError(error)
+            Log.e("VideoPlayerActivity", "ExoPlayer Error: ", error)
+
+            // Provide more specific error messages for offline content
+            val errorMessage = when (error.errorCode) {
+                PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND ->
+                    "Downloaded file not found. It may have been moved or deleted."
+                PlaybackException.ERROR_CODE_IO_NO_PERMISSION ->
+                    "Permission denied accessing the downloaded file."
+                PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ->
+                    "Unsupported file format for offline playback."
+                else -> "Playback error: ${error.message}"
+            }
+
+            Toast.makeText(this@VideoPlayerActivity, errorMessage, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun showSourceSelectionDialog() {
@@ -627,6 +752,7 @@ class VideoPlayerActivity : AppCompatActivity() {
 
     // In VideoPlayerActivity.kt
 
+    // Enhanced initializePlayerForVideo method to handle offline content
     @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializePlayerForVideo(video: Video) {
         player?.release()
@@ -634,55 +760,63 @@ class VideoPlayerActivity : AppCompatActivity() {
 
         tvServerName.text = "${video.quality} (Auto)"
 
-        // 1. This part remains the same. We still need to create our custom data source
-        //    with the unsafe client and the required headers.
-        val dataSourceFactory = if (video.url.startsWith("https")) {
-            val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
-            val okHttpDataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
-                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-            video.headers?.let { okHttpDataSourceFactory.setDefaultRequestProperties(it) }
-            DefaultDataSource.Factory(this, okHttpDataSourceFactory)
+        // Check if this is a local file (offline content)
+        val isLocalFile = video.url.startsWith("file://") ||
+                video.url.startsWith("content://") ||
+                video.url.startsWith("/") ||
+                File(video.url).exists()
+
+        val dataSourceFactory = if (isLocalFile) {
+            // For local files, use a simple DefaultDataSource factory without network components
+            Log.d("VideoPlayerActivity", "Playing offline content: ${video.url}")
+            DefaultDataSource.Factory(this)
         } else {
-            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-            video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
-            DefaultDataSource.Factory(this, httpDataSourceFactory)
+            // For online content, use the existing network setup
+            Log.d("VideoPlayerActivity", "Playing online content: ${video.url}")
+            if (video.url.startsWith("https")) {
+                val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
+                val okHttpDataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
+                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+                video.headers?.let { okHttpDataSourceFactory.setDefaultRequestProperties(it) }
+                DefaultDataSource.Factory(this, okHttpDataSourceFactory)
+            } else {
+                val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+                video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
+                DefaultDataSource.Factory(this, httpDataSourceFactory)
+            }
         }
 
-        // 2. This part for building subtitle configurations also remains the same.
-        val subtitleConfigurations = video.subtitles?.mapNotNull { subtitle ->
-            val subtitleUri = Uri.parse(subtitle.url)
-            val mimeType = when {
-                subtitle.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
-                subtitle.url.contains(".srt", true) -> MimeTypes.APPLICATION_SUBRIP
-                else -> null // Let ExoPlayer try to infer if extension is unknown
-            }
-            if (mimeType != null) {
-                MediaItem.SubtitleConfiguration.Builder(subtitleUri)
-                    .setMimeType(mimeType)
-                    .setLanguage(subtitle.lang)
-                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-                    .build()
-            } else {
-                null
-            }
-        } ?: emptyList()
+        // Handle subtitles - only for online content or if subtitles are also stored locally
+        val subtitleConfigurations = if (!isLocalFile) {
+            video.subtitles?.mapNotNull { subtitle ->
+                val subtitleUri = Uri.parse(subtitle.url)
+                val mimeType = when {
+                    subtitle.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
+                    subtitle.url.contains(".srt", true) -> MimeTypes.APPLICATION_SUBRIP
+                    else -> null
+                }
+                if (mimeType != null) {
+                    MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+                        .setMimeType(mimeType)
+                        .setLanguage(subtitle.lang)
+                        .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                        .build()
+                } else {
+                    null
+                }
+            } ?: emptyList()
+        } else {
+            // For offline content, check if there are local subtitle files
+            findLocalSubtitleFiles(video.url)
+        }
 
         val mediaItem = MediaItem.Builder()
             .setUri(video.url)
             .setSubtitleConfigurations(subtitleConfigurations)
             .build()
 
-        // ========= MODIFICATION START =========
-
-        // 3. THE KEY FIX: Create a DefaultMediaSourceFactory and provide our
-        //    custom dataSourceFactory. This factory will now be used to create the
-        //    MediaSource for the video AND to load the subtitle files, ensuring
-        //    they both get the correct headers.
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
-
-        // 4. We no longer need the HlsMediaSource vs ProgressiveMediaSource if/else block.
-        //    The DefaultMediaSourceFactory handles this for us.
 
         trackSelector = DefaultTrackSelector(this).apply {
             setParameters(
@@ -693,13 +827,10 @@ class VideoPlayerActivity : AppCompatActivity() {
             )
         }
 
-        // 5. Build the player, telling it to use our new MediaSourceFactory.
         player = ExoPlayer.Builder(this)
             .setTrackSelector(trackSelector)
-            .setMediaSourceFactory(mediaSourceFactory) // <-- INJECT THE FACTORY HERE
+            .setMediaSourceFactory(mediaSourceFactory)
             .build().apply {
-                // Instead of setting the mediaSource, we set the mediaItem directly.
-                // The factory will handle the rest.
                 setMediaItem(mediaItem)
                 addListener(playerListener)
                 playWhenReady = true
@@ -709,11 +840,69 @@ class VideoPlayerActivity : AppCompatActivity() {
                 prepare()
             }
 
-        // ========= MODIFICATION END =========
-
         playerView.player = player
         playerView.resizeMode = currentResizeMode
         updateProgress()
+    }
+
+    // Helper method to find local subtitle files
+    private fun findLocalSubtitleFiles(videoPath: String): List<MediaItem.SubtitleConfiguration> {
+        val subtitleConfigurations = mutableListOf<MediaItem.SubtitleConfiguration>()
+
+        try {
+            val videoFile = if (videoPath.startsWith("file://")) {
+                File(Uri.parse(videoPath).path ?: return emptyList())
+            } else {
+                File(videoPath)
+            }
+
+            if (!videoFile.exists()) return emptyList()
+
+            val videoDirectory = videoFile.parentFile ?: return emptyList()
+            val videoNameWithoutExt = videoFile.nameWithoutExtension
+
+            // Look for subtitle files with the same name as the video file
+            val subtitleExtensions = arrayOf("srt", "vtt", "ass", "ssa")
+
+            for (extension in subtitleExtensions) {
+                val subtitleFile = File(videoDirectory, "$videoNameWithoutExt.$extension")
+                if (subtitleFile.exists()) {
+                    val mimeType = when (extension) {
+                        "srt" -> MimeTypes.APPLICATION_SUBRIP
+                        "vtt" -> MimeTypes.TEXT_VTT
+                        "ass", "ssa" -> MimeTypes.APPLICATION_SS
+                        else -> continue
+                    }
+
+                    val subtitleUri = Uri.fromFile(subtitleFile)
+                    val config = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+                        .setMimeType(mimeType)
+                        .setLanguage("en") // Default to English, could be made configurable
+                        .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                        .build()
+
+                    subtitleConfigurations.add(config)
+                    Log.d("VideoPlayerActivity", "Found local subtitle: ${subtitleFile.absolutePath}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VideoPlayerActivity", "Error finding local subtitles", e)
+        }
+
+        return subtitleConfigurations
+    }
+
+    // Enhanced method to detect file type for better handling
+    private fun isAudioFile(url: String): Boolean {
+        val audioExtensions = listOf("mp3", "wav", "aac", "ogg", "m4a", "flac", "wma")
+        val extension = url.substringAfterLast('.', "").lowercase()
+        return audioExtensions.contains(extension)
+    }
+
+    private fun isVideoFile(url: String): Boolean {
+        val videoExtensions = listOf("mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v")
+        val extension = url.substringAfterLast('.', "").lowercase()
+        return videoExtensions.contains(extension)
     }
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {

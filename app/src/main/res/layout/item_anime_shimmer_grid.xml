@@ -1,21 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
+              android:layout_width="0dp"
+              android:layout_weight="1"
               android:layout_height="wrap_content"
               android:orientation="vertical"
               android:padding="8dp">
 
-    <!-- These Views have NO background attributes -->
+    <!-- Poster placeholder with proper background -->
     <View
             android:layout_width="match_parent"
-            android:layout_height="240dp"/>
+            android:layout_height="240dp"
+            android:background="@color/shimmer_placeholder_color"
+            android:layout_marginBottom="8dp"/>
 
+    <!-- Title placeholder -->
     <View
             android:layout_width="match_parent"
             android:layout_height="16dp"
-            android:layout_marginTop="8dp"/>
+            android:background="@color/shimmer_placeholder_color"
+            android:layout_marginBottom="4dp"/>
 
+    <!-- Subtitle placeholder -->
     <View
             android:layout_width="120dp"
-            android:layout_height="16dp"
-            android:layout_marginTop="4dp"/>
+            android:layout_height="12dp"
+            android:background="@color/shimmer_placeholder_color"/>
+
 </LinearLayout>

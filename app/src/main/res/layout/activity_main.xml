@@ -115,277 +115,259 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <!-- Add SwipeRefreshLayout for pull-to-refresh functionality -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipe_refresh_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- This LinearLayout contains all your content sections -->
-        <LinearLayout
+        <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="16dp"
-                android:descendantFocusability="blocksDescendants">
+                android:layout_height="match_parent">
 
-            <!-- === CONTINUE WATCHING (RESTORED) === -->
-            <LinearLayout
-                    android:id="@+id/continue_watching_section"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:visibility="gone"
-                    tools:visibility="visible">
-
-                <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Continue Watching"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"/>
-
-                <TextView
-                        android:id="@+id/see_all_continue_watching"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="See all"
-                        android:textColor="@color/green_see_all"
-                        android:textStyle="bold"/>
-            </LinearLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/continue_watching_recycler_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:clipToPadding="false"
-                    android:paddingHorizontal="12dp"
-                    android:layout_marginBottom="16dp"
-                    android:visibility="gone"
-                    tools:visibility="visible"
-                    tools:listitem="@layout/item_continue_watching"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
-
-            <!-- === TOP HITS ANIME (NEW DESIGN) === -->
-            <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="16dp"
-                    android:layout_marginBottom="8dp">
-
-                <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Top Hits Anime"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"/>
-
-                <TextView
-                        android:id="@+id/see_all_top_hits"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="See all"
-                        android:textColor="@color/green_see_all"
-                        android:textStyle="bold"/>
-            </LinearLayout>
-
-            <com.facebook.shimmer.ShimmerFrameLayout
-                    android:id="@+id/shimmer_top_hits"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:shimmer_base_color="?attr/shimmerPlaceholderColor">
-                <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                    <include layout="@layout/item_anime_shimmer_horizontal"/>
-                    <include layout="@layout/item_anime_shimmer_horizontal"/>
-                    <include layout="@layout/item_anime_shimmer_horizontal"/>
-                </LinearLayout>
-            </com.facebook.shimmer.ShimmerFrameLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/top_hits_recycler_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:clipToPadding="false"
-                    android:paddingHorizontal="12dp"
-                    android:layout_marginBottom="16dp"
-                    tools:listitem="@layout/item_top_hit"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
-
-            <!-- === NEW EPISODE RELEASES (NEW DESIGN) === -->
-            <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="16dp"
-                    android:layout_marginBottom="8dp">
-
-                <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="New Episode Releases"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"/>
-
-                <TextView
-                        android:id="@+id/see_all_new_episodes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="See all"
-                        android:textColor="@color/green_see_all"
-                        android:textStyle="bold"/>
-            </LinearLayout>
-
-            <com.facebook.shimmer.ShimmerFrameLayout
-                    android:id="@+id/shimmer_new_episodes"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:shimmer_base_color="?attr/shimmerPlaceholderColor">
-                <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                    <include layout="@layout/item_anime_shimmer_horizontal"/>
-                    <include layout="@layout/item_anime_shimmer_horizontal"/>
-                    <include layout="@layout/item_anime_shimmer_horizontal"/>
-                </LinearLayout>
-            </com.facebook.shimmer.ShimmerFrameLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/new_episodes_recycler_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:clipToPadding="false"
-                    android:paddingHorizontal="12dp"
-                    android:layout_marginBottom="16dp"
-                    tools:listitem="@layout/item_new_release"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
-
-            <!-- === LATEST UPDATES (RESTORED - GRID) === -->
-            <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="16dp"
-                    android:layout_marginBottom="8dp">
-
-                <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Latest Updates"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"/>
-
-                <TextView
-                        android:id="@+id/see_all_latest"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="See all"
-                        android:textColor="@color/green_see_all"
-                        android:textStyle="bold"/>
-            </LinearLayout>
-
+            <!-- This LinearLayout contains all your content sections -->
             <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginTop="16dp">
+                    android:paddingTop="16dp"
+                    android:descendantFocusability="blocksDescendants">
 
-                <RelativeLayout
+                <!-- === CONTINUE WATCHING === -->
+                <LinearLayout
+                        android:id="@+id/continue_watching_section"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:paddingHorizontal="16dp">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp"
+                        android:layout_marginBottom="8dp"
+                        android:visibility="gone"
+                        tools:visibility="visible">
 
                     <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Continue Watching"
+                            android:textAppearance="?attr/textAppearanceTitleLarge"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"/>
+
+                    <TextView
+                            android:id="@+id/see_all_continue_watching"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Popular Manga"
-                            android:textAppearance="?attr/textAppearanceHeadline6"
-                            android:textColor="?attr/colorOnSurface" />
-                </RelativeLayout>
+                            android:text="See all"
+                            android:textColor="@color/green_see_all"
+                            android:textStyle="bold"/>
+                </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/popular_manga_recycler_view"
+                        android:id="@+id/continue_watching_recycler_view"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal"
                         android:clipToPadding="false"
-                        android:paddingHorizontal="12dp"/>
-            </LinearLayout>
+                        android:paddingHorizontal="12dp"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        tools:listitem="@layout/item_continue_watching"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
 
-            <com.facebook.shimmer.ShimmerFrameLayout
-                    android:id="@+id/shimmer_latest_updates"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:shimmer_auto_start="true"
-                    app:shimmer_base_color="?attr/shimmerPlaceholderColor">
-
-                <!-- This GridLayout arranges the shimmer items in a 2-column grid -->
-                <GridLayout
+                <!-- === TOP HITS ANIME === -->
+                <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:columnCount="2"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp"
+                        android:layout_marginBottom="8dp">
 
-                    <!-- Column 1 -->
-                    <include
-                            layout="@layout/item_anime_shimmer_grid"
+                    <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"/>
-                    <include
-                            layout="@layout/item_anime_shimmer_grid"
+                            android:layout_weight="1"
+                            android:text="Top Hits Anime"
+                            android:textAppearance="?attr/textAppearanceTitleLarge"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"/>
+
+                    <TextView
+                            android:id="@+id/see_all_top_hits"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="See all"
+                            android:textColor="@color/green_see_all"
+                            android:textStyle="bold"/>
+                </LinearLayout>
+
+                <com.facebook.shimmer.ShimmerFrameLayout
+                        android:id="@+id/shimmer_top_hits"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:shimmer_base_color="?attr/shimmerPlaceholderColor"
+                        app:shimmer_highlight_color="#FFFFFF">
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="12dp">
+                        <include layout="@layout/item_anime_shimmer_horizontal"/>
+                        <include layout="@layout/item_anime_shimmer_horizontal"/>
+                        <include layout="@layout/item_anime_shimmer_horizontal"/>
+                    </LinearLayout>
+                </com.facebook.shimmer.ShimmerFrameLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/top_hits_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:clipToPadding="false"
+                        android:paddingHorizontal="12dp"
+                        android:layout_marginBottom="16dp"
+                        tools:listitem="@layout/item_top_hit"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+
+                <!-- === NEW EPISODE RELEASES === -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp"
+                        android:layout_marginBottom="8dp">
+
+                    <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"/>
+                            android:layout_weight="1"
+                            android:text="New Episode Releases"
+                            android:textAppearance="?attr/textAppearanceTitleLarge"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"/>
 
-                    <!-- Column 2 -->
-                    <include
-                            layout="@layout/item_anime_shimmer_grid"
+                    <TextView
+                            android:id="@+id/see_all_new_episodes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="See all"
+                            android:textColor="@color/green_see_all"
+                            android:textStyle="bold"/>
+                </LinearLayout>
+
+                <com.facebook.shimmer.ShimmerFrameLayout
+                        android:id="@+id/shimmer_new_episodes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:shimmer_base_color="?attr/shimmerPlaceholderColor"
+                        app:shimmer_highlight_color="#FFFFFF">
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="12dp">
+                        <include layout="@layout/item_anime_shimmer_horizontal"/>
+                        <include layout="@layout/item_anime_shimmer_horizontal"/>
+                        <include layout="@layout/item_anime_shimmer_horizontal"/>
+                    </LinearLayout>
+                </com.facebook.shimmer.ShimmerFrameLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/new_episodes_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:clipToPadding="false"
+                        android:paddingHorizontal="12dp"
+                        android:layout_marginBottom="16dp"
+                        tools:listitem="@layout/item_new_release"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+
+                <!-- === LATEST UPDATES === -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp"
+                        android:layout_marginBottom="8dp">
+
+                    <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"/>
-                    <include
-                            layout="@layout/item_anime_shimmer_grid"
-                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="Latest Updates"
+                            android:textAppearance="?attr/textAppearanceTitleLarge"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface"/>
+
+                    <TextView
+                            android:id="@+id/see_all_latest"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"/>
-                </GridLayout>
+                            android:text="See all"
+                            android:textColor="@color/green_see_all"
+                            android:textStyle="bold"/>
+                </LinearLayout>
 
-            </com.facebook.shimmer.ShimmerFrameLayout>
-            <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/latest_recycler_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clipToPadding="false"
-                    android:paddingHorizontal="0dp"
-                    android:paddingBottom="80dp"
-                    android:orientation="vertical"
-                    app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                    app:spanCount="3"
-                    tools:listitem="@layout/item_anime_grid" />
+                <com.facebook.shimmer.ShimmerFrameLayout
+                        android:id="@+id/shimmer_latest_updates"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:shimmer_auto_start="true"
+                        app:shimmer_base_color="?attr/shimmerPlaceholderColor"
+                        app:shimmer_highlight_color="#FFFFFF">
 
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+                    <!-- This GridLayout arranges the shimmer items in a 3-column grid -->
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingHorizontal="8dp">
+
+                        <!-- Row 1 -->
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+                            <include layout="@layout/item_anime_shimmer_grid"/>
+                            <include layout="@layout/item_anime_shimmer_grid"/>
+                            <include layout="@layout/item_anime_shimmer_grid"/>
+                        </LinearLayout>
+
+                        <!-- Row 2 -->
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+                            <include layout="@layout/item_anime_shimmer_grid"/>
+                            <include layout="@layout/item_anime_shimmer_grid"/>
+                            <include layout="@layout/item_anime_shimmer_grid"/>
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.facebook.shimmer.ShimmerFrameLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/latest_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:paddingHorizontal="0dp"
+                        android:paddingBottom="80dp"
+                        android:orientation="vertical"
+                        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                        app:spanCount="3"
+                        tools:listitem="@layout/item_anime_grid" />
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Bottom Navigation Bar -->
     <com.google.android.material.bottomnavigation.BottomNavigationView

@@ -105,19 +105,28 @@ class Asia2TvSource(private val context: Context) {
     }
 
     // ============================== Episodes ==============================
+    // ============================== Episodes ==============================
     suspend fun fetchEpisodeList(animeUrl: String): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(animeUrl).build()
         val document = Jsoup.parse(client.newCall(request).execute().body!!.string())
 
-        document.select("div.loop-episode a").map {
+        // ========= MODIFICATION START =========
+        // 1. Get the main anime title to use as the "season" name.
+        val animeNameAsSeason = document.select("h1 span.title").text()
+
+        // 2. Map the episodes and format their names consistently.
+        return@withContext document.select("div.loop-episode a").map {
+            val episodeNumberStr = it.attr("href").trimEnd('/').substringAfterLast("-")
             SEpisode().apply {
                 this.url = it.attr("href")
-                // Example: .../the-good-bad-mother-episode-1/ -> "1 : الحلقة"
-                this.name = it.attr("href").trimEnd('/').substringAfterLast("-") + " : الحلقة"
-                this.episode_number = this.name!!.substringBefore(" ").toFloatOrNull() ?: 0f
+                // Format the name as "Anime Title : الحلقة [Number]"
+                this.name = "$animeNameAsSeason : الحلقة $episodeNumberStr"
+                this.episode_number = episodeNumberStr.toFloatOrNull() ?: 0f
             }
-        }.reversed()
+        }
+        // ========= MODIFICATION END =========
     }
+
 
     // ============================ Video Links =============================
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
@@ -238,7 +247,7 @@ class Asia2TvSource(private val context: Context) {
 //                url.contains("mixdrop" ) || url.contains("mxdrop" ) || url.contains("mx" ) -> mixDropExtractor.videosFromUrl(url)
 
 
-                // LuluStream extractors with proper pageReferer
+//                 LuluStream extractors with proper pageReferer
 //                "luluvid.com" in host || "luluvid" in host||"lulu" in host -> {
 //                    println("DEBUG: Using luluVdoExtractor for: $host")
 //                    luluVdoExtractor.videosFromUrl(url, pageReferer)

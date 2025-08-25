@@ -37,6 +37,14 @@ interface WatchHistoryDao {
     fun getContinueWatchingHistory(): Flow<List<WatchHistory>> // <-- Renamed for clarity
 
 
+    @Query("""
+    SELECT * FROM watch_history 
+    WHERE animeUrl = :animeUrl 
+    AND lastWatchedPosition > 0 
+    ORDER BY lastWatchedPosition DESC 
+    LIMIT 1
+""")
+    suspend fun getRecentWatchHistoryForAnime(animeUrl: String): WatchHistory?
     // We still need a way to get ALL history for the details screen
     @Query("SELECT * FROM watch_history")
     fun getAllWatchHistory(): Flow<List<WatchHistory>> // <-- Added this

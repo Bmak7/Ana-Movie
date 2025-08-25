@@ -26,6 +26,14 @@ class SliderAdapter(
 
     override fun getItemCount(): Int = items.size
 
+    // Add this method to allow MainActivity to access the items
+    fun getItems(): List<SAnime> = items
+
+    // Optional: Get item at specific position (useful for featured anime updates)
+    fun getItemAt(position: Int): SAnime? {
+        return if (position in 0 until items.size) items[position] else null
+    }
+
     inner class SliderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val imageView: ImageView = itemView.findViewById(R.id.slider_image)
         private val titleView: TextView = itemView.findViewById(R.id.slider_title)
@@ -43,6 +51,7 @@ class SliderAdapter(
             Glide.with(itemView.context)
                 .load(item.thumbnail_url)
                 .placeholder(R.drawable.placeholder_anime)
+                .error(R.drawable.placeholder_anime) // Add error placeholder too
                 .into(imageView)
         }
     }

@@ -8,37 +8,53 @@
         android:background="?attr/colorSurface"
         android:fitsSystemWindows="true">
 
-    <!-- 1. Use a FrameLayout to stack the content and the toolbar -->
     <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-        <!-- 2. The NestedScrollView with all content is the FIRST child (the background layer) -->
         <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:scrollbars="none">
 
+            <!-- This single LinearLayout is now the only direct child -->
             <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                <!-- Header Image -->
-                <ImageView
-                        android:id="@+id/anime_image"
+
+                <!-- All your other content goes inside this LinearLayout -->
+                <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="300dp"
-                        android:scaleType="centerCrop"
-                        tools:src="@tools:sample/backgrounds/scenic"/>
+                        android:layout_height="300dp">
+
+                    <ImageView
+                            android:id="@+id/anime_image"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:contentDescription="Anime poster"
+                            tools:src="@tools:sample/backgrounds/scenic"/>
+
+                    <!-- Gradient overlay for better text readability -->
+                    <View
+                            android:layout_width="match_parent"
+                            android:layout_height="100dp"
+                            android:layout_gravity="bottom"
+                            android:background="@drawable/gradient_overlay"/>
+
+                </FrameLayout>
 
                 <!-- Main Content Area -->
                 <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:padding="16dp"
+                        android:clipToPadding="false">
 
-                    <!-- Title and Icons -->
+                    <!-- Title and Action Icons -->
                     <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -51,146 +67,423 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:textAppearance="?attr/textAppearanceHeadlineSmall"
-                                android:textColor="@android:color/black"
+                                android:textColor="?attr/colorOnSurface"
                                 android:textStyle="bold"
-                                tools:text="Demon Slayer (Kimetsu no Yaiba)"
-                                android:maxLines="1"
-                                android:ellipsize="end" />
+                                android:maxLines="2"
+                                android:ellipsize="end"
+                                android:lineSpacingMultiplier="1.1"
+                                tools:text="Demon Slayer: Kimetsu no Yaiba"/>
 
-                        <ImageButton
-                                android:id="@+id/btn_bookmark"
+                        <!-- Action buttons container -->
+                        <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:src="@drawable/bookmark_24px"
-                                android:background="?attr/selectableItemBackgroundBorderless"/>
+                                android:orientation="horizontal"
+                                android:layout_marginStart="12dp">
 
-                        <ImageButton
-                                android:id="@+id/btn_share"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:src="@drawable/share_24px"
-                                android:background="?attr/selectableItemBackgroundBorderless"/>
-                </LinearLayout>
+                            <ImageButton
+                                    android:id="@+id/btn_bookmark"
+                                    android:layout_width="48dp"
+                                    android:layout_height="48dp"
+                                    android:src="@drawable/bookmark_24px"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:contentDescription="Add to favorites"
+                                    android:layout_marginEnd="4dp"/>
 
-                <!-- Metadata Row -->
-                <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginTop="8dp">
+                            <ImageButton
+                                    android:id="@+id/btn_share"
+                                    android:layout_width="48dp"
+                                    android:layout_height="48dp"
+                                    android:src="@drawable/share_24px"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:contentDescription="Share anime"/>
 
-                    <ImageView android:src="@drawable/ic_star" android:layout_width="16dp" android:layout_height="16dp" app:tint="@color/yellow_star"/>
-                    <TextView android:id="@+id/anime_rating" android:layout_width="wrap_content" android:layout_height="wrap_content" tools:text="9.8" android:layout_marginStart="4dp"/>
-                    <TextView android:id="@+id/anime_year" android:layout_width="wrap_content" android:layout_height="wrap_content" tools:text=">  2022" android:layout_marginStart="8dp"/>
-                </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
 
-                <!-- Tags Row -->
-                <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/anime_tags_chip_group"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp">
-                    <!-- Chips will be added programmatically -->
-                </com.google.android.material.chip.ChipGroup>
 
-                <!-- Play and Download Buttons -->
-                <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="16dp">
-
-                    <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_play"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Play"
-                            app:icon="@drawable/ic_play_arrow"
-                            app:backgroundTint="@color/green_play_button"/>
-
-                    <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_download"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Download"
-                            app:icon="@drawable/ic_download"
-                            android:layout_marginStart="12dp"/>
-                </LinearLayout>
-
-                <!-- Description -->
-                <TextView
-                        android:id="@+id/anime_description"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:maxLines="3"
-                        android:ellipsize="end"
-                        tools:text="Genre: Action, Martial Arts...\nLorem ipsum dolor sit amet, consectetur adipiscing elit..."/>
-
-                <!-- Episodes Section -->
-                <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginTop="24dp">
-                    <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Episodes"
-                            android:textAppearance="?attr/textAppearanceTitleLarge"
-                            android:textStyle="bold"/>
-                    <Spinner
-                            android:id="@+id/season_spinner"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                </LinearLayout>
-
-                <!-- This FrameLayout allows us to show a progress bar on top of where the list will be -->
-                <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="120dp"
-                        android:layout_marginTop="8dp">
-
-                    <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/episodes_recycler_view"
+                    <!-- Metadata Row with better styling -->
+                    <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="horizontal"
-                            android:clipToPadding="false"
-                            tools:listitem="@layout/item_episode_horizontal"/>
-
-                    <ProgressBar
-                            android:id="@+id/episodes_progress_bar"
-                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:visibility="gone"
-                            tools:visibility="visible"/>
-                </FrameLayout>
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/metadata_background"
+                            android:padding="12dp">
 
-                <!-- Tabs for More Like This / Comments -->
-                <com.google.android.material.tabs.TabLayout
-                        android:id="@+id/tab_layout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="24dp"/>
+                        <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@drawable/ic_star"
+                                app:tint="@color/yellow_star"/>
 
-                <androidx.viewpager2.widget.ViewPager2
-                        android:id="@+id/view_pager"
-                        android:layout_width="match_parent"
-                        android:layout_height="400dp"/>
+                        <TextView
+                                android:id="@+id/anime_rating"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="9.8"/>
 
+                        <View
+                                android:layout_width="1dp"
+                                android:layout_height="16dp"
+                                android:layout_marginHorizontal="12dp"
+                                android:background="?attr/colorOutline"/>
+
+                        <TextView
+                                android:id="@+id/anime_year"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="2022"/>
+
+                        <View
+                                android:layout_width="1dp"
+                                android:layout_height="16dp"
+                                android:layout_marginHorizontal="12dp"
+                                android:background="?attr/colorOutline"/>
+
+                        <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Episodes"
+                                android:textColor="?attr/colorOnSurface"
+                                android:id="@+id/episodes_count"/>
+
+                    </LinearLayout>
+
+                    <!-- Tags Row with improved design -->
+                    <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/anime_tags_chip_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            app:chipSpacing="8dp"
+                            app:lineSpacing="4dp">
+                        <!-- Chips will be added programmatically -->
+                    </com.google.android.material.chip.ChipGroup>
+
+                    <!-- Play and Download Buttons with better styling -->
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="20dp"
+                            android:gravity="center">
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_play"
+                                android:layout_width="0dp"
+                                android:layout_height="52dp"
+                                android:layout_weight="1"
+                                android:text="Play"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                app:icon="@drawable/ic_play_arrow"
+                                app:iconSize="24dp"
+                                app:backgroundTint="@color/green_play_button"
+                                app:cornerRadius="26dp"
+                                android:elevation="2dp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_download"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="52dp"
+                                android:layout_weight="1"
+                                android:text="Download"
+                                android:textSize="16sp"
+                                app:icon="@drawable/ic_download"
+                                app:iconSize="24dp"
+                                app:cornerRadius="26dp"
+                                app:strokeWidth="2dp"
+                                android:layout_marginStart="12dp"/>
+                    </LinearLayout>
+
+                    <!-- Description with expandable text -->
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginTop="20dp"
+                            android:background="@drawable/description_background"
+                            android:padding="16dp">
+
+                        <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Synopsis"
+                                android:textAppearance="?attr/textAppearanceTitleMedium"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                                android:id="@+id/anime_description"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:maxLines="4"
+                                android:ellipsize="end"
+                                android:lineSpacingMultiplier="1.3"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="14sp"
+                                tools:text="Genre: Action, Martial Arts, Supernatural\n\nA young man's quest to avenge his family and cure his sister leads him into a world of demons and demon slayers. With unwavering determination, he trains to become one of the most skilled swordsmen."/>
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_expand_description"
+                                style="@style/Widget.Material3.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="end"
+                                android:text="Read more"
+                                android:textSize="12sp"
+                                android:visibility="gone"
+                                app:icon="@drawable/expand_more"
+                                app:iconSize="16dp"/>
+
+                    </LinearLayout>
+
+                    <!-- Audio Player for ARABICTOONS source -->
+                    <LinearLayout
+                            android:id="@+id/audio_player_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginTop="16dp"
+                            android:background="@drawable/audio_player_background"
+                            android:padding="16dp"
+                            android:visibility="gone">
+
+                        <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Opening Theme"
+                                android:textAppearance="?attr/textAppearanceTitleMedium"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                                android:id="@+id/audio_title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="14sp"
+                                android:maxLines="1"
+                                android:ellipsize="end"
+                                tools:text="Anime Opening Theme"/>
+
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginTop="12dp">
+
+                            <ImageButton
+                                    android:id="@+id/btn_play_audio"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:src="@drawable/ic_play_arrow"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:contentDescription="Play audio"/>
+
+                            <SeekBar
+                                    android:id="@+id/audio_seek_bar"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginHorizontal="8dp"
+                                    android:progress="0"
+                                    android:max="100"/>
+
+                            <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal">
+
+                                <TextView
+                                        android:id="@+id/audio_progress"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0:00"
+                                        android:textSize="12sp"
+                                        android:textColor="?attr/colorOnSurfaceVariant"/>
+
+                                <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text=" / "
+                                        android:textSize="12sp"
+                                        android:textColor="?attr/colorOnSurfaceVariant"/>
+
+                                <TextView
+                                        android:id="@+id/audio_duration"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0:00"
+                                        android:textSize="12sp"
+                                        android:textColor="?attr/colorOnSurfaceVariant"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <ImageButton
+                                android:id="@+id/btn_download_audio"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:src="@drawable/ic_download"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="Download audio"
+                                android:layout_gravity="end"
+                                android:layout_marginTop="8dp"/>
+                    </LinearLayout>
+
+                    <!-- Episodes Section with enhanced header -->
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginTop="24dp">
+
+                        <!-- Episodes Header -->
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:background="@drawable/section_header_background"
+                                android:padding="12dp">
+
+                            <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="Episodes"
+                                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorOnSurface"/>
+
+                            <Spinner
+                                    android:id="@+id/season_spinner"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="36dp"
+                                    android:background="@drawable/spinner_background"
+                                    android:padding="8dp"/>
+
+                            <!-- Add this button to toggle the layout -->
+                            <ImageButton
+                                    android:id="@+id/btn_toggle_episodes_layout"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:src="@drawable/ic_view_list"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:contentDescription="Toggle episode layout"
+                                    android:layout_marginStart="8dp"
+                                    app:tint="?attr/colorOnSurface"/>
+
+                        </LinearLayout>
+
+                        <!-- Episodes List with loading state -->
+                        <FrameLayout
+                                android:id="@+id/episodes_list_container"
+                                android:layout_width="match_parent"
+                                android:layout_height="140dp"
+                                android:layout_marginTop="8dp">
+
+                            <androidx.recyclerview.widget.RecyclerView
+                                    android:id="@+id/episodes_recycler_view"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:orientation="horizontal"
+                                    android:clipToPadding="false"
+                                    android:paddingHorizontal="4dp"
+                                    android:scrollbars="horizontal"
+                                    tools:listitem="@layout/item_episode_horizontal"/>
+
+                            <!-- Loading state for episodes -->
+                            <LinearLayout
+                                    android:id="@+id/episodes_loading_layout"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    android:orientation="vertical"
+                                    android:background="@drawable/loading_background"
+                                    android:visibility="gone"
+                                    tools:visibility="visible">
+
+                                <ProgressBar
+                                        android:id="@+id/episodes_progress_bar"
+                                        android:layout_width="32dp"
+                                        android:layout_height="32dp"
+                                        android:layout_gravity="center"
+                                        android:indeterminateTint="@color/green_see_all"/>
+
+                                <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:text="Loading episodes..."
+                                        android:textColor="?attr/colorOnSurfaceVariant"
+                                        android:textSize="12sp"/>
+
+                            </LinearLayout>
+
+                            <!-- Empty state for episodes -->
+                            <LinearLayout
+                                    android:id="@+id/episodes_empty_layout"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    android:orientation="vertical"
+                                    android:visibility="gone">
+
+                                <ImageView
+                                        android:layout_width="48dp"
+                                        android:layout_height="48dp"
+                                        android:src="@drawable/ic_video_library_off"
+                                        app:tint="?attr/colorOnSurfaceVariant"
+                                        android:alpha="0.6"/>
+
+                                <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:text="No episodes available"
+                                        android:textColor="?attr/colorOnSurfaceVariant"
+                                        android:textSize="14sp"/>
+
+                            </LinearLayout>
+
+                        </FrameLayout>
+
+                    </LinearLayout>
+
+                    <!-- Enhanced Tabs for More Like This / Comments -->
+                    <com.google.android.material.tabs.TabLayout
+                            android:id="@+id/tab_layout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="32dp"
+                            app:tabMode="fixed"
+                            app:tabGravity="fill"
+                            app:tabIndicatorColor="@color/green_see_all"
+                            app:tabSelectedTextColor="@color/green_see_all"
+                            app:tabTextColor="?attr/colorOnSurfaceVariant"
+                            android:background="@drawable/tab_background"/>
+
+                    <androidx.viewpager2.widget.ViewPager2
+                            android:id="@+id/view_pager"
+                            android:layout_width="match_parent"
+                            android:layout_height="400dp"
+                            android:layout_marginBottom="16dp"/>
+                </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+        </androidx.core.widget.NestedScrollView>
 
-        <!-- 3. The AppBarLayout is the SECOND child, so it is drawn ON TOP of the scroll view -->
+        <!-- Floating Toolbar -->
         <com.google.android.material.appbar.AppBarLayout
                 android:id="@+id/app_bar"
                 android:layout_width="match_parent"
@@ -204,22 +497,252 @@
                     android:layout_height="?attr/actionBarSize"
                     app:navigationIcon="@drawable/ic_arrow_back"
                     app:navigationIconTint="@android:color/white"
-                    app:title=""/>
+                    app:title=""
+                    android:background="@drawable/toolbar_gradient"/>
 
         </com.google.android.material.appbar.AppBarLayout>
 
     </FrameLayout>
 
+    <!-- Full-screen Loading Overlay -->
     <androidx.compose.ui.platform.ComposeView
             android:id="@+id/compose_progress"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#80000000"
+            android:background="@color/loading_overlay"
             android:clickable="true"
             android:focusable="true"
             android:visibility="gone"
+            android:elevation="10dp"
             tools:visibility="visible"/>
 
-
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+
+
+
+        <!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<androidx.coordinatorlayout.widget.CoordinatorLayout-->
+<!--        xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--        xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--        xmlns:tools="http://schemas.android.com/tools"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:background="?attr/colorSurface"-->
+<!--        android:fitsSystemWindows="true">-->
+
+<!--    &lt;!&ndash; 1. Use a FrameLayout to stack the content and the toolbar &ndash;&gt;-->
+<!--    <FrameLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent">-->
+
+<!--        &lt;!&ndash; 2. The NestedScrollView with all content is the FIRST child (the background layer) &ndash;&gt;-->
+<!--        <androidx.core.widget.NestedScrollView-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent">-->
+
+<!--            <LinearLayout-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:orientation="vertical">-->
+
+<!--                &lt;!&ndash; Header Image &ndash;&gt;-->
+<!--                <ImageView-->
+<!--                        android:id="@+id/anime_image"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="300dp"-->
+<!--                        android:scaleType="centerCrop"-->
+<!--                        tools:src="@tools:sample/backgrounds/scenic"/>-->
+
+<!--                &lt;!&ndash; Main Content Area &ndash;&gt;-->
+<!--                <LinearLayout-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:orientation="vertical"-->
+<!--                        android:padding="16dp">-->
+
+<!--                    &lt;!&ndash; Title and Icons &ndash;&gt;-->
+<!--                    <LinearLayout-->
+<!--                            android:layout_width="match_parent"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:gravity="center_vertical"-->
+<!--                            android:orientation="horizontal">-->
+
+<!--                        <TextView-->
+<!--                                android:id="@+id/anime_title"-->
+<!--                                android:layout_width="0dp"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:layout_weight="1"-->
+<!--                                android:textAppearance="?attr/textAppearanceHeadlineSmall"-->
+<!--                                android:textColor="@android:color/black"-->
+<!--                                android:textStyle="bold"-->
+<!--                                tools:text="Demon Slayer (Kimetsu no Yaiba)"-->
+<!--                                android:maxLines="1"-->
+<!--                                android:ellipsize="end" />-->
+
+<!--                        <ImageButton-->
+<!--                                android:id="@+id/btn_bookmark"-->
+<!--                                android:layout_width="wrap_content"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:src="@drawable/bookmark_24px"-->
+<!--                                android:background="?attr/selectableItemBackgroundBorderless"/>-->
+
+<!--                        <ImageButton-->
+<!--                                android:id="@+id/btn_share"-->
+<!--                                android:layout_width="wrap_content"-->
+<!--                                android:layout_height="wrap_content"-->
+<!--                                android:src="@drawable/share_24px"-->
+<!--                                android:background="?attr/selectableItemBackgroundBorderless"/>-->
+<!--                </LinearLayout>-->
+
+<!--                &lt;!&ndash; Metadata Row &ndash;&gt;-->
+<!--                <LinearLayout-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:orientation="horizontal"-->
+<!--                        android:gravity="center_vertical"-->
+<!--                        android:layout_marginTop="8dp">-->
+
+<!--                    <ImageView android:src="@drawable/ic_star" android:layout_width="16dp" android:layout_height="16dp" app:tint="@color/yellow_star"/>-->
+<!--                    <TextView android:id="@+id/anime_rating" android:layout_width="wrap_content" android:layout_height="wrap_content" tools:text="9.8" android:layout_marginStart="4dp"/>-->
+<!--                    <TextView android:id="@+id/anime_year" android:layout_width="wrap_content" android:layout_height="wrap_content" tools:text=">  2022" android:layout_marginStart="8dp"/>-->
+<!--                </LinearLayout>-->
+
+<!--                &lt;!&ndash; Tags Row &ndash;&gt;-->
+<!--                <com.google.android.material.chip.ChipGroup-->
+<!--                        android:id="@+id/anime_tags_chip_group"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginTop="4dp">-->
+<!--                    &lt;!&ndash; Chips will be added programmatically &ndash;&gt;-->
+<!--                </com.google.android.material.chip.ChipGroup>-->
+
+<!--                &lt;!&ndash; Play and Download Buttons &ndash;&gt;-->
+<!--                <LinearLayout-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:orientation="horizontal"-->
+<!--                        android:layout_marginTop="16dp">-->
+
+<!--                    <com.google.android.material.button.MaterialButton-->
+<!--                            android:id="@+id/btn_play"-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:text="Play"-->
+<!--                            app:icon="@drawable/ic_play_arrow"-->
+<!--                            app:backgroundTint="@color/green_play_button"/>-->
+
+<!--                    <com.google.android.material.button.MaterialButton-->
+<!--                            android:id="@+id/btn_download"-->
+<!--                            style="@style/Widget.Material3.Button.OutlinedButton"-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:text="Download"-->
+<!--                            app:icon="@drawable/ic_download"-->
+<!--                            android:layout_marginStart="12dp"/>-->
+<!--                </LinearLayout>-->
+
+<!--                &lt;!&ndash; Description &ndash;&gt;-->
+<!--                <TextView-->
+<!--                        android:id="@+id/anime_description"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginTop="16dp"-->
+<!--                        android:maxLines="3"-->
+<!--                        android:ellipsize="end"-->
+<!--                        tools:text="Genre: Action, Martial Arts...\nLorem ipsum dolor sit amet, consectetur adipiscing elit..."/>-->
+
+<!--                &lt;!&ndash; Episodes Section &ndash;&gt;-->
+<!--                <LinearLayout-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:orientation="horizontal"-->
+<!--                        android:gravity="center_vertical"-->
+<!--                        android:layout_marginTop="24dp">-->
+<!--                    <TextView-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:text="Episodes"-->
+<!--                            android:textAppearance="?attr/textAppearanceTitleLarge"-->
+<!--                            android:textStyle="bold"/>-->
+<!--                    <Spinner-->
+<!--                            android:id="@+id/season_spinner"-->
+<!--                            android:layout_width="wrap_content"-->
+<!--                            android:layout_height="wrap_content"/>-->
+<!--                </LinearLayout>-->
+
+<!--                &lt;!&ndash; This FrameLayout allows us to show a progress bar on top of where the list will be &ndash;&gt;-->
+<!--                <FrameLayout-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="120dp"-->
+<!--                        android:layout_marginTop="8dp">-->
+
+<!--                    <androidx.recyclerview.widget.RecyclerView-->
+<!--                            android:id="@+id/episodes_recycler_view"-->
+<!--                            android:layout_width="match_parent"-->
+<!--                            android:layout_height="match_parent"-->
+<!--                            android:orientation="horizontal"-->
+<!--                            android:clipToPadding="false"-->
+<!--                            tools:listitem="@layout/item_episode_horizontal"/>-->
+
+<!--                    <ProgressBar-->
+<!--                            android:id="@+id/episodes_progress_bar"-->
+<!--                            android:layout_width="wrap_content"-->
+<!--                            android:layout_height="wrap_content"-->
+<!--                            android:layout_gravity="center"-->
+<!--                            android:visibility="gone"-->
+<!--                            tools:visibility="visible"/>-->
+<!--                </FrameLayout>-->
+
+<!--                &lt;!&ndash; Tabs for More Like This / Comments &ndash;&gt;-->
+<!--                <com.google.android.material.tabs.TabLayout-->
+<!--                        android:id="@+id/tab_layout"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:layout_marginTop="24dp"/>-->
+
+<!--                <androidx.viewpager2.widget.ViewPager2-->
+<!--                        android:id="@+id/view_pager"-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="400dp"/>-->
+
+<!--            </LinearLayout>-->
+<!--        </LinearLayout>-->
+<!--    </androidx.core.widget.NestedScrollView>-->
+
+<!--        &lt;!&ndash; 3. The AppBarLayout is the SECOND child, so it is drawn ON TOP of the scroll view &ndash;&gt;-->
+<!--        <com.google.android.material.appbar.AppBarLayout-->
+<!--                android:id="@+id/app_bar"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:background="@android:color/transparent"-->
+<!--                app:elevation="0dp">-->
+
+<!--            <com.google.android.material.appbar.MaterialToolbar-->
+<!--                    android:id="@+id/toolbar"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="?attr/actionBarSize"-->
+<!--                    app:navigationIcon="@drawable/ic_arrow_back"-->
+<!--                    app:navigationIconTint="@android:color/white"-->
+<!--                    app:title=""/>-->
+
+<!--        </com.google.android.material.appbar.AppBarLayout>-->
+
+<!--    </FrameLayout>-->
+
+<!--    <androidx.compose.ui.platform.ComposeView-->
+<!--            android:id="@+id/compose_progress"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:background="#80000000"-->
+<!--            android:clickable="true"-->
+<!--            android:focusable="true"-->
+<!--            android:visibility="gone"-->
+<!--            tools:visibility="visible"/>-->
+
+
+
+<!--</androidx.coordinatorlayout.widget.CoordinatorLayout>-->
