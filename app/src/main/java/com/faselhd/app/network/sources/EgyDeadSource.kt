@@ -1,5 +1,7 @@
 package com.faselhd.app.network.sources
 
+import MivalyoExtractor
+import StreamGHExtractor
 import android.content.Context
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
@@ -41,6 +43,8 @@ class EgyDeadSource(private val context: Context) {
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val uqloadExtractor by lazy { UqloadExtractor(client) }
     private val bigWarpExtractor by lazy { BigWarpExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
+    private val haxloppdExtractor by lazy { StreamGHExtractor(client) }
     //endregion
 
     // ============================== Popular ===============================
@@ -208,6 +212,17 @@ class EgyDeadSource(private val context: Context) {
         }
     }
 
+    fun extractHglinkId(url: String): String? {
+        // Normalize scheme-less URLs
+        val normalized = if (url.startsWith("//")) "https:$url" else url
+
+        val regex = Regex(
+            pattern = """^https?://(?:www\.)?hglink\.to/e/([A-Za-z0-9]+)(?:[/?#]|$)""",
+            option = RegexOption.IGNORE_CASE
+        )
+        return regex.find(normalized)?.groupValues?.get(1)
+    }
+
     private fun extractVideosFromUrl(url: String): List<Video> {
         return when {
 //            DOOD_REGEX.matcher(url).find() -> doodExtractor.videosFromUrl(url, "Dood")
@@ -219,6 +234,8 @@ class EgyDeadSource(private val context: Context) {
             STREAMWISH_REGEX.matcher(url).find() -> streamWishExtractor.videosFromUrl(url)
             url.contains("uqload") || url.contains("upload") -> uqloadExtractor.videosFromUrl(url)
             url.contains("bigwarp") || url.contains("bigwarp.io") -> bigWarpExtractor.videosFromUrl(url)
+            url.contains("mivalyo") || url.contains("mivalyo.com") -> mivalyoExtractor.videosFromUrl(url)
+            url.contains("hglink") || url.contains("hglink.to") -> haxloppdExtractor.videosFromUrl("https://haxloppd.com/${extractHglinkId(url)}")
             url.contains("ahvsh") || url.contains("fanakishtuna") -> {
                 try {
                     val doc = Jsoup.parse(client.newCall(Request.Builder().url(url).build()).execute().body!!.string())

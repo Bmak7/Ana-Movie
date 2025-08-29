@@ -75,6 +75,13 @@
         <item name="thumbColor">?attr/colorPrimary</item>
     </style>
 
+    <style name="SearchViewTheme" parent="ThemeOverlay.AppCompat.Light">
+        <item name="colorControlNormal">@color/primary_light</item>
+        <item name="colorControlActivated">@color/primary_light</item>
+        <item name="android:textColorHint">@color/onPrimaryContainer_light</item>
+        <item name="android:textColor">@color/onPrimaryContainer_light</item>
+    </style>
+
     <style name="Player.Button" parent="Widget.AppCompat.ImageButton">
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
         <item name="android:layout_width">48dp</item>

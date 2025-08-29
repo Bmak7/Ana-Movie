@@ -217,5 +217,19 @@
     <string name="latest_episodes">أحدث الحلقات</string>
 
 
+    <string name="search_initial_message">Search for movies, series, and anime across all providers</string>
+    <string name="searching">Searching...</string>
+    <string name="search_failed">Search failed</string>
+    <string name="no_results_found">No results found</string>
+    <string name="results_count">%d results</string>
+    <string name="see_all_results">See All Results</string>
+    <string name="search_error_message">An error occurred during search: %s</string>
+    <string name="search_no_results">No results found for </string>
+
+    <!-- Filter chips -->
+    <string name="filter_tv_series">TV Series</string>
+    <string name="filter_asian">Asian</string>
+
+
 </resources>
 

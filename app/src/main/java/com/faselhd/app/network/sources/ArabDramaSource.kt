@@ -1,5 +1,6 @@
 package com.faselhd.app.network.sources
 
+import VoeExtractor
 import android.content.Context
 import android.util.Base64
 import com.faselhd.app.models.AnimeFilter // Make sure this import is correct
@@ -140,7 +141,7 @@ class ArabDramaSource(private val context: Context) {
     private val baseUrl = "https://www.arab-drama.me"
 
     private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
-    private val voeExtractor by lazy { VoeExtractor(client, json) }
+    private val voeExtractor by lazy { VoeExtractor(client) }
     private val doodExtractor by lazy { DoodExtractor(client) }
     private val vidBomExtractor by lazy { VidBomExtractor(client) }
     private val okruExtractor by lazy { OkruExtractor(client) }
@@ -346,8 +347,8 @@ class ArabDramaSource(private val context: Context) {
                         println("DEBUG: Found ${extractedVideos.size} videos from Mp4upload")
                     }
 
-                    "voe.sx" in serverUrl -> {
-                        val extractedVideos = voeExtractor.videosFromUrl(serverUrl, prefix = "Arab Drama")
+                    "voe.sx" in serverUrl || "voe" in serverUrl -> {
+                        val extractedVideos = voeExtractor.videosFromUrl(serverUrl)
                         videos.addAll(extractedVideos)
                         println("DEBUG: Found ${extractedVideos.size} videos from Voe")
                     }

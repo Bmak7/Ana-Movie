@@ -1,5 +1,6 @@
 package com.faselhd.app.network.sources
 
+import VoeExtractor
 import android.content.Context
 import com.faselhd.app.models.AnimeFilterList
 import com.faselhd.app.models.MangaPage
@@ -48,7 +49,7 @@ class OkAnimeSource(private val context: Context) {
     // --- Extractors ---
     // You already have Mp4upload and Voe. You will need to add the others later.
     private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
-    private val voeExtractor by lazy { VoeExtractor(client, json) }
+    private val voeExtractor by lazy { VoeExtractor(client) }
     private val doodExtractor by lazy { DoodExtractor(client) }
     private val vidBomExtractor by lazy { VidBomExtractor(client) }
     private val okruExtractor by lazy { OkruExtractor(client) }
@@ -213,8 +214,8 @@ class OkAnimeSource(private val context: Context) {
             "mp4upload" in url && selection.contains("Mp4upload") -> {
                 mp4uploadExtractor.videosFromUrl(url, prefix = "Okanime")
             }
-            "voe.sx" in url && selection.contains("Voe") -> {
-                voeExtractor.videosFromUrl(url, prefix = "Okanime")
+            "voe.sx" in url ||  "voe" in url -> {
+                voeExtractor.videosFromUrl(url)
             }
             // UNCOMMENT THE BLOCKS BELOW
             "https://doo" in url && "/e/" in url && selection.contains("Dood") -> {

@@ -15,8 +15,8 @@ android {
         minSdk = 26
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
-        versionCode = 9
-        versionName = "2.3.0"
+        versionCode = 10
+        versionName = "2.3.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -54,6 +54,17 @@ android {
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
+    }
+    packagingOptions {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}" // Exclude common license files
+            pickFirsts += "META-INF/DEPENDENCIES" // Pick the first DEPENDENCIES file it finds
+            pickFirsts += "META-INF/LICENSE"
+            pickFirsts += "META-INF/LICENSE.txt"
+            pickFirsts += "META-INF/NOTICE"
+            pickFirsts += "META-INF/NOTICE.txt"
+            pickFirsts += "org/apache/commons/logging/Log.class"
+        }
     }
     packaging {
         resources {
@@ -162,8 +173,18 @@ dependencies {
     implementation("com.airbnb.android:lottie:6.4.0")
 
 
+    // For Browser Automation
+    implementation("org.seleniumhq.selenium:selenium-java:4.22.0")
 
-            // Testing
+    // To automatically manage browser drivers
+    implementation("io.github.bonigarcia:webdrivermanager:5.9.1")
+
+    // For logging (optional, but good practice)
+    implementation("org.slf4j:slf4j-simple:2.0.13")
+
+
+
+    // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")

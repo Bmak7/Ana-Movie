@@ -1,5 +1,6 @@
 package com.faselhd.app.network.sources
 
+import VidmolyExtractor
 import android.content.Context
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
@@ -40,6 +41,7 @@ class Asia2TvSource(private val context: Context) {
     private val luluVdoExtractor by lazy { LuluVdoExtractor(client) }
     private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
     private val luluStream2Extractor by lazy { LuluStream2Extractor(client) }
+    private val vidmolyExtractor by lazy { VidmolyExtractor(client) }
 
     //endregion
 
@@ -226,7 +228,7 @@ class Asia2TvSource(private val context: Context) {
             val videos = when {
 //                "dood" in host || "ds2play" in host -> {
 //                    println("DEBUG: Using doodExtractor for: $host")
-                    url.contains("d-s.io" ) || url.contains("dood" )-> {
+                    url.contains("d-s.io" ) || url.contains("dood") ||url.contains("vide0") -> {
                         val doodUrl = getInstantFinalUrl(url)
                         println("doodUrl $doodUrl")
                         doodExtractor.videosFromUrl(doodUrl, "Doodstream")
@@ -256,9 +258,9 @@ class Asia2TvSource(private val context: Context) {
                     println("DEBUG: Using luluStream1Extractor for: $host")
                     luluStream1Extractor.videosFromUrl(url, pageReferer)
                 }
-                "kinoger.pw" in host || "kinoger" in host -> {
-                    println("DEBUG: Using luluStream2Extractor for: $host")
-                    luluStream2Extractor.videosFromUrl(url, pageReferer)
+                "vidmoly" in host || "vidmoly.net" in host -> {
+                    println("DEBUG: Using vidmolyExtractor for: $host")
+                    vidmolyExtractor.videosFromUrl(url)
                 }
 
 

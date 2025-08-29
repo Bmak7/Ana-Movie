@@ -13,6 +13,10 @@
     <color name="secondary_light">#5C6BC0</color> <!-- A secondary accent color (e.g., Indigo) -->
     <color name="onSecondary_light">#FFFFFF</color>
 
+    <!-- Additional colors for enhanced UI -->
+    <color name="primary_light_alpha">#4000C853</color>
+    <color name="search_background">#F1F8E9</color>
+
     <color name="background_light">#F5F5F5</color> <!-- Very light gray for main background -->
     <color name="onBackground_light">#121212</color> <!-- Dark text for readability -->
     <color name="surface_light">#FFFFFF</color> <!-- White for cards, sheets, dialogs -->

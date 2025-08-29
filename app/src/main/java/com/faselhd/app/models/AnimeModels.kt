@@ -151,6 +151,7 @@ data class SAnime(
         const val UNKNOWN = 0
         const val ONGOING = 1
         const val COMPLETED = 2
+        const val AUDIOBOOK = 3
         const val LICENSED = 3
         const val PUBLISHING_FINISHED = 4
         const val CANCELLED = 5
@@ -195,7 +196,7 @@ data class Video(
     var videoUrl: String,
     val resolution: String = "", // Assuming resolution might be empty for some videos
     val headers: Map<String, String>? = null,
-    val subtitles: List<Subtitle>? = null
+    var subtitles: List<Subtitle>? = null
 ): Parcelable
 
 

@@ -549,7 +549,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
         }
         selectionAdapter.submitList(allEpisodes.map { SelectableEpisode(it) })
 
-        val qualities = arrayOf("720p", "480p", "360p")
+        val qualities = arrayOf("1080","720p", "480p", "360p")
         qualitySpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, qualities)
 
 //        // Select All / Deselect All functionality

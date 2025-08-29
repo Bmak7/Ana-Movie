@@ -3,6 +3,7 @@ package com.faselhd.app
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -22,8 +23,10 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class ParentSearchActivity : AppCompatActivity(), SourceResultsBottomSheet.OnAnimeSelectedListener {
 
@@ -37,8 +40,17 @@ class ParentSearchActivity : AppCompatActivity(), SourceResultsBottomSheet.OnAni
     private val sourceManager by lazy { SourceManager(applicationContext) }
     private var searchJob: Job? = null
 
-    // Companion object to easily launch this activity
+    // For thread-safe updates to the results list
+    private val resultsMutex = Mutex()
+    private val currentResults = mutableListOf<SourceSearchResult>()
+    private var searchInProgress = false
+    private var completedSources = 0
+    private var totalSources = 0
+
     companion object {
+        private const val TAG = "ParentSearchActivity"
+        private const val SEARCH_TIMEOUT_MS = 30000L // 30 seconds per source
+
         fun newIntent(context: Context): Intent {
             return Intent(context, ParentSearchActivity::class.java)
         }
@@ -65,19 +77,15 @@ class ParentSearchActivity : AppCompatActivity(), SourceResultsBottomSheet.OnAni
     private fun setupRecyclerView() {
         parentAdapter = SearchParentAdapter(
             onAnimeClick = { anime ->
-                // Your existing openAnimeDetails logic
                 val intent = AnimeDetailsActivity.newIntent(this, anime, anime.source?.let { AnimeSource.valueOf(it) })
                 startActivity(intent)
             },
             onSeeAllClick = { sourceResult ->
-                // --- THIS IS THE NEW LOGIC ---
-                // Launch the Bottom Sheet
                 val bottomSheet = SourceResultsBottomSheet.newInstance(
                     sourceResult.source.displayName,
                     sourceResult.results
                 )
                 bottomSheet.show(supportFragmentManager, "SourceResultsBottomSheet")
-                // --- END OF NEW LOGIC ---
             }
         )
         parentRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -89,7 +97,7 @@ class ParentSearchActivity : AppCompatActivity(), SourceResultsBottomSheet.OnAni
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {
                     if (it.isNotBlank()) {
-                        performUnifiedSearch(it)
+                        performIncrementalSearch(it.trim())
                     }
                 }
                 searchView.clearFocus()
@@ -105,81 +113,179 @@ class ParentSearchActivity : AppCompatActivity(), SourceResultsBottomSheet.OnAni
             val chip = Chip(this).apply {
                 text = filterName
                 isCheckable = true
-                isChecked = true // Default to all selected
+                isChecked = true
             }
             filterChipGroup.addView(chip)
         }
     }
 
     override fun onAnimeSelected(anime: SAnime) {
-        // You already have the logic! Just copy it from your `onAnimeClick` lambda.
         val intent = AnimeDetailsActivity.newIntent(this, anime, anime.source?.let { AnimeSource.valueOf(it) })
         startActivity(intent)
     }
-    private fun performUnifiedSearch(query: String) {
-        // Cancel any previous search job to avoid race conditions
+
+    private fun getSelectedFilterType(): String {
+        val checkedChips = mutableListOf<String>()
+        for (i in 0 until filterChipGroup.childCount) {
+            val chip = filterChipGroup.getChildAt(i) as? Chip
+            if (chip?.isChecked == true) {
+                checkedChips.add(chip.text.toString().lowercase())
+            }
+        }
+
+        // Return appropriate type based on selection
+        return when {
+            checkedChips.contains("movies") -> "movie"
+            checkedChips.contains("tv series") -> "tv"
+            checkedChips.contains("anime") -> "anime"
+            else -> "movie" // Default
+        }
+    }
+
+    private fun performIncrementalSearch(query: String) {
         searchJob?.cancel()
+
+        // Reset state
+        searchInProgress = true
+        completedSources = 0
+        currentResults.clear()
 
         progressIndicator.visibility = View.VISIBLE
         emptyTextView.visibility = View.GONE
-        parentAdapter.updateData(emptyList()) // Clear previous results
+        parentAdapter.updateData(emptyList())
 
         searchJob = lifecycleScope.launch {
             try {
-                // Get all sources you want to search
-                val sourcesToSearch = sourceManager.getAllSources()
+                Log.d(TAG, "Starting incremental search for query: $query")
 
+                val sourcesToSearch = sourceManager.getAllSources()
+                totalSources = sourcesToSearch.size
+                val filterType = getSelectedFilterType()
+                val emptyFilterList = AnimeFilterList(emptyList())
+
+                Log.d(TAG, "Searching ${sourcesToSearch.size} sources with filter type: $filterType")
+
+                // Launch all searches concurrently, but update UI as each completes
                 val searchJobs = sourcesToSearch.map { source ->
                     async {
-                        try {
-                            val source_n = AnimeSource.valueOf(source.displayName.replace(" ", "_").uppercase())
-                            // Fetch search results for a single source
-                            val page = sourceManager.fetchSearchAnime(1, query, AnimeFilterList(emptyList()), "movie", source_n)
+                        val result = searchSingleSource(source, query, filterType, emptyFilterList)
 
-                            //
-                            // --- THIS IS THE FIX ---
-                            // Before creating the SourceSearchResult, loop through the manga list
-                            // and assign the source's name to each individual SAnime object.
-                            // We use .copy() as it's the standard practice for immutable data classes.
-                            val animeListWithSource = page.manga.map { anime ->
-                                anime.copy(source = source_n.name) // source_n.name gives the enum's string name
-                            }
-                            // --- END OF FIX ---
-                            //
-
-                            println("fff search parent (${source.displayName}): ${animeListWithSource.toString()}")
-                            // Now, pass the MODIFIED list to the SourceSearchResult
-                            SourceSearchResult(source, animeListWithSource)
-
-                        } catch (e: Exception) {
-                            // If a single source fails, return an empty result for it
-                            SourceSearchResult(source, emptyList())
+                        // Update UI immediately when this source completes
+                        if (result != null && result.results.isNotEmpty()) {
+                            updateUIWithNewResult(result)
                         }
+
+                        // Always increment completed count
+                        incrementCompletedSources()
+
+                        result
                     }
                 }
 
-                // Await all parallel searches to complete
-                val results = searchJobs.awaitAll()
+                // Wait for all to complete (this doesn't block UI updates)
+                searchJobs.forEach { it.await() }
 
-                // Filter out sources that returned no results
-                val successfulResults = results.filter { it.results.isNotEmpty() }
-
+                // Final cleanup
+                searchInProgress = false
                 progressIndicator.visibility = View.GONE
 
-                if (successfulResults.isEmpty()) {
+                Log.d(TAG, "Search completed. Total results: ${currentResults.size}/$totalSources sources")
+
+                // Show empty message if no results found
+                if (currentResults.isEmpty()) {
                     emptyTextView.text = "No results found for '$query'"
                     emptyTextView.visibility = View.VISIBLE
-                } else {
-                    parentAdapter.updateData(successfulResults)
                 }
 
             } catch (e: Exception) {
+                Log.e(TAG, "Error in incremental search", e)
+                searchInProgress = false
                 progressIndicator.visibility = View.GONE
-                emptyTextView.text = "An error occurred during search"
+                emptyTextView.text = "An error occurred during search: ${e.message}"
                 emptyTextView.visibility = View.VISIBLE
             }
         }
     }
 
+    private suspend fun updateUIWithNewResult(newResult: SourceSearchResult) {
+        resultsMutex.withLock {
+            // Add the new result to our list
+            currentResults.add(newResult)
 
+            // Update UI on main thread
+            lifecycleScope.launch {
+                Log.d(TAG, "Adding results from ${newResult.source.displayName}: ${newResult.results.size} items")
+
+                // Sort results by source name for consistent display
+                val sortedResults = currentResults.sortedBy { it.source.displayName }
+                parentAdapter.updateData(sortedResults)
+
+                // Hide empty text if we have results
+                if (emptyTextView.visibility == View.VISIBLE) {
+                    emptyTextView.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    private suspend fun incrementCompletedSources() {
+        resultsMutex.withLock {
+            completedSources++
+
+            // Update progress indicator if still searching
+            lifecycleScope.launch {
+                if (searchInProgress) {
+                    // You could update a progress text or progress bar here
+                    Log.d(TAG, "Progress: $completedSources/$totalSources sources completed")
+                }
+
+                // Hide progress when all sources are done
+                if (completedSources >= totalSources) {
+                    progressIndicator.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    private suspend fun searchSingleSource(
+        source: AnimeSource,
+        query: String,
+        filterType: String,
+        filterList: AnimeFilterList
+    ): SourceSearchResult? {
+        return try {
+            Log.d(TAG, "Searching source: ${source.displayName}")
+
+            val result = withTimeoutOrNull(SEARCH_TIMEOUT_MS) {
+                val page = sourceManager.fetchSearchAnime(1, query, filterList, filterType, source)
+
+                // Assign source to each anime result
+                val animeListWithSource = page.manga.map { anime ->
+                    // Create a copy with the source assigned
+                    anime.apply {
+                        this.source = source.name
+                    }
+                }
+
+                SourceSearchResult(source, animeListWithSource)
+            }
+
+            if (result == null) {
+                Log.w(TAG, "Search timeout for source: ${source.displayName}")
+                return null
+            }
+
+            Log.d(TAG, "Source ${source.displayName} returned ${result.results.size} results")
+            result
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error searching source ${source.displayName}", e)
+            null
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        searchJob?.cancel()
+    }
 }

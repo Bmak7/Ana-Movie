@@ -1,6 +1,8 @@
 package com.faselhd.app.utils
 
 
+import com.faselhd.app.models.Video
+import okhttp3.Headers.Companion.toHeaders
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
@@ -133,5 +135,56 @@ object M3u8Helper {
             )
         }
         return tsData
+    }
+
+    /**
+     * High-level function for online playback. Parses a master M3U8 playlist and returns
+     * a list of Video objects, one for each quality stream found.
+     *
+     * @param m3u8Url The URL of the master M3U8 playlist.
+     * @param headers A map of headers (like Referer) required to access the playlist.
+     * @return A list of Video objects sorted by quality.
+     */
+    fun extractVideoQualities(m3u8Url: String, headers: Map<String, String>): List<Video> {
+        try {
+            val request = Request.Builder().url(m3u8Url).headers(headers.toHeaders()).build()
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) return emptyList()
+
+            val masterPlaylist = response.body!!.string()
+            val masterBaseUrl = m3u8Url.substringBeforeLast("/")
+            val videoList = mutableListOf<Video>()
+
+            // Regex to find stream info (resolution) and its corresponding URL
+            val streamRegex = Regex("""#EXT-X-STREAM-INF:(?:.*?RESOLUTION=(\d+x\d+))?.*?\n(.*?)\s""")
+            streamRegex.findAll(masterPlaylist).forEach { match ->
+                val resolution = match.groups[1]?.value?.substringAfter('x') // e.g., "1920x1080" -> "1080"
+                val qualityLabel = if (resolution != null) "${resolution}p" else "Auto"
+                val streamUrl = match.groups[2]?.value?.trim()
+
+                if (streamUrl != null) {
+                    val fullUrl = if (streamUrl.startsWith("http")) streamUrl else "$masterBaseUrl/$streamUrl"
+                    videoList.add(
+                        Video(
+                            url = fullUrl,
+                            quality = qualityLabel,
+                            videoUrl = fullUrl,
+                            headers = headers // Pass original headers to the player
+                        )
+                    )
+                }
+            }
+
+            // If no streams were found, it might be a direct media playlist.
+            if (videoList.isEmpty() && masterPlaylist.contains("#EXTINF")) {
+                videoList.add(Video(m3u8Url, "Default", m3u8Url, headers = headers))
+            }
+
+            // Sort from highest quality to lowest
+            return videoList.sortedByDescending { it.quality.filter { q -> q.isDigit() }.toIntOrNull() ?: 0 }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return emptyList()
+        }
     }
 }

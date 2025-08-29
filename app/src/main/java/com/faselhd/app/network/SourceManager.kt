@@ -7,6 +7,7 @@ import com.faselhd.app.network.sources.*
 enum class AnimeSource(val displayName: String) {
     FASEL_HD("FASEL HD"),
     MY_CIMA("MY CIMA"),
+    Top_Cinema("Top Cinema"),
     ARAB_ANIME("ARAB ANIME"),
     ARAB_DRAMA("ARAB DRAMA"),
     OKANIME("OKANIME"),
@@ -20,6 +21,14 @@ enum class AnimeSource(val displayName: String) {
     HUHU("Huhu TV"),
     DADDY_LIVE("DaddyLive TV"),
     FREE_TV("Free TV"),
+    INTERNET_ARCHIVE("Internet Archive"),
+    ANIMERCO("ANIMERCO"),
+    UHDMOVIES("UHD Movies"),
+    WITANIME("WITANIME"),
+    DRAMADRIP("DRAMADRIP"),
+    ISQ("ISQ"),
+    ANIME4UP("ANIME4UP"),
+
 
 }
 
@@ -61,7 +70,14 @@ class SourceManager(private val context: Context) {
     private val huhuSource by lazy { HuhuSource(context) }
     private val daddyLiveSource by lazy { DaddyLiveSource(context) }
     private val freeTVSource by lazy { FreeTVSource(context) }
-
+    private val internetArchiveSource by lazy { InternetArchiveSource(context) }
+    private val animercoSource by lazy { AnimercoSource(context) }
+    private val witAnimeSource by lazy { WitAnimeSource(context) }
+    private val uhdMoviesSource by lazy { UHDMoviesSource(context) }
+    private val dramaDripSource by lazy { DramaDripSource(context) }
+    private val isqSource by lazy { IsqSource(context) }
+    private val anime4upSource by lazy { Anime4upSource(context) }
+    private val topCinemaSource by lazy { TopCinemaSource(context) }
     private val currentSource: AnimeSource
         get() = getSelectedSource(context)
 
@@ -83,6 +99,15 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchPopularSeries(page)
             AnimeSource.ANIME3RB -> MangaPage(emptyList(),false)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchPopularSeries(page)
+            AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchPopularSeries(page)
+            AnimeSource.WITANIME -> witAnimeSource.fetchLatestUpdates(page)
+            AnimeSource.ANIMERCO -> animercoSource.fetchPopularSeries(page)
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchPopularSeries(page)
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchPopularSeries(page)
+            AnimeSource.ISQ -> isqSource.fetchPopularSeries(page)
+            AnimeSource.ANIME4UP -> anime4upSource.fetchPopularSeries(page)
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchPopularSeries(page)
+
             AnimeSource.HUHU -> {
                 // Convert live TV channels to manga format for main screen
                 val channels = huhuSource.fetchAllChannelsByCountry()
@@ -147,7 +172,15 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchPopularSeries(page)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchLatestUpdates(1)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchLatestUpdates(page)
+            AnimeSource.WITANIME -> witAnimeSource.fetchLatestUpdates(page)
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchLatestUpdates(page)
 //            AnimeSource.ANIME3RB -> anime3rbSource.fetchPopularSeries(page)
+            AnimeSource.INTERNET_ARCHIVE -> MangaPage(emptyList(), false)
+            AnimeSource.ANIMERCO -> animercoSource.fetchLatestUpdates(page)
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchLatestUpdates(page)
+            AnimeSource.ANIME4UP -> anime4upSource.fetchPopularSeries(page)
+            AnimeSource.ISQ -> isqSource.fetchPopularSeries(page)
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchPopularSeries(page)
             AnimeSource.HUHU -> {
                 // For latest updates, show all channels grouped by country
                 val channels = huhuSource.fetchAllChannelsByCountry()
@@ -212,6 +245,14 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.ANIMERCO -> animercoSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.WITANIME -> witAnimeSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.ISQ -> isqSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.ANIME4UP -> anime4upSource.fetchSearchAnime(page, query, filters)
             AnimeSource.HUHU -> {
                 // Search within live TV channels
                 val searchResults = huhuSource.search(query)
@@ -273,6 +314,14 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.ANIMERCO -> animercoSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.WITANIME -> witAnimeSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.ISQ -> isqSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.ANIME4UP -> anime4upSource.fetchAnimeDetails(animeUrl)
             AnimeSource.HUHU -> {
                 // Create anime details from live TV channel data
                 try {
@@ -358,6 +407,14 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchEpisodeList(animeUrl)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchEpisodeList(animeUrl)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchEpisodeList(animeUrl)
+            AnimeSource.WITANIME -> witAnimeSource.fetchEpisodeList(animeUrl)
+            AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchEpisodeList(animeUrl)
+            AnimeSource.ANIMERCO -> animercoSource.fetchEpisodeList(animeUrl)
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchEpisodeList(animeUrl)
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchEpisodeList(animeUrl)
+            AnimeSource.ANIME4UP -> anime4upSource.fetchEpisodeList(animeUrl)
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchEpisodeList(animeUrl)
+            AnimeSource.ISQ -> isqSource.fetchEpisodeList(animeUrl)
             AnimeSource.HUHU -> {
                 // For live TV, create a single "episode" that represents the live stream
                 listOf(
@@ -407,6 +464,14 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchVideoList(episodeUrl)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchVideoList(episodeUrl)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchVideoList(episodeUrl)
+            AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchVideoList(episodeUrl)
+            AnimeSource.ANIMERCO -> animercoSource.fetchVideoList(episodeUrl)
+            AnimeSource.WITANIME -> witAnimeSource.fetchVideoList(episodeUrl)
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchVideoList(episodeUrl)
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchVideoList(episodeUrl)
+            AnimeSource.ISQ -> isqSource.fetchVideoList(episodeUrl)
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchVideoList(episodeUrl)
+            AnimeSource.ANIME4UP -> anime4upSource.fetchVideoList(episodeUrl)
             AnimeSource.HUHU -> {
                 // Get live stream link
                 val video = huhuSource.fetchLiveStreamLink(episodeUrl)
@@ -441,6 +506,14 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchMainSlider()
             AnimeSource.ANIME3RB -> anime3rbSource.fetchMainSlider()
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchLatestUpdatess(1)
+            AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchMainSlider()
+            AnimeSource.ANIMERCO -> animercoSource.fetchLatestUpdates(1).manga
+            AnimeSource.WITANIME -> witAnimeSource.fetchMainSlider()
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchMainSlider()
+            AnimeSource.ISQ -> isqSource.fetchMainSlider()
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchMainSlider()
+            AnimeSource.ANIME4UP -> anime4upSource.fetchLatestUpdates(1).manga
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchMainSlider()
             AnimeSource.HUHU -> {
                 // Create slider from featured live TV channels
                 val channels = huhuSource.fetchAllChannelsByCountry()
@@ -511,6 +584,14 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> emptyList()
             AnimeSource.ANIME3RB -> anime3rbSource.fetchHomePageLatestAnimes()
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchLatestUpdatess(1)
+            AnimeSource.INTERNET_ARCHIVE -> emptyList()
+            AnimeSource.ANIMERCO -> emptyList()
+            AnimeSource.WITANIME -> emptyList()
+            AnimeSource.UHDMOVIES -> emptyList()
+            AnimeSource.Top_Cinema -> topCinemaSource.fetchHomePageLatestEpisodes()
+            AnimeSource.DRAMADRIP -> dramaDripSource.fetchLatestUpdates(1).manga
+            AnimeSource.ISQ -> isqSource.fetchPopularSeries(1).manga
+            AnimeSource.ANIME4UP -> anime4upSource.fetchLatestUpdates(1).manga
             AnimeSource.HUHU -> {
                 // Show some popular live TV channels for "latest episodes"
                 val channels = huhuSource.fetchAllChannelsByCountry()
@@ -581,6 +662,14 @@ class SourceManager(private val context: Context) {
             AnimeSource.DADDY_LIVE -> AnimeFilterList(emptyList())
             AnimeSource.FREE_TV -> AnimeFilterList(emptyList()) // Live TV doesn't need complex filters
             AnimeSource.ARABICTOONS -> AnimeFilterList(emptyList())
+            AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.getFilterList()
+            AnimeSource.ANIMERCO -> animercoSource.getFilterList()
+            AnimeSource.WITANIME -> witAnimeSource.getFilterList()
+            AnimeSource.DRAMADRIP -> dramaDripSource.getFilterList()
+            AnimeSource.UHDMOVIES -> uhdMoviesSource.getFilterList()
+            AnimeSource.ISQ -> isqSource.getFilterList()
+            AnimeSource.Top_Cinema -> topCinemaSource.getFilterList()
+            AnimeSource.ANIME4UP ->AnimeFilterList(emptyList())
         }
     }
 
