@@ -50,6 +50,7 @@ import com.faselhd.app.adapters.SelectableEpisode
 import com.google.gson.Gson
 import android.media.MediaPlayer
 import android.widget.SeekBar
+import androidx.core.view.isVisible
 import java.io.IOException
 
 
@@ -110,6 +111,15 @@ class AnimeDetailsActivity : AppCompatActivity() {
     private var audioUrl: String? = null
     private var audioUpdateHandler = android.os.Handler()
     private var audioUpdateRunnable: Runnable? = null
+
+    // Add these new views to your existing view declarations
+    private lateinit var searchView: SearchView
+    private lateinit var searchContainer: LinearLayout
+    private lateinit var btnToggleSearch: ImageButton
+
+    // Add this to track search state
+    private var isSearchVisible = false
+    private var originalEpisodesList: List<EpisodeWithHistory> = emptyList()
 
 
 
@@ -361,7 +371,15 @@ class AnimeDetailsActivity : AppCompatActivity() {
         rootLayout = findViewById(android.R.id.content)
         btnToggleEpisodesLayout = findViewById(R.id.btn_toggle_episodes_layout)
         episodesListContainer = findViewById(R.id.episodes_list_container)
+
+        // Add these new view initializations
+        searchView = findViewById(R.id.search_view)
+        searchContainer = findViewById(R.id.search_container)
+        btnToggleSearch = findViewById(R.id.btn_toggle_search)
+
         rootLayout = findViewById(android.R.id.content)
+
+
     }
 
     private fun setupToolbar() {
@@ -469,6 +487,119 @@ class AnimeDetailsActivity : AppCompatActivity() {
         btnToggleEpisodesLayout.setOnClickListener {
             isEpisodeLayoutHorizontal = !isEpisodeLayoutHorizontal
             updateEpisodesLayout()
+        }
+
+        // Add search toggle functionality
+        btnToggleSearch.setOnClickListener {
+            toggleSearchVisibility()
+        }
+
+        // Setup search functionality
+        setupSearchView()
+    }
+
+    private fun setupSearchView() {
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                filterEpisodes(newText ?: "")
+                return true
+            }
+        })
+
+        // Handle search view close
+        searchView.setOnCloseListener {
+            if (isSearchVisible) {
+                toggleSearchVisibility()
+            }
+            false
+        }
+
+        // Handle search view expansion/collapse
+        searchView.setOnSearchClickListener {
+            // Search view is being opened
+        }
+    }
+
+    private fun toggleSearchVisibility() {
+        isSearchVisible = !isSearchVisible
+
+        if (isSearchVisible) {
+            // Show search
+            searchContainer.isVisible = true
+            searchView.requestFocus()
+            searchView.isIconified = false
+            btnToggleSearch.setImageResource(R.drawable.ic_close)
+
+            // Store original list for filtering
+            val currentSeason = getCurrentSelectedSeason()
+            originalEpisodesList = episodesBySeason[currentSeason] ?: emptyList()
+        } else {
+            // Hide search
+            searchContainer.isVisible = false
+            searchView.setQuery("", false)
+            searchView.clearFocus()
+            searchView.isIconified = true
+            btnToggleSearch.setImageResource(R.drawable.ic_search)
+
+            // Restore original list
+            episodeAdapter.submitList(originalEpisodesList)
+        }
+    }
+
+    private fun filterEpisodes(query: String) {
+        if (!isSearchVisible || originalEpisodesList.isEmpty()) return
+
+        val filteredList = if (query.isBlank()) {
+            originalEpisodesList
+        } else {
+            originalEpisodesList.filter { episodeWithHistory ->
+                val episode = episodeWithHistory.episode
+
+                // Search in episode name
+                val nameMatch = episode.name?.contains(query, ignoreCase = true) == true
+
+                // Search in episode number (extract number from name)
+                val numberMatch = try {
+                    val episodeNumber = extractEpisodeNumber(episode.name ?: "")
+                    episodeNumber?.toString()?.contains(query, ignoreCase = true) == true
+                } catch (e: Exception) {
+                    false
+                }
+
+                nameMatch || numberMatch
+            }
+        }
+
+        episodeAdapter.submitList(filteredList)
+
+        // Show empty state if no results
+        if (filteredList.isEmpty() && query.isNotBlank()) {
+            showSnackbar("No episodes found for '$query'", false)
+        }
+    }
+
+    private fun extractEpisodeNumber(episodeName: String): Int? {
+        return try {
+            // Try to extract number from patterns like "Episode 1", "Ep 1", "01", etc.
+            val regex = Regex("""(?:Episode|Ep|E)?[\s]*(\d+)""", RegexOption.IGNORE_CASE)
+            val matchResult = regex.find(episodeName)
+            matchResult?.groupValues?.get(1)?.toIntOrNull()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun getCurrentSelectedSeason(): String {
+        val seasonNames = episodesBySeason.keys.toList().sorted()
+        val selectedPosition = seasonSpinner.selectedItemPosition
+        return if (selectedPosition >= 0 && selectedPosition < seasonNames.size) {
+            seasonNames[selectedPosition]
+        } else {
+            seasonNames.firstOrNull() ?: "Season 1"
         }
     }
 
@@ -840,7 +971,17 @@ class AnimeDetailsActivity : AppCompatActivity() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (position < seasonNames.size) {
                     val selectedSeason = seasonNames[position]
-                    episodeAdapter.submitList(episodesBySeason[selectedSeason])
+                    val episodes = episodesBySeason[selectedSeason] ?: emptyList()
+
+                    // Update original list for search
+                    originalEpisodesList = episodes
+
+                    // If search is active, re-filter with current query
+                    if (isSearchVisible && !searchView.query.isNullOrBlank()) {
+                        filterEpisodes(searchView.query.toString())
+                    } else {
+                        episodeAdapter.submitList(episodes)
+                    }
                 }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -848,9 +989,13 @@ class AnimeDetailsActivity : AppCompatActivity() {
 
         // Set initial selection
         if (seasonNames.isNotEmpty()) {
-            episodeAdapter.submitList(episodesBySeason[seasonNames.first()])
+            val initialEpisodes = episodesBySeason[seasonNames.first()] ?: emptyList()
+            originalEpisodesList = initialEpisodes
+            episodeAdapter.submitList(initialEpisodes)
         }
     }
+
+
 
     private fun checkIfFavorite() {
         lifecycleScope.launch {
@@ -937,14 +1082,26 @@ class AnimeDetailsActivity : AppCompatActivity() {
         }
     }
 
+    override fun onBackPressed() {
+        if (isSearchVisible) {
+            toggleSearchVisibility()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        // Refresh favorite status and episode progress when returning to the activity
         checkIfFavorite()
         if (allEpisodes.isNotEmpty()) {
             lifecycleScope.launch {
                 processAndDisplayEpisodes(allEpisodes)
             }
+        }
+
+        // Clear search if it was active
+        if (isSearchVisible) {
+            searchView.setQuery("", false)
         }
     }
 }

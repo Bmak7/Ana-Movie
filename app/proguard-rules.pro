@@ -19,3 +19,17 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep data classes
+-keep class com.musicplayer.data.model.** { *; }
+
+# Keep Hilt generated classes
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+
+# Keep Room database classes
+-keep class androidx.room.** { *; }
+
+# Keep Media3 classes
+-keep class androidx.media3.** { *; }
+

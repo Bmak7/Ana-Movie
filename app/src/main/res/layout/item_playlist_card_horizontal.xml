@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:tools="http://schemas.android.com/tools"
+                                                   android:layout_width="140dp"
+                                                   android:layout_height="wrap_content"
+                                                   android:layout_marginHorizontal="8dp"
+                                                   android:clickable="true"
+                                                   android:focusable="true"
+                                                   android:foreground="?attr/selectableItemBackground"
+                                                   app:cardCornerRadius="12dp"
+                                                   app:cardElevation="3dp"
+                                                   app:cardBackgroundColor="@color/card_background">
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+        <!-- Playlist Artwork Container -->
+        <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="124dp"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp">
+
+            <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                <ImageView
+                        android:id="@+id/playlist_artwork"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/placeholder_anime"
+                        tools:src="@tools:sample/backgrounds/scenic" />
+
+                <!-- Play Overlay -->
+                <View
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/gradient_overlay"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                <!-- Play Button -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/play_button"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Play playlist"
+                        android:visibility="gone"
+                        app:backgroundTint="@color/colorPrimary"
+                        app:fabCustomSize="36dp"
+                        app:maxImageSize="20dp"
+                        app:srcCompat="@drawable/ic_play_arrow"
+                        app:tint="@color/white"
+                        tools:visibility="visible" />
+
+                <!-- Quality Badge -->
+                <TextView
+                        android:id="@+id/quality_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="6dp"
+                        android:background="@drawable/quality_badge_background"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:text="HD"
+                        android:textColor="@color/white"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+            </FrameLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Playlist Title -->
+        <TextView
+                android:id="@+id/playlist_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="Amazing Playlist Name" />
+
+        <!-- Playlist Creator/Artist -->
+        <TextView
+                android:id="@+id/playlist_creator"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                tools:text="Artist Name" />
+
+        <!-- Song Count or Additional Info -->
+        <TextView
+                android:id="@+id/playlist_info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_tertiary"
+                android:textSize="11sp"
+                android:visibility="gone"
+                tools:text="12 songs • 45 min"
+                tools:visibility="visible" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
+                                                   xmlns:tools="http://schemas.android.com/tools"
+                                                   android:id="@+id/song_card"
+                                                   android:layout_width="match_parent"
+                                                   android:layout_height="wrap_content"
+                                                   android:layout_marginHorizontal="8dp"
+                                                   android:layout_marginVertical="4dp"
+                                                   android:clickable="true"
+                                                   android:focusable="true"
+                                                   android:foreground="?attr/selectableItemBackground"
+                                                   app:cardCornerRadius="12dp"
+                                                   app:cardElevation="2dp"
+                                                   app:cardBackgroundColor="@color/card_background"
+                                                   app:strokeColor="@color/card_stroke"
+                                                   app:strokeWidth="0.5dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp">
+
+        <!-- Song Artwork -->
+        <com.google.android.material.card.MaterialCardView
+                android:id="@+id/artwork_card"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                    android:id="@+id/song_artwork"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/placeholder_anime"
+                    tools:src="@tools:sample/avatars" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Song Title -->
+        <TextView
+                android:id="@+id/song_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@+id/duration_container"
+                app:layout_constraintStart_toEndOf="@+id/artwork_card"
+                app:layout_constraintTop_toTopOf="@+id/artwork_card"
+                tools:text="Song Title Here" />
+
+        <!-- Artist Name -->
+        <TextView
+                android:id="@+id/song_artist"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="@+id/song_title"
+                app:layout_constraintStart_toStartOf="@+id/song_title"
+                app:layout_constraintTop_toBottomOf="@+id/song_title"
+                tools:text="Artist Name" />
+
+        <!-- Play Count -->
+        <TextView
+                android:id="@+id/song_play_count"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:drawablePadding="4dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_tertiary"
+                android:textSize="12sp"
+                app:drawableStartCompat="@drawable/playlist_play_24px"
+                app:drawableTint="@color/text_tertiary"
+                app:layout_constraintEnd_toEndOf="@+id/song_artist"
+                app:layout_constraintStart_toStartOf="@+id/song_artist"
+                app:layout_constraintTop_toBottomOf="@+id/song_artist"
+                tools:text="1.2M plays" />
+
+        <!-- Duration Container -->
+        <LinearLayout
+                android:id="@+id/duration_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="@+id/artwork_card"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/artwork_card">
+
+            <!-- Duration -->
+            <TextView
+                    android:id="@+id/song_duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/duration_chip_background"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="3:45" />
+
+            <!-- More Options Button -->
+            <ImageButton
+                    android:id="@+id/btn_more_options"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginTop="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="More options"
+                    android:padding="2dp"
+                    android:src="@drawable/ic_more_vert"
+                    app:tint="@color/text_secondary" />
+
+        </LinearLayout>
+
+        <!-- Quality Indicator (Optional) -->
+        <View
+                android:id="@+id/quality_indicator"
+                android:layout_width="4dp"
+                android:layout_height="0dp"
+                android:layout_marginEnd="2dp"
+                android:background="@drawable/quality_indicator_background"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@+id/artwork_card"
+                app:layout_constraintEnd_toStartOf="@+id/artwork_card"
+                app:layout_constraintTop_toTopOf="@+id/artwork_card"
+                tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

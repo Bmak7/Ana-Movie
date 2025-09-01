@@ -157,10 +157,17 @@ class IsqSource(private val context: Context) {
         val request = Request.Builder().url(animeUrl).build()
         val document = Jsoup.parse(client.newCall(request).execute().body!!.string())
 
+        // First, get the anime name/season name from the main page
+        val animeNameAsSeason = document.selectFirst("h1.title, h1.anime-title, div.anime-info h1, h1")?.text() ?: "الموسم 1"
+
         document.select("section.allepcont div.Small--Box.series a.recent--block").map {
             SEpisode().apply {
                 this.url = it.attr("href")
-                this.name = it.select("div.title").text()
+
+                // Format the name to be "Anime Name : Episode Name" like function 1
+                val episodeName = it.select("div.title").text()
+                this.name = "$animeNameAsSeason : $episodeName"
+
                 this.episode_number = it.select("div.number em").text().toFloatOrNull() ?: 0f
             }
         }.reversed() // Episodes are usually listed newest first
@@ -243,6 +250,10 @@ class IsqSource(private val context: Context) {
                 "vidbom" in url -> {
                     Log.d(TAG, "🎯 Using vidbomExtractor")
                     vidbomExtractor.videosFromUrl(url)
+                }
+                "vidmoly" in url || "vidmoly.net" in url -> {
+                    println("DEBUG: Using vidmolyExtractor for: $url")
+                    vidmolyExtractor.videosFromUrl(url)
                 }
                 else -> {
                     Log.d(TAG, "⚠️ No extractor found for url=$url")

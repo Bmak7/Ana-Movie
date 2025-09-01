@@ -10,6 +10,7 @@ enum class AnimeSource(val displayName: String) {
     Top_Cinema("Top Cinema"),
     ARAB_ANIME("ARAB ANIME"),
     ARAB_DRAMA("ARAB DRAMA"),
+    ARABDRAMA2("ARABDRAMA2"),
     OKANIME("OKANIME"),
     NETFLIX_MIRROR("NETFLIX MIRROR"),
     PRIME_VIDEO_MIRROR("PRIME VIDEO MIRROR"),
@@ -58,6 +59,8 @@ class SourceManager(private val context: Context) {
     private val faselHDSource by lazy { FaselHDSource(context) }
     private val myCimaSource by lazy { MyCimaSource(context) }
     private val arabAnimeSource by lazy { ArabAnimeSource(context) }
+    private val arabDrama2Source by lazy { ArabDrama2Source(context) }
+
     private val okAnimeSource by lazy { OkAnimeSource(context) }
     private val arabDramSource by lazy { ArabDramaSource(context) }
     private val netflixMirrorSource by lazy { NetflixMirrorSource(context) }
@@ -92,6 +95,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> arabAnimeSource.fetchPopularSeries(page)
             AnimeSource.OKANIME -> okAnimeSource.fetchPopularSeries(page)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchPopularSeries(page)
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchPopularSeries(page)
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchPopularSeries(page)
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchPopularSeries(page)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchPopularSeries(page)
@@ -165,6 +169,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> arabAnimeSource.fetchLatestUpdates(page)
             AnimeSource.OKANIME -> okAnimeSource.fetchPopularSeries(page)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchPopularSeries(page)
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchPopularSeries(page)
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchPopularSeries(page)
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchPopularSeries(page)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchPopularSeries(page)
@@ -238,6 +243,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> arabAnimeSource.fetchSearchAnime(page, query, filters)
             AnimeSource.OKANIME -> okAnimeSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchSearchAnime(page, query, filters)
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchSearchAnime(page, query, filters)
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchSearchAnime(page, query, filters)
@@ -307,6 +313,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> arabAnimeSource.fetchAnimeDetails(animeUrl)
             AnimeSource.OKANIME -> okAnimeSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchAnimeDetails(animeUrl)
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchAnimeDetails(animeUrl)!!
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchAnimeDetails(animeUrl)!!
             AnimeSource.ASIA2TV -> asia2TvSource.fetchAnimeDetails(animeUrl)
@@ -400,6 +407,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> arabAnimeSource.fetchEpisodeList(animeUrl)
             AnimeSource.OKANIME -> okAnimeSource.fetchEpisodeList(animeUrl)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchEpisodeList(animeUrl)
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchEpisodeList(animeUrl)
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchEpisodeList(animeUrl)
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchEpisodeList(animeUrl)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchEpisodeList(animeUrl)
@@ -457,6 +465,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> arabAnimeSource.fetchVideoList(episodeUrl)
             AnimeSource.OKANIME -> okAnimeSource.fetchVideoList(episodeUrl)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchVideoList(episodeUrl)
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchVideoList(episodeUrl)
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchVideoList(episodeUrl)
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchVideoList(episodeUrl)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchVideoList(episodeUrl)
@@ -499,6 +508,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> arabAnimeSource.fetchMainSlider()
             AnimeSource.OKANIME -> okAnimeSource.fetchMainSlider()
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchMainSlider()
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchMainSlider()
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchMainSlider()
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchMainSlider()
             AnimeSource.ASIA2TV -> asia2TvSource.fetchMainSlider()
@@ -577,6 +587,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_ANIME -> emptyList()
             AnimeSource.OKANIME -> okAnimeSource.fetchLatestUpdates(1)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchLatestUpdates(1)
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchHomePageLatestEpisodes()
             AnimeSource.NETFLIX_MIRROR -> emptyList()
             AnimeSource.PRIME_VIDEO_MIRROR -> emptyList()
             AnimeSource.ASIA2TV -> emptyList()
@@ -670,6 +681,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ISQ -> isqSource.getFilterList()
             AnimeSource.Top_Cinema -> topCinemaSource.getFilterList()
             AnimeSource.ANIME4UP ->AnimeFilterList(emptyList())
+            AnimeSource.ARABDRAMA2 -> arabDrama2Source.getFilterList()
         }
     }
 

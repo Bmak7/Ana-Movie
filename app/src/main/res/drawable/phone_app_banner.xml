@@ -1,0 +1,57 @@
+<svg width="108" height="108" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background with rounded corners -->
+    <defs>
+        <linearGradient id="iconBgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0d2818;stop-opacity:1" />
+            <stop offset="30%" style="stop-color:#1a3d2e;stop-opacity:1" />
+            <stop offset="70%" style="stop-color:#0f2027;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0d2818;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="playGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#00ff87;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#4ade80;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#22c55e;stop-opacity:1" />
+        </linearGradient>
+        <filter id="iconGlow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        <filter id="shadow">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+        </filter>
+    </defs>
+
+    <!-- Main background circle -->
+    <circle cx="54" cy="54" r="50" fill="url(#iconBgGradient)" filter="url(#shadow)"/>
+
+    <!-- Outer ring -->
+    <circle cx="54" cy="54" r="46" fill="none" stroke="url(#playGradient)" stroke-width="2" opacity="0.6"/>
+
+    <!-- Play button container -->
+    <circle cx="54" cy="54" r="28" fill="url(#playGradient)" opacity="0.9" filter="url(#iconGlow)"/>
+
+    <!-- Play triangle -->
+    <polygon points="45,40 45,68 70,54" fill="white" filter="url(#iconGlow)"/>
+
+    <!-- Streaming dots/signals -->
+    <g opacity="0.7">
+        <circle cx="30" cy="30" r="3" fill="#4ade80">
+            <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="78" cy="30" r="3" fill="#22c55e">
+            <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="30" cy="78" r="3" fill="#00ff87">
+            <animate attributeName="opacity" values="0.7;0.3;0.7" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="78" cy="78" r="3" fill="#4ade80">
+            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+    </g>
+
+    <!-- Small "A" letter in corner for branding -->
+    <text x="20" y="25" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#4ade80" opacity="0.8"></text>
+</svg>

@@ -24,6 +24,10 @@
             android:name="android.software.leanback"
             android:required="false" />
 
+    <uses-feature
+            android:name="android.software.leanback"
+            android:required="false" />
+
     <!-- This allows the app to appear on the TV homescreen launcher -->
     <uses-feature
             android:name="android.hardware.touchscreen"
@@ -73,12 +77,19 @@
         <activity
                 android:name="com.faselhd.app.MainActivity"
                 android:exported="true"
-                android:theme="@style/Theme.MyApplication">
+                android:theme="@style/Theme.MyApplication"
+                android:banner="@drawable/app_banner"> <!-- Recommended TV banner -->
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <!-- Phone/Tablet launcher -->
                 <category android:name="android.intent.category.LAUNCHER" />
+                <!-- Android TV launcher -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+
 
         <activity
                 android:name="com.faselhd.app.VideoPlayerActivity"

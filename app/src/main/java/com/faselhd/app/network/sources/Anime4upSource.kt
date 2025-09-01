@@ -1,26 +1,71 @@
 package com.faselhd.app.network.sources
 
+import VidmolyExtractor
 import android.content.Context
+import android.os.Build
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.extractors.*
+import com.faselhd.app.utils.Tls12SocketFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.TlsVersion
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 class Anime4upSource(private val context: Context) {
 
     private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
+        val clientBuilder = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val request = original.newBuilder()
+                    .header("User-Agent", FaselHDSource.USER_AGENT)
+                    .header("Referer", baseUrl)
+                    .build()
+                chain.proceed(request)
+            }
+
+        if (Build.VERSION.SDK_INT in 16..21) { // Apply for Jelly Bean up to Lollipop
+            try {
+                val sc = SSLContext.getInstance("TLSv1.2")
+                sc.init(null, null, null)
+                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                trustManagerFactory.init(null as java.security.KeyStore?)
+                val trustManagers = trustManagerFactory.trustManagers
+                if (trustManagers.size != 1 || trustManagers[0] !is X509TrustManager) {
+                    throw IllegalStateException("Unexpected default trust managers:" + java.util.Arrays.toString(trustManagers))
+                }
+                val trustManager = trustManagers[0] as X509TrustManager
+
+                // Pass our custom Tls12SocketFactory
+                clientBuilder.sslSocketFactory(Tls12SocketFactory(sc.socketFactory), trustManager)
+
+                // Optional: Force a connection spec that includes modern cipher suites
+                val cs = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_2)
+                    .build()
+                clientBuilder.connectionSpecs(Collections.singletonList(cs))
+            } catch (e: Exception) {
+                // Could not enable TLSv1.2, older devices might still fail.
+                // Log the error for debugging.
+                e.printStackTrace()
+            }
+        }
+
+        clientBuilder.build()
+
     }
+
 
     private val baseUrl = "https://ww.anime4up.rest"
 
@@ -29,6 +74,7 @@ class Anime4upSource(private val context: Context) {
     private val streamTapeExtractor by lazy { StreamTapeExtractor(client) }
     private val uqloadExtractor by lazy { UqloadExtractor(client) }
     private val vidBomExtractor by lazy { VidBomExtractor(client) }
+    private val vidmolyExtractor by lazy { VidmolyExtractor(client) }
     private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
     private val okruExtractor by lazy { OkruExtractor(client) }
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
@@ -61,7 +107,7 @@ class Anime4upSource(private val context: Context) {
                     this.url = animeLink.attr("href")
                     this.title = animeLink.text()
                     // Use the episode's image as the anime thumbnail
-                    this.thumbnail_url = element.selectFirst("div.episodes-card img")?.attr("data-image")
+                    this.thumbnail_url = element.selectFirst("div.episodes-card img")?.attr("data-image")?:element.selectFirst("div.episodes-card img")?.attr("src") ?:element.selectFirst("div.episodes-card img")?.attr("data-src")?:element.selectFirst("div.episodes-card img")?.attr("data-image")
                     this.source = AnimeSource.ANIME4UP.name
                 }
             } else {
@@ -77,7 +123,7 @@ class Anime4upSource(private val context: Context) {
         val linkElement = element.selectFirst("a.overlay")
         return SAnime().apply {
             url = linkElement?.attr("href") ?: ""
-            thumbnail_url = element.selectFirst("img")?.attr("src")
+            thumbnail_url = element.selectFirst("img")?.attr("data-src") ?: element.selectFirst("img")?.attr("src")
             title = element.selectFirst("div.anime-card-title h3 a")?.text() ?: "No Title"
             source = AnimeSource.ANIME4UP.name
         }
@@ -164,31 +210,53 @@ class Anime4upSource(private val context: Context) {
 
     // ============================== Episodes ==============================
     suspend fun fetchEpisodeList(animeUrl: String): List<SEpisode> = withContext(Dispatchers.IO) {
-        val document = Jsoup.parse(client.newCall(Request.Builder().url(animeUrl).build()).execute().body!!.string())
+        val allEpisodes = mutableListOf<SEpisode>()
+        var currentPageUrl = animeUrl
 
-        // Select episode containers from the episodes list
-        val episodeElements = document.select("div.DivEpisodeContainer")
+        // First, get the anime name/season name from the main page
+        val mainDocument = Jsoup.parse(client.newCall(Request.Builder().url(animeUrl).build()).execute().body!!.string())
+        val animeNameAsSeason = mainDocument.selectFirst("h1.title")?.text() ?: "الموسم 1"
 
-        return@withContext episodeElements.mapNotNull { container ->
-            val linkElement = container.selectFirst("a")
-            val titleElement = container.selectFirst("h3 a")
+        while (true) {
+            val document = Jsoup.parse(client.newCall(Request.Builder().url(currentPageUrl).build()).execute().body!!.string())
 
-            if (linkElement != null && titleElement != null) {
-                SEpisode().apply {
-                    url = linkElement.attr("href")
-                    name = titleElement.text()
+            // Select episode containers from the current page
+            val episodeElements = document.select("div.DivEpisodeContainer")
 
-                    // Extract episode number from Arabic text like "الحلقة 1"
-                    val episodeText = name
-                    val episodeNumberMatch = Regex("الحلقة\\s*(\\d+)").find(episodeText!!)
-                    episode_number = episodeNumberMatch?.groupValues?.get(1)?.toFloatOrNull() ?: 0f
+            val episodesOnPage = episodeElements.mapNotNull { container ->
+                val linkElement = container.selectFirst("a")
+                val titleElement = container.selectFirst("h3 a")
 
-                    date_upload = System.currentTimeMillis()
+                if (linkElement != null && titleElement != null) {
+                    SEpisode().apply {
+                        url = linkElement.attr("href")
+
+                        // Format the name to be "Anime Name : Episode Name" like function 1
+                        val episodeName = titleElement.text()
+                        name = "$animeNameAsSeason : $episodeName"
+
+                        // Extract episode number from Arabic text like "الحلقة 1"
+                        val episodeNumberMatch = Regex("الحلقة\\s*(\\d+)").find(episodeName)
+                        episode_number = episodeNumberMatch?.groupValues?.get(1)?.toFloatOrNull() ?: 0f
+
+                        date_upload = System.currentTimeMillis() // Or parse from page if available
+                    }
+                } else {
+                    null
                 }
-            } else {
-                null
             }
-        }.reversed() // Reverse to get episode 1 first
+            allEpisodes.addAll(episodesOnPage)
+
+            // Check for the "next page" link to continue scraping
+            val nextPageElement = document.selectFirst("div.pagination a.next")
+            if (nextPageElement != null) {
+                currentPageUrl = nextPageElement.attr("href") // Get the URL for the next page
+            } else {
+                break // No more pages, exit the loop
+            }
+        }
+
+        return@withContext allEpisodes // Reverse the complete list to get episode 1 first
     }
 
     // ============================ Video Links =============================
@@ -210,6 +278,10 @@ class Anime4upSource(private val context: Context) {
             "streamtape" in url -> streamTapeExtractor.videosFromUrl(url)
             "uqload" in url -> uqloadExtractor.videosFromUrl(url)
             "yourupload" in url -> yourUploadExtractor.videosFromUrl(url)
+            "vidmoly" in url || "vidmoly.net" in url -> {
+                println("DEBUG: Using vidmolyExtractor for: $url")
+                vidmolyExtractor.videosFromUrl(url)
+            }
             "vidmoly" in url -> vidBomExtractor.videosFromUrl(url) // Vidmoly might work with Vidbom
             "voe.sx" in url -> {
                 // Placeholder for VoeExtractor if you have one.

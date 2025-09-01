@@ -10,29 +10,38 @@ import com.faselhd.app.models.Download
 import com.faselhd.app.models.Favorite
 import com.faselhd.app.models.WatchHistory
 
-@Database(entities = [WatchHistory::class, Download::class, Favorite::class], version = 12)
-@androidx.room.TypeConverters(com.faselhd.app.db.TypeConverters::class, com.faselhd.app.db.EpisodeListConverter::class)
+@Database(
+    entities = [WatchHistory::class, Download::class, Favorite::class],
+    version = 14
+)
+@androidx.room.TypeConverters(
+    com.faselhd.app.db.TypeConverters::class,
+    com.faselhd.app.db.EpisodeListConverter::class
+)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun watchHistoryDao(): WatchHistoryDao
     abstract fun downloadDao(): DownloadDao
     abstract fun favoriteDao(): FavoriteDao
 
+
     companion object {
 
-        // ADD THE MIGRATION OBJECT
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Add the new 'isFinished' column to the existing table,
-                // with a default value of 0 (false) for all old rows.
                 db.execSQL("ALTER TABLE favorites ADD COLUMN source TEXT")
             }
         }
 
-        // ADD THE NEW MIGRATION
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Drop the tables you don’t want
+                db.execSQL("DROP TABLE IF EXISTS liked_songs")
+                db.execSQL("DROP TABLE IF EXISTS music_history")
+            }
+        }
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Add the new 'animeUrl' column. The default value is an empty string.
                 db.execSQL("ALTER TABLE watch_history ADD COLUMN animeUrl TEXT")
             }
         }
@@ -71,7 +80,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "anime_app_database"
                 )
-//                    .addMigrations(MIGRATION_1_2)
+                    // Uncomment if you want migrations instead of destructive
+                     .addMigrations(MIGRATION_13_14)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

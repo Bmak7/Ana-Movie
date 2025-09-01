@@ -3,18 +3,22 @@ package com.faselhd.app.network.sources
 import MivalyoExtractor
 import StreamGHExtractor
 import android.content.Context
+import android.os.Build
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.extractors.*
+import com.faselhd.app.utils.Tls12SocketFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.FormBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.*
 import org.jsoup.Jsoup
 import java.io.IOException
+import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 class EgyDeadSource(private val context: Context) {
 
@@ -22,19 +26,46 @@ class EgyDeadSource(private val context: Context) {
     //  THE FIX: Add an Interceptor to the client to automatically add a User-Agent header
     // =========================================================================
     private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+        val clientBuilder = OkHttpClient.Builder()
             .addInterceptor { chain ->
-                val originalRequest = chain.request()
-                val newRequest = originalRequest.newBuilder()
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0")
+                val original = chain.request()
+                val request = original.newBuilder()
+                    .header("User-Agent", FaselHDSource.USER_AGENT)
+                    .header("Referer", baseUrl)
                     .build()
-                chain.proceed(newRequest)
+                chain.proceed(request)
             }
-            .build()
-    }
 
+        if (Build.VERSION.SDK_INT in 16..21) { // Apply for Jelly Bean up to Lollipop
+            try {
+                val sc = SSLContext.getInstance("TLSv1.2")
+                sc.init(null, null, null)
+                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                trustManagerFactory.init(null as java.security.KeyStore?)
+                val trustManagers = trustManagerFactory.trustManagers
+                if (trustManagers.size != 1 || trustManagers[0] !is X509TrustManager) {
+                    throw IllegalStateException("Unexpected default trust managers:" + java.util.Arrays.toString(trustManagers))
+                }
+                val trustManager = trustManagers[0] as X509TrustManager
+
+                // Pass our custom Tls12SocketFactory
+                clientBuilder.sslSocketFactory(Tls12SocketFactory(sc.socketFactory), trustManager)
+
+                // Optional: Force a connection spec that includes modern cipher suites
+                val cs = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_2)
+                    .build()
+                clientBuilder.connectionSpecs(Collections.singletonList(cs))
+            } catch (e: Exception) {
+                // Could not enable TLSv1.2, older devices might still fail.
+                // Log the error for debugging.
+                e.printStackTrace()
+            }
+        }
+
+        clientBuilder.build()
+
+    }
     private val baseUrl = "https://tv2.egydead.live/"
 
     //region Extractors
@@ -225,26 +256,89 @@ class EgyDeadSource(private val context: Context) {
 
     private fun extractVideosFromUrl(url: String): List<Video> {
         return when {
-//            DOOD_REGEX.matcher(url).find() -> doodExtractor.videosFromUrl(url, "Dood")
-            url.contains("d-s.io" ) || url.contains("dood" )-> {
+            //            DOOD_REGEX.matcher(url).find() -> doodExtractor.videosFromUrl(url, "Dood")
+            url.contains("d-s.io") || url.contains("dood") -> {
+                println("DEBUG: Processing Doodstream URL: $url")
                 val doodUrl = getFinalDoodUrl(url)
-                doodExtractor.videosFromUrl(doodUrl, "Doodstream")
+                println("DEBUG: Final Dood URL: $doodUrl")
+                val result = doodExtractor.videosFromUrl(doodUrl, "Doodstream")
+                println("DEBUG: Doodstream extraction result: ${result.size} videos found")
+                result
             }
-            url.contains("mixdrop" ) || url.contains("mxdrop" ) || url.contains("mx" ) -> mixDropExtractor.videosFromUrl(url)
-            STREAMWISH_REGEX.matcher(url).find() -> streamWishExtractor.videosFromUrl(url)
-            url.contains("uqload") || url.contains("upload") -> uqloadExtractor.videosFromUrl(url)
-            url.contains("bigwarp") || url.contains("bigwarp.io") -> bigWarpExtractor.videosFromUrl(url)
-            url.contains("mivalyo") || url.contains("mivalyo.com") -> mivalyoExtractor.videosFromUrl(url)
-            url.contains("hglink") || url.contains("hglink.to") -> haxloppdExtractor.videosFromUrl("https://haxloppd.com/${extractHglinkId(url)}")
+            url.contains("mixdrop") || url.contains("mxdrop") || url.contains("mx") -> {
+                println("DEBUG: Processing MixDrop URL: $url")
+                val result = mixDropExtractor.videosFromUrl(url)
+                println("DEBUG: MixDrop extraction result: ${result.size} videos found")
+                result
+            }
+            STREAMWISH_REGEX.matcher(url).find() -> {
+                println("DEBUG: Processing StreamWish URL: $url")
+                val result = streamWishExtractor.videosFromUrl(url)
+                println("DEBUG: StreamWish extraction result: ${result.size} videos found")
+                result
+            }
+            url.contains("uqload") || url.contains("upload") -> {
+                println("DEBUG: Processing Uqload URL: $url")
+                val result = uqloadExtractor.videosFromUrl(url)
+                println("DEBUG: Uqload extraction result: ${result.size} videos found")
+                result
+            }
+//            url.contains("bigwarp") || url.contains("bigwarp.io") -> {
+//                println("DEBUG: Processing BigWarp URL: $url")
+//                val result = bigWarpExtractor.videosFromUrl(url)
+//                println("DEBUG: BigWarp extraction result: ${result.size} videos found")
+//                result
+//            }
+            url.contains("mivalyo") || url.contains("mivalyo.com") -> {
+                println("DEBUG: Processing Mivalyo URL: $url")
+                val result = mivalyoExtractor.videosFromUrl(url)
+                println("DEBUG: Mivalyo extraction result: ${result.size} videos found")
+                result
+            }
+            url.contains("hglink") || url.contains("hglink.to") -> {
+                println("DEBUG: Processing Hglink URL: $url")
+                val extractedId = extractHglinkId(url)
+                println("DEBUG: Extracted Hglink ID: $extractedId")
+                val haxloppdUrl = "https://haxloppd.com/$extractedId"
+                println("DEBUG: Haxloppd URL: $haxloppdUrl")
+                val result = haxloppdExtractor.videosFromUrl(haxloppdUrl)
+                println("DEBUG: Haxloppd extraction result: ${result.size} videos found")
+                result
+            }
             url.contains("ahvsh") || url.contains("fanakishtuna") -> {
+                println("DEBUG: Processing AHVSH/Fanakishtuna URL: $url")
                 try {
-                    val doc = Jsoup.parse(client.newCall(Request.Builder().url(url).build()).execute().body!!.string())
+                    val response = client.newCall(Request.Builder().url(url).build()).execute()
+                    println("DEBUG: HTTP Response code: ${response.code}")
+                    val htmlBody = response.body!!.string()
+                    println("DEBUG: HTML body length: ${htmlBody.length}")
+
+                    val doc = Jsoup.parse(htmlBody)
                     val script = doc.selectFirst("script:containsData(sources)")?.data() ?: ""
+                    println("DEBUG: Script found: ${script.isNotEmpty()}, length: ${script.length}")
+
                     val videoUrl = Regex("""file:\s*["']([^"']+)""").find(script)?.groupValues?.get(1)
-                    if (videoUrl != null) listOf(Video(videoUrl, "Mirror", videoUrl)) else emptyList()
-                } catch (e: Exception) { emptyList() }
+                    println("DEBUG: Extracted video URL: $videoUrl")
+
+                    val result = if (videoUrl != null) {
+                        val videos = listOf(Video(videoUrl, "Mirror", videoUrl))
+                        println("DEBUG: AHVSH extraction successful: ${videos.size} videos found")
+                        videos
+                    } else {
+                        println("DEBUG: AHVSH extraction failed - no video URL found")
+                        emptyList()
+                    }
+                    result
+                } catch (e: Exception) {
+                    println("DEBUG: AHVSH extraction error: ${e.message}")
+                    e.printStackTrace()
+                    emptyList()
+                }
             }
-            else -> emptyList()
+            else -> {
+                println("DEBUG: No matching extractor found for URL: $url")
+                emptyList()
+            }
         }
     }
 

@@ -15,8 +15,8 @@ android {
         minSdk = 26
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
-        versionCode = 10
-        versionName = "2.3.2"
+        versionCode = 12
+        versionName = "2.3.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -86,6 +86,7 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
+
     // Lifecycle & ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
@@ -104,7 +105,7 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:2.7.5")
 
     // Compose BOM
-    implementation(platform("androidx.compose:compose-bom:2023.10.01"))
+    implementation(platform("androidx.compose:compose-bom:2024.05.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -137,12 +138,16 @@ dependencies {
     implementation("org.jsoup:jsoup:1.16.2")
 
     // Image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.github.bumptech.glide:glide:4.16.0")
     kapt("com.github.bumptech.glide:compiler:4.16.0")
 
     // Shimmer effect
     implementation("com.facebook.shimmer:shimmer:0.5.0")
+    implementation("androidx.compose.material:material-icons-extended:1.7.2")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
 
+    implementation("androidx.paging:paging-compose:3.2.1")
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
@@ -182,6 +187,13 @@ dependencies {
     // For logging (optional, but good practice)
     implementation("org.slf4j:slf4j-simple:2.0.13")
 
+    // Hilt for dependency injection
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    kapt("com.google.dagger:hilt-compiler:2.51.1")
+
+
+    implementation("jp.wasabeef:glide-transformations:4.3.0")
 
 
     // Testing

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 13,
-    "identityHash": "e53e87c84f3a0813e4c34d2b9b00fd43",
+    "identityHash": "90a5da3787c07aed485f1eea96c4eb5c",
     "entities": [
       {
         "tableName": "watch_history",
@@ -207,136 +207,12 @@
         },
         "indices": [],
         "foreignKeys": []
-      },
-      {
-        "tableName": "manga_favorites",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`mangaUrl` TEXT NOT NULL, `title` TEXT, `thumbnailUrl` TEXT, `source` TEXT NOT NULL, `dateAdded` INTEGER NOT NULL, PRIMARY KEY(`mangaUrl`))",
-        "fields": [
-          {
-            "fieldPath": "mangaUrl",
-            "columnName": "mangaUrl",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "title",
-            "columnName": "title",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "thumbnailUrl",
-            "columnName": "thumbnailUrl",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "source",
-            "columnName": "source",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "dateAdded",
-            "columnName": "dateAdded",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "mangaUrl"
-          ]
-        },
-        "indices": [],
-        "foreignKeys": []
-      },
-      {
-        "tableName": "manga_read_history",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`chapterUrl` TEXT NOT NULL, `mangaUrl` TEXT NOT NULL, `mangaTitle` TEXT, `mangaThumbnailUrl` TEXT, `chapterName` TEXT, `chapterNumber` TEXT NOT NULL, `lastReadPage` INTEGER NOT NULL, `totalPages` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `isFinished` INTEGER NOT NULL, `source` TEXT NOT NULL, PRIMARY KEY(`chapterUrl`))",
-        "fields": [
-          {
-            "fieldPath": "chapterUrl",
-            "columnName": "chapterUrl",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "mangaUrl",
-            "columnName": "mangaUrl",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "mangaTitle",
-            "columnName": "mangaTitle",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "mangaThumbnailUrl",
-            "columnName": "mangaThumbnailUrl",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "chapterName",
-            "columnName": "chapterName",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "chapterNumber",
-            "columnName": "chapterNumber",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "lastReadPage",
-            "columnName": "lastReadPage",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "totalPages",
-            "columnName": "totalPages",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "timestamp",
-            "columnName": "timestamp",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "isFinished",
-            "columnName": "isFinished",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "source",
-            "columnName": "source",
-            "affinity": "TEXT",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "chapterUrl"
-          ]
-        },
-        "indices": [],
-        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e53e87c84f3a0813e4c34d2b9b00fd43')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '90a5da3787c07aed485f1eea96c4eb5c')"
     ]
   }
 }

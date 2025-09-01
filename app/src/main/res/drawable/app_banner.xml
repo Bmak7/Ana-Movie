@@ -1,0 +1,52 @@
+<svg width="320" height="180" viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background gradient -->
+    <defs>
+        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0d2818;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#1a3d2e;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f2027;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00ff87;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#4ade80;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#22c55e;stop-opacity:1" />
+        </linearGradient>
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+
+    <!-- Background -->
+    <rect width="320" height="180" fill="url(#bgGradient)" rx="8"/>
+
+    <!-- Decorative elements -->
+    <circle cx="280" cy="40" r="30" fill="#4ade80" opacity="0.1"/>
+    <circle cx="40" cy="140" r="25" fill="#00ff87" opacity="0.1"/>
+    <circle cx="260" cy="130" r="20" fill="#22c55e" opacity="0.1"/>
+
+    <!-- Play button icon -->
+    <g transform="translate(40, 60)">
+        <circle cx="30" cy="30" r="25" fill="#4ade80" opacity="0.9" filter="url(#glow)"/>
+        <polygon points="22,18 22,42 40,30" fill="white"/>
+    </g>
+
+    <!-- App title -->
+    <text x="100" y="75" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="url(#textGradient)" filter="url(#glow)">
+    </text>
+
+
+    <!-- Subtitle -->
+    <text x="100" y="100" font-family="Arial, sans-serif" font-size="14" fill="#ffffff" opacity="0.8">
+    </text>
+
+    <!-- Streaming lines decoration -->
+    <g opacity="0.3">
+        <line x1="100" y1="115" x2="250" y2="115" stroke="#4ade80" stroke-width="2"/>
+        <line x1="100" y1="125" x2="220" y2="125" stroke="#22c55e" stroke-width="2"/>
+        <line x1="100" y1="135" x2="200" y2="135" stroke="#00ff87" stroke-width="2"/>
+    </g>
+</svg>
