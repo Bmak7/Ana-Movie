@@ -14,11 +14,14 @@ import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.*
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import java.util.regex.Pattern
+import javax.net.ssl.TrustManager
 
 class ArabicToonsSource(private val context: Context) {
     companion object {
@@ -45,8 +48,23 @@ class ArabicToonsSource(private val context: Context) {
     private val baseUrl: String
         get() = getBaseUrl(context)
 
+
+    val trustAllCerts = arrayOf<TrustManager>(
+        object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+    )
+
+    val sslContext = SSLContext.getInstance("SSL").apply {
+        init(null, trustAllCerts, SecureRandom())
+    }
+
+
     private val client: OkHttpClient by lazy {
         val clientBuilder = OkHttpClient.Builder()
+            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
             .addInterceptor { chain ->
                 val original = chain.request()
                 val request = original.newBuilder()

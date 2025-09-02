@@ -15,8 +15,11 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.TlsVersion
 import org.jsoup.Jsoup
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.*
 import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
@@ -26,8 +29,21 @@ class ArabDrama2Source(private val context: Context) {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
     }
 
+    val trustAllCerts = arrayOf<TrustManager>(
+        object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+    )
+
+    val sslContext = SSLContext.getInstance("SSL").apply {
+        init(null, trustAllCerts, SecureRandom())
+    }
+
     private val client: OkHttpClient by lazy {
         val clientBuilder = OkHttpClient.Builder()
+            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
             .addInterceptor { chain ->
                 val original = chain.request()
                 val request = original.newBuilder()

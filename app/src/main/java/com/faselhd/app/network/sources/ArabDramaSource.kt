@@ -23,7 +23,12 @@ import okhttp3.RequestBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import uy.kohesive.injekt.injectLazy
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 // DTOs (Data Transfer Objects) for ArabAnime API responses
 @Serializable
@@ -129,8 +134,22 @@ private class StatusFilterr : QueryPartFilterr("الحالة", STATUS_LIST)
 
 class ArabDramaSource(private val context: Context) {
 
+    val trustAllCerts = arrayOf<TrustManager>(
+        object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+    )
+
+    val sslContext = SSLContext.getInstance("SSL").apply {
+        init(null, trustAllCerts, SecureRandom())
+    }
+
+
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
+            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

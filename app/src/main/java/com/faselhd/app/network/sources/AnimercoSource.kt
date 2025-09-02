@@ -18,12 +18,30 @@ import kotlin.math.roundToInt
 
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.regex.Pattern
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 class AnimercoSource(private val context: Context) {
 
+    val trustAllCerts = arrayOf<TrustManager>(
+        object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+    )
+
+    val sslContext = SSLContext.getInstance("SSL").apply {
+        init(null, trustAllCerts, SecureRandom())
+    }
+
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
+            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

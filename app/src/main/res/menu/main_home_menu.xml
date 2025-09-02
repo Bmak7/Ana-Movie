@@ -7,11 +7,6 @@
             android:icon="@drawable/ic_search"
             android:title="Search"
             app:showAsAction="ifRoom|collapseActionView" />
-    <item
-            android:id="@+id/action_music_search"
-            android:icon="@drawable/ic_search"
-            android:title="Searzch"
-            app:showAsAction="ifRoom|collapseActionView" />
 
     <item
             android:id="@+id/action_notifications"
