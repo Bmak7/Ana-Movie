@@ -2,16 +2,18 @@ package com.faselhd.app.network.sources
 
 import android.content.Context
 import android.os.Build
+import androidx.preference.PreferenceManager
+import com.example.myapplication.R
 import com.faselhd.app.models.*
-import com.faselhd.app.utils.PlaylistUtils
-import com.faselhd.app.utils.Tls12SocketFactory
-import com.faselhd.app.utils.WebViewResolver
+import com.faselhd.app.utils.*
+import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.*
@@ -60,50 +62,80 @@ class FaselHDSource(private val context: Context)  {
         init(null, trustAllCerts, SecureRandom())
     }
 
+    val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
     private val client: OkHttpClient by lazy {
-        val clientBuilder = OkHttpClient.Builder()
+        OkHttpClient.Builder()
+            .followRedirects(true)
             .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .hostnameVerifier { _, _ -> true }
-            .addInterceptor { chain ->
-                val original = chain.request()
-                val request = original.newBuilder()
-                    .header("User-Agent", USER_AGENT)
-                    .header("Referer", baseUrl)
-                    .build()
-                chain.proceed(request)
-            }
+            .followSslRedirects(true)
 
-        if (Build.VERSION.SDK_INT in 16..21) { // Apply for Jelly Bean up to Lollipop
-            try {
-                val sc = SSLContext.getInstance("TLSv1.2")
-                sc.init(null, null, null)
-                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-                trustManagerFactory.init(null as java.security.KeyStore?)
-                val trustManagers = trustManagerFactory.trustManagers
-                if (trustManagers.size != 1 || trustManagers[0] !is X509TrustManager) {
-                    throw IllegalStateException("Unexpected default trust managers:" + java.util.Arrays.toString(trustManagers))
+            .cache(
+                // Note that you need to add a ResponseInterceptor to make this 100% active.
+                // The server response dictates if and when stuff should be cached.
+                Cache(
+                    directory = File(context.cacheDir, "http_cache"),
+                    maxSize = 50L * 1024L * 1024L // 50 MiB
+                )
+            ).apply {
+                when (dns) {
+                    1 -> addGoogleDns()
+                    2 -> addCloudFlareDns()
+//                3 -> addOpenDns()
+                    4 -> addAdGuardDns()
+                    5 -> addDNSWatchDns()
+                    6 -> addQuad9Dns()
+                    7 -> addDnsSbDns()
+                    8 -> addCanadianShieldDns()
                 }
-                val trustManager = trustManagers[0] as X509TrustManager
-
-                // Pass our custom Tls12SocketFactory
-                clientBuilder.sslSocketFactory(Tls12SocketFactory(sc.socketFactory), trustManager)
-
-                // Optional: Force a connection spec that includes modern cipher suites
-                val cs = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .tlsVersions(TlsVersion.TLS_1_2)
-                    .build()
-                clientBuilder.connectionSpecs(Collections.singletonList(cs))
-            } catch (e: Exception) {
-                // Could not enable TLSv1.2, older devices might still fail.
-                // Log the error for debugging.
-                e.printStackTrace()
             }
-        }
-
-        clientBuilder.
-        build()
-
+            // Needs to be build as otherwise the other builders will change this object
+            .build()
     }
+//    private val client: OkHttpClient by lazy {
+//        val clientBuilder = OkHttpClient.Builder()
+//            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+//            .hostnameVerifier { _, _ -> true }
+//            .addInterceptor { chain ->
+//                val original = chain.request()
+//                val request = original.newBuilder()
+//                    .header("User-Agent", USER_AGENT)
+//                    .header("Referer", baseUrl)
+//                    .build()
+//                chain.proceed(request)
+//            }
+//
+//        if (Build.VERSION.SDK_INT in 16..21) { // Apply for Jelly Bean up to Lollipop
+//            try {
+//                val sc = SSLContext.getInstance("TLSv1.2")
+//                sc.init(null, null, null)
+//                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+//                trustManagerFactory.init(null as java.security.KeyStore?)
+//                val trustManagers = trustManagerFactory.trustManagers
+//                if (trustManagers.size != 1 || trustManagers[0] !is X509TrustManager) {
+//                    throw IllegalStateException("Unexpected default trust managers:" + java.util.Arrays.toString(trustManagers))
+//                }
+//                val trustManager = trustManagers[0] as X509TrustManager
+//
+//                // Pass our custom Tls12SocketFactory
+//                clientBuilder.sslSocketFactory(Tls12SocketFactory(sc.socketFactory), trustManager)
+//
+//                // Optional: Force a connection spec that includes modern cipher suites
+//                val cs = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+//                    .tlsVersions(TlsVersion.TLS_1_2)
+//                    .build()
+//                clientBuilder.connectionSpecs(Collections.singletonList(cs))
+//            } catch (e: Exception) {
+//                // Could not enable TLSv1.2, older devices might still fail.
+//                // Log the error for debugging.
+//                e.printStackTrace()
+//            }
+//        }
+//
+//        clientBuilder.
+//        build()
+//
+//    }
 
     // ============================== Popular ===============================
     private fun popularSeriesSelector(): String = "div#postList div.col-xl-2 a"

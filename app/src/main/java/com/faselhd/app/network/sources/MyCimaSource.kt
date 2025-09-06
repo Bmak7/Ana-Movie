@@ -2,15 +2,19 @@ package com.faselhd.app.network.sources
 
 import android.content.Context
 import android.os.Build
+import androidx.preference.PreferenceManager
+import com.example.myapplication.R
 import com.faselhd.app.models.*
 import com.faselhd.app.network.extractors.UqloadExtractor
 import com.faselhd.app.network.extractors.VidBomExtractor
-import com.faselhd.app.utils.Tls12SocketFactory
+import com.faselhd.app.utils.*
+import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.*
@@ -18,6 +22,8 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
+
+
 
 class MyCimaSource(private val context: Context) {
     companion object {
@@ -59,6 +65,35 @@ class MyCimaSource(private val context: Context) {
         init(null, trustAllCerts, SecureRandom())
     }
 
+//    val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+//    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 2)
+//    private val client: OkHttpClient by lazy {
+//        OkHttpClient.Builder()
+//            .followRedirects(true)
+//            .followSslRedirects(true)
+//            .ignoreAllSSLErrors()
+//            .cache(
+//                // Note that you need to add a ResponseInterceptor to make this 100% active.
+//                // The server response dictates if and when stuff should be cached.
+//                Cache(
+//                    directory = File(context.cacheDir, "http_cache"),
+//                    maxSize = 50L * 1024L * 1024L // 50 MiB
+//                )
+//            ).apply {
+//                when (dns) {
+//                    1 -> addGoogleDns()
+//                    2 -> addCloudFlareDns()
+////                3 -> addOpenDns()
+//                    4 -> addAdGuardDns()
+//                    5 -> addDNSWatchDns()
+//                    6 -> addQuad9Dns()
+//                    7 -> addDnsSbDns()
+//                    8 -> addCanadianShieldDns()
+//                }
+//            }
+//            // Needs to be build as otherwise the other builders will change this object
+//            .build()
+//    }
     private val client: OkHttpClient by lazy {
         val clientBuilder = OkHttpClient.Builder()
             .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)

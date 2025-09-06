@@ -3,9 +3,11 @@ package com.arabictoons.app.network.sources
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.preference.PreferenceManager
+import com.example.myapplication.R
 import com.faselhd.app.models.* // Assuming these models are generic enough to be reused
-import com.faselhd.app.utils.PlaylistUtils
-import com.faselhd.app.utils.Tls12SocketFactory
+import com.faselhd.app.utils.*
+import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -14,6 +16,7 @@ import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.*
@@ -62,40 +65,69 @@ class ArabicToonsSource(private val context: Context) {
     }
 
 
+    val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
     private val client: OkHttpClient by lazy {
-        val clientBuilder = OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .addInterceptor { chain ->
-                val original = chain.request()
-                val request = original.newBuilder()
-                    .header("User-Agent", USER_AGENT)
-                    .header("Referer", baseUrl)
-                    .build()
-                chain.proceed(request)
-            }
-
-        if (Build.VERSION.SDK_INT in 16..21) {
-            try {
-                val sc = SSLContext.getInstance("TLSv1.2")
-                sc.init(null, null, null)
-                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-                trustManagerFactory.init(null as java.security.KeyStore?)
-                val trustManagers = trustManagerFactory.trustManagers
-                if (trustManagers.size != 1 || trustManagers[0] !is X509TrustManager) {
-                    throw IllegalStateException("Unexpected default trust managers:" + Arrays.toString(trustManagers))
+        OkHttpClient.Builder()
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .ignoreAllSSLErrors()
+            .cache(
+                // Note that you need to add a ResponseInterceptor to make this 100% active.
+                // The server response dictates if and when stuff should be cached.
+                Cache(
+                    directory = File(context.cacheDir, "http_cache"),
+                    maxSize = 50L * 1024L * 1024L // 50 MiB
+                )
+            ).apply {
+                when (dns) {
+                    1 -> addGoogleDns()
+                    2 -> addCloudFlareDns()
+//                3 -> addOpenDns()
+                    4 -> addAdGuardDns()
+                    5 -> addDNSWatchDns()
+                    6 -> addQuad9Dns()
+                    7 -> addDnsSbDns()
+                    8 -> addCanadianShieldDns()
                 }
-                val trustManager = trustManagers[0] as X509TrustManager
-                clientBuilder.sslSocketFactory(Tls12SocketFactory(sc.socketFactory), trustManager)
-                val cs = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .tlsVersions(TlsVersion.TLS_1_2)
-                    .build()
-                clientBuilder.connectionSpecs(Collections.singletonList(cs))
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
-        }
-        clientBuilder.build()
+            // Needs to be build as otherwise the other builders will change this object
+            .build()
     }
+//    private val client: OkHttpClient by lazy {
+//        val clientBuilder = OkHttpClient.Builder()
+//            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+//            .addInterceptor { chain ->
+//                val original = chain.request()
+//                val request = original.newBuilder()
+//                    .header("User-Agent", USER_AGENT)
+//                    .header("Referer", baseUrl)
+//                    .build()
+//                chain.proceed(request)
+//            }
+//
+//        if (Build.VERSION.SDK_INT in 16..21) {
+//            try {
+//                val sc = SSLContext.getInstance("TLSv1.2")
+//                sc.init(null, null, null)
+//                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+//                trustManagerFactory.init(null as java.security.KeyStore?)
+//                val trustManagers = trustManagerFactory.trustManagers
+//                if (trustManagers.size != 1 || trustManagers[0] !is X509TrustManager) {
+//                    throw IllegalStateException("Unexpected default trust managers:" + Arrays.toString(trustManagers))
+//                }
+//                val trustManager = trustManagers[0] as X509TrustManager
+//                clientBuilder.sslSocketFactory(Tls12SocketFactory(sc.socketFactory), trustManager)
+//                val cs = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+//                    .tlsVersions(TlsVersion.TLS_1_2)
+//                    .build()
+//                clientBuilder.connectionSpecs(Collections.singletonList(cs))
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//        clientBuilder.build()
+//    }
 
     private val playlistUtils by lazy { PlaylistUtils(client) }
 

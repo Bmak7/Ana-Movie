@@ -230,6 +230,9 @@
     <string name="filter_tv_series">TV Series</string>
     <string name="filter_asian">Asian</string>
 
+    <string name="dns_pref">Dns Pref</string>
+
+
 
 </resources>
 

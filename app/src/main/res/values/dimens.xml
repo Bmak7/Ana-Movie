@@ -85,4 +85,39 @@
     <!-- TV Navigation Sidebar -->
     <dimen name="tv_sidebar_width">200dp</dimen>
 
+    <dimen name="tv_item_spacing">12dp</dimen>
+    <dimen name="tv_grid_spacing">12dp</dimen>
+    <dimen name="tv_button_height">56dp</dimen>
+    <dimen name="tv_card_elevation">4dp</dimen>
+
+    <!-- Existing dimensions -->
+<!--    <dimen name="grid_spacing">6dp</dimen>-->
+
+
+    <dimen name="tv_card_radius">12dp</dimen>
+    <dimen name="tv_focus_stroke_width">3dp</dimen>
+
+    <!-- Phone-specific dimensions -->
+    <dimen name="phone_item_spacing">6dp</dimen>
+    <dimen name="phone_card_elevation">2dp</dimen>
+    <dimen name="phone_card_radius">8dp</dimen>
+
+    <!-- Universal spacing -->
+    <dimen name="section_padding">16dp</dimen>
+    <dimen name="item_margin">6dp</dimen>
+    <dimen name="card_padding">12dp</dimen>
+    <dimen name="text_padding">8dp</dimen>
+
+    <!-- Specific item dimensions -->
+    <dimen name="continue_watching_width">300dp</dimen>
+    <dimen name="continue_watching_height">168dp</dimen>
+    <dimen name="top_hit_width">160dp</dimen>
+    <dimen name="top_hit_height">240dp</dimen>
+    <dimen name="grid_item_aspect_ratio">0.75</dimen>
+
+    <!-- Focus and animation -->
+    <dimen name="focus_scale_factor">1.05</dimen>
+    <dimen name="button_focus_scale_factor">1.1</dimen>
+    <dimen name="focus_elevation">8dp</dimen>
+
 </resources>

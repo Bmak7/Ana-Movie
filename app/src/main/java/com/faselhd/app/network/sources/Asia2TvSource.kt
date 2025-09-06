@@ -1,18 +1,24 @@
 package com.faselhd.app.network.sources
 
-import VidmolyExtractor
+
 import android.content.Context
+import androidx.preference.PreferenceManager
+import com.example.myapplication.R
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.extractors.*
+import com.faselhd.app.utils.*
+import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import okhttp3.Cache
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import uy.kohesive.injekt.injectLazy
+import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
@@ -35,13 +41,42 @@ class Asia2TvSource(private val context: Context) {
         init(null, trustAllCerts, SecureRandom())
     }
 
+    val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .ignoreAllSSLErrors()
+            .cache(
+                // Note that you need to add a ResponseInterceptor to make this 100% active.
+                // The server response dictates if and when stuff should be cached.
+                Cache(
+                    directory = File(context.cacheDir, "http_cache"),
+                    maxSize = 50L * 1024L * 1024L // 50 MiB
+                )
+            ).apply {
+                when (dns) {
+                    1 -> addGoogleDns()
+                    2 -> addCloudFlareDns()
+//                3 -> addOpenDns()
+                    4 -> addAdGuardDns()
+                    5 -> addDNSWatchDns()
+                    6 -> addQuad9Dns()
+                    7 -> addDnsSbDns()
+                    8 -> addCanadianShieldDns()
+                }
+            }
+            // Needs to be build as otherwise the other builders will change this object
             .build()
     }
+//    private val client: OkHttpClient by lazy {
+//        OkHttpClient.Builder()
+//            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+//            .connectTimeout(30, TimeUnit.SECONDS)
+//            .readTimeout(30, TimeUnit.SECONDS)
+//            .build()
+//    }
     private val json: Json by injectLazy()
 
     private val baseUrl = "https://ww1.asia2tv.pw"
@@ -54,6 +89,7 @@ class Asia2TvSource(private val context: Context) {
     private val uqloadExtractor by lazy { UqloadExtractor(client) }
     private val vidbomExtractor by lazy { VidBomExtractor(client) }
     private val mixDropExtractor by lazy { MixDropExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
 
     // Initialize all LuluStream extractors
     private val luluVdoExtractor by lazy { LuluVdoExtractor(client) }
@@ -272,13 +308,18 @@ class Asia2TvSource(private val context: Context) {
 //                    println("DEBUG: Using luluVdoExtractor for: $host")
 //                    luluVdoExtractor.videosFromUrl(url, pageReferer)
 //                }
-                "lulustream.com" in host || "lulustream" in host -> {
+                "lulu" in host || "lulustream"  in host -> {
                     println("DEBUG: Using luluStream1Extractor for: $host")
                     luluStream1Extractor.videosFromUrl(url, pageReferer)
                 }
                 "vidmoly" in host || "vidmoly.net" in host -> {
                     println("DEBUG: Using vidmolyExtractor for: $host")
                     vidmolyExtractor.videosFromUrl(url)
+                }
+
+                "mivalyo" in host || "mival" in host -> {
+                    println("DEBUG: Using mivalyoExtractor for: $host")
+                    mivalyoExtractor.videosFromUrl(url)
                 }
 
 

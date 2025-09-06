@@ -153,20 +153,15 @@ class MixDropExtractor(private val client: OkHttpClient) {
             "https://mixdrop.co/" // Fallback to the most common one
         }
 
-        // Enhanced headers for better compatibility
+
         val videoHeaders = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Referer" to referer,
-            "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.9",
-            "Accept-Encoding" to "identity", // Important: avoid compression for video streams
-            "Range" to "bytes=0-", // Enable range requests for better streaming
-            "Connection" to "keep-alive"
+            "Referer" to originalUrl,
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         )
-        Log.d(TAG, "Created video headers: $videoHeaders")
+                    Log.d(TAG, "Created video headers: $videoHeaders")
 
         val video = Video(finalUrl, "$prefix $quality", finalUrl, headers = videoHeaders)
-        Log.d(TAG, "Created video: ${video.quality}")
+        Log.d(TAG, "Created video: ${video.videoUrl} ${video.quality}")
 
         return listOf(video)
     }
@@ -179,3 +174,4 @@ class MixDropExtractor(private val client: OkHttpClient) {
         private val MD_URL_REGEX = Pattern.compile("""MDCore\.wurl="([^"]+)";.*?MDCore\.wurl="\+?"([^"]+)"""")
     }
 }
+

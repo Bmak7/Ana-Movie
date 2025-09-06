@@ -1,6 +1,6 @@
 package com.faselhd.app.network.sources
 
-import VidmolyExtractor
+
 import android.content.Context
 import android.os.Build
 import com.faselhd.app.models.*
@@ -95,7 +95,27 @@ class Anime4upSource(private val context: Context) {
     private val okruExtractor by lazy { OkruExtractor(client) }
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val yourUploadExtractor by lazy { YourUploadExtractor(client) }
+    private val voeExtractor by lazy { VoeExtractor(client) }
+    private val mixDropExtractor by lazy { MixDropExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
+    private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
+    private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
+
+
     // VoeExtractor and others can be added if you have them.
+    val megaMaxExtractor = MegaMaxExtractor(
+        client = client,
+        doodExtractor = doodExtractor,
+        voeExtractor = voeExtractor,
+        mixDropExtractor = mixDropExtractor,
+        streamWishExtractor = streamWishExtractor,
+        streamTapeExtractor = streamTapeExtractor,
+        mp4uploadExtractor = mp4uploadExtractor,
+        vidTubeExtractor = vidTubeExtractor,
+        mivalyoExtractor = mivalyoExtractor,
+        // ... pass others here
+    )
+
 
     // ============================== Popular & Latest ===============================
 
@@ -276,12 +296,20 @@ class Anime4upSource(private val context: Context) {
     }
 
     // ============================ Video Links =============================
+    fun normalizeUrl(url: String): String {
+        return when {
+            url.startsWith("//") -> "https:$url"
+            url.startsWith("http://") || url.startsWith("https://") -> url
+            else -> "https://$url"
+        }
+    }
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
         val document = Jsoup.parse(client.newCall(Request.Builder().url(episodeUrl).build()).execute().body!!.string())
         val serverElements = document.select("ul#episode-servers li a")
 
         return@withContext serverElements.flatMap { element ->
-            val embedUrl = element.attr("data-ep-url")
+            var embedUrl = element.attr("data-ep-url")
+            embedUrl = normalizeUrl(embedUrl)
             extractVideosFromUrl(embedUrl)
         }
     }
@@ -293,12 +321,14 @@ class Anime4upSource(private val context: Context) {
             "dood" in url || "d-s.io" in url -> doodExtractor.videosFromUrl(url)
             "streamtape" in url -> streamTapeExtractor.videosFromUrl(url)
             "uqload" in url -> uqloadExtractor.videosFromUrl(url)
+            "4shared" in url -> fourSharedExtractor.videosFromUrl(url)
+            "megamax" in url -> megaMaxExtractor.videosFromUrl(url)
             "yourupload" in url -> yourUploadExtractor.videosFromUrl(url)
-            "vidmoly" in url || "vidmoly.net" in url -> {
-                println("DEBUG: Using vidmolyExtractor for: $url")
-                vidmolyExtractor.videosFromUrl(url)
-            }
-            "vidmoly" in url -> vidBomExtractor.videosFromUrl(url) // Vidmoly might work with Vidbom
+//            "vidmoly" in url || "vidmoly.net" in url -> {
+//                println("DEBUG: Using vidmolyExtractor for: $url")
+//                vidmolyExtractor.videosFromUrl(url)
+//            }
+//            "vidmoly" in url -> vidBomExtractor.videosFromUrl(url) // Vidmoly might work with Vidbom
             "voe.sx" in url -> {
                 // Placeholder for VoeExtractor if you have one.
                 emptyList()

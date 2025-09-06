@@ -1,7 +1,8 @@
 package com.faselhd.app.network.sources
 
-import VoeExtractor
 import android.content.Context
+import androidx.preference.PreferenceManager
+import com.example.myapplication.R
 import com.faselhd.app.models.AnimeFilterList
 import com.faselhd.app.models.MangaPage
 import com.faselhd.app.models.SAnime
@@ -9,9 +10,12 @@ import com.faselhd.app.models.SEpisode
 import com.faselhd.app.models.Video
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.extractors.*
+import com.faselhd.app.utils.*
+import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -19,6 +23,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.injectLazy
+import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
@@ -40,13 +45,42 @@ class OkAnimeSource(private val context: Context) {
         init(null, trustAllCerts, SecureRandom())
     }
 
+    val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .ignoreAllSSLErrors()
+            .cache(
+                // Note that you need to add a ResponseInterceptor to make this 100% active.
+                // The server response dictates if and when stuff should be cached.
+                Cache(
+                    directory = File(context.cacheDir, "http_cache"),
+                    maxSize = 50L * 1024L * 1024L // 50 MiB
+                )
+            ).apply {
+                when (dns) {
+                    1 -> addGoogleDns()
+                    2 -> addCloudFlareDns()
+//                3 -> addOpenDns()
+                    4 -> addAdGuardDns()
+                    5 -> addDNSWatchDns()
+                    6 -> addQuad9Dns()
+                    7 -> addDnsSbDns()
+                    8 -> addCanadianShieldDns()
+                }
+            }
+            // Needs to be build as otherwise the other builders will change this object
             .build()
     }
+//    private val client: OkHttpClient by lazy {
+//        OkHttpClient.Builder()
+//            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+//            .connectTimeout(30, TimeUnit.SECONDS)
+//            .readTimeout(30, TimeUnit.SECONDS)
+//            .build()
+//    }
 
 
     companion object {

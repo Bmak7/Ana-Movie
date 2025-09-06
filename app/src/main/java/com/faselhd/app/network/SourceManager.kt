@@ -14,6 +14,7 @@ enum class AnimeSource(val displayName: String) {
     OKANIME("OKANIME"),
     NETFLIX_MIRROR("NETFLIX MIRROR"),
     PRIME_VIDEO_MIRROR("PRIME VIDEO MIRROR"),
+    HIANIME("HIANIME"),
     ASIA2TV("ASIA2TV"),
     ANIMEIAT("ANIMEIAT"),
     EGYDEAD("EGYDEAD"),
@@ -81,6 +82,7 @@ class SourceManager(private val context: Context) {
     private val isqSource by lazy { IsqSource(context) }
     private val anime4upSource by lazy { Anime4upSource(context) }
     private val topCinemaSource by lazy { TopCinemaSource(context) }
+    private val hiAnimeSource by lazy { HiAnimeSource(context) }
     private val currentSource: AnimeSource
         get() = getSelectedSource(context)
 
@@ -111,6 +113,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ISQ -> isqSource.fetchPopularSeries(page)
             AnimeSource.ANIME4UP -> anime4upSource.fetchPopularSeries(page)
             AnimeSource.Top_Cinema -> topCinemaSource.fetchPopularSeries(page)
+            AnimeSource.HIANIME -> hiAnimeSource.fetchTopAiring(page)
 
             AnimeSource.HUHU -> {
                 // Convert live TV channels to manga format for main screen
@@ -174,6 +177,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchPopularSeries(page)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchPopularSeries(page)
             AnimeSource.ANIMEIAT -> animeiatSource.fetchLatestUpdates(page)
+            AnimeSource.HIANIME -> hiAnimeSource.fetchRecentlyUpdated(page)
             AnimeSource.EGYDEAD -> egyDeadSource.fetchPopularSeries(page)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchLatestUpdates(1)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchLatestUpdates(page)
@@ -248,6 +252,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ANIMEIAT -> animeiatSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.HIANIME -> hiAnimeSource.fetchSearchAnime(page, query, filters)
             AnimeSource.EGYDEAD -> egyDeadSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchSearchAnime(page, query, filters)
@@ -323,6 +328,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchAnimeDetails(animeUrl)
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ANIMERCO -> animercoSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.HIANIME -> hiAnimeSource.fetchAnimeDetails(animeUrl)!!
             AnimeSource.WITANIME -> witAnimeSource.fetchAnimeDetails(animeUrl)
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchAnimeDetails(animeUrl)
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchAnimeDetails(animeUrl)
@@ -413,6 +419,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ASIA2TV -> asia2TvSource.fetchEpisodeList(animeUrl)
             AnimeSource.ANIMEIAT -> animeiatSource.fetchEpisodeList(animeUrl)
             AnimeSource.EGYDEAD -> egyDeadSource.fetchEpisodeList(animeUrl)
+            AnimeSource.HIANIME -> hiAnimeSource.fetchEpisodeList(animeUrl)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchEpisodeList(animeUrl)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchEpisodeList(animeUrl)
             AnimeSource.WITANIME -> witAnimeSource.fetchEpisodeList(animeUrl)
@@ -466,6 +473,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.OKANIME -> okAnimeSource.fetchVideoList(episodeUrl)
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchVideoList(episodeUrl)
             AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchVideoList(episodeUrl)
+            AnimeSource.HIANIME -> hiAnimeSource.fetchVideoList(episodeUrl)
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchVideoList(episodeUrl)
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchVideoList(episodeUrl)
             AnimeSource.ASIA2TV -> asia2TvSource.fetchVideoList(episodeUrl)
@@ -510,6 +518,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARAB_DRAMA -> arabDramSource.fetchMainSlider()
             AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchMainSlider()
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.fetchMainSlider()
+            AnimeSource.HIANIME -> hiAnimeSource.fetchPopularSeries(1).manga
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchMainSlider()
             AnimeSource.ASIA2TV -> asia2TvSource.fetchMainSlider()
             AnimeSource.ANIMEIAT -> animeiatSource.fetchMainSlider()
@@ -599,6 +608,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ANIMERCO -> emptyList()
             AnimeSource.WITANIME -> emptyList()
             AnimeSource.UHDMOVIES -> emptyList()
+            AnimeSource.HIANIME -> hiAnimeSource.fetchRecentlyUpdated(1).manga
             AnimeSource.Top_Cinema -> topCinemaSource.fetchHomePageLatestEpisodes()
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchLatestUpdates(1).manga
             AnimeSource.ISQ -> isqSource.fetchPopularSeries(1).manga
@@ -678,6 +688,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.WITANIME -> witAnimeSource.getFilterList()
             AnimeSource.DRAMADRIP -> dramaDripSource.getFilterList()
             AnimeSource.UHDMOVIES -> uhdMoviesSource.getFilterList()
+            AnimeSource.HIANIME ->AnimeFilterList(emptyList())
             AnimeSource.ISQ -> isqSource.getFilterList()
             AnimeSource.Top_Cinema -> topCinemaSource.getFilterList()
             AnimeSource.ANIME4UP ->AnimeFilterList(emptyList())

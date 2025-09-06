@@ -15,8 +15,8 @@ android {
         minSdk = 26
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
-        versionCode = 13
-        versionName = "2.4.0"
+        versionCode = 14
+        versionName = "2.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -119,12 +119,12 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     // ExoPlayer & Media3
-    implementation("androidx.media3:media3-exoplayer:1.7.1")
-    implementation("androidx.media3:media3-ui:1.7.1")
-    implementation("androidx.media3:media3-common:1.7.1")
-    implementation("androidx.media3:media3-exoplayer-dash:1.7.1")
-    implementation("androidx.media3:media3-exoplayer-hls:1.7.1")
-    implementation("androidx.media3:media3-session:1.7.1")
+    implementation("androidx.media3:media3-exoplayer:1.8.0")
+    implementation("androidx.media3:media3-ui:1.8.0")
+    implementation("androidx.media3:media3-common:1.8.0")
+    implementation("androidx.media3:media3-exoplayer-dash:1.8.0")
+    implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
+    implementation("androidx.media3:media3-session:1.8.0")
 
     // Networking
 //    implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -194,6 +194,8 @@ dependencies {
 
 
     implementation("jp.wasabeef:glide-transformations:4.3.0")
+
+    implementation("com.github.Blatzar:NiceHttp:+")
 
 
     // Testing

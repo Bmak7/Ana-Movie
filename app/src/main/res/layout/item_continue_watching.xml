@@ -1,59 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                   xmlns:tools="http://schemas.android.com/tools"
-                                                   android:layout_width="280dp"
-                                                   android:layout_height="wrap_content"
-                                                   android:layout_margin="8dp"
-                                                   app:cardCornerRadius="16dp">
+<com.google.android.material.card.MaterialCardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="6dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="?attr/colorSurface"
+        android:stateListAnimator="@animator/card_state_animator">
 
     <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+        <!-- Thumbnail container with better aspect ratio -->
         <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="160dp">
+                android:layout_height="168dp">
 
-            <!-- This is the ImageView with id 'episode_icon' -->
+            <!-- Episode thumbnail with rounded top corners -->
             <ImageView
                     android:id="@+id/episode_icon"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
+                    android:contentDescription="Episode thumbnail"
                     tools:src="@tools:sample/backgrounds/scenic" />
 
-            <!-- This is the ProgressBar with id 'episode_progress_bar' -->
-            <ProgressBar
-                    android:id="@+id/episode_progress_bar"
-                    style="?android:attr/progressBarStyleHorizontal"
+            <!-- Dark overlay for better contrast -->
+            <View
                     android:layout_width="match_parent"
-                    android:layout_height="5dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/gradient_dark_overlay"
+                    android:alpha="0.3" />
+
+            <!-- Play icon overlay -->
+            <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_play_circle"
+                    android:alpha="0.8"
+                    app:tint="@android:color/white"
+                    android:contentDescription="Play episode" />
+
+            <!-- Progress indicator at bottom -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="bottom"
-                    android:progressDrawable="@drawable/custom_seekbar_progress"
-                    tools:progress="60" />
+                    android:orientation="vertical"
+                    android:background="@drawable/gradient_bottom_overlay"
+                    android:padding="8dp">
+
+                <!-- Time remaining indicator -->
+                <TextView
+                        android:id="@+id/time_remaining"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:textColor="@android:color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:background="@drawable/rounded_background_dark"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:layout_marginBottom="4dp"
+                        tools:text="12 min left" />
+
+                <!-- Progress bar with better styling -->
+                <ProgressBar
+                        android:id="@+id/episode_progress_bar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="4dp"
+                        android:progressDrawable="@drawable/custom_seekbar_progress"
+                        android:background="@drawable/progress_background"
+                        tools:progress="65" />
+
+            </LinearLayout>
 
         </FrameLayout>
 
+        <!-- Content section with improved typography -->
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="12dp">
 
-            <!-- This is the TextView with id 'anime_title_text' -->
+            <!-- Anime title with better styling -->
             <TextView
                     android:id="@+id/anime_title_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
                     android:maxLines="1"
                     android:ellipsize="end"
+                    android:letterSpacing="0.01"
                     tools:text="Attack on Titan" />
 
-            <!-- This is the TextView with id 'episode_title' -->
+            <!-- Episode information with better hierarchy -->
             <TextView
                     android:id="@+id/episode_title"
                     android:layout_width="match_parent"
@@ -61,13 +116,59 @@
                     android:layout_marginTop="4dp"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:ellipsize="end"
-                    tools:text="Season 1: The Fall of Shiganshina" />
+                    android:lineSpacingExtra="2dp"
+                    tools:text="S4 E28: The Dawn of Humanity" />
+
+            <!-- Additional metadata -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                <!-- Episode duration -->
+                <TextView
+                        android:id="@+id/episode_duration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceCaption"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:background="@drawable/rounded_background_light"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        tools:text="24 min" />
+
+                <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                <!-- Watch date -->
+                <TextView
+                        android:id="@+id/watch_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceCaption"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="2 days ago" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
     </LinearLayout>
+
+    <!-- Focus indicator for TV navigation -->
+    <View
+            android:id="@+id/focus_indicator"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/tv_focus_indicator"
+            android:visibility="gone"
+            android:alpha="0" />
 
 </com.google.android.material.card.MaterialCardView>
 
@@ -78,7 +179,7 @@
 <!--                                                   android:layout_width="280dp"-->
 <!--                                                   android:layout_height="wrap_content"-->
 <!--                                                   android:layout_margin="8dp"-->
-<!--                                                   app:cardCornerRadius="12dp">-->
+<!--                                                   app:cardCornerRadius="16dp">-->
 
 <!--    <LinearLayout-->
 <!--            android:layout_width="match_parent"-->
@@ -89,50 +190,123 @@
 <!--                android:layout_width="match_parent"-->
 <!--                android:layout_height="160dp">-->
 
+<!--            &lt;!&ndash; This is the ImageView with id 'episode_icon' &ndash;&gt;-->
 <!--            <ImageView-->
-<!--                    android:id="@+id/item_image"-->
+<!--                    android:id="@+id/episode_icon"-->
 <!--                    android:layout_width="match_parent"-->
 <!--                    android:layout_height="match_parent"-->
 <!--                    android:scaleType="centerCrop"-->
 <!--                    tools:src="@tools:sample/backgrounds/scenic" />-->
 
-<!--            <View-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="match_parent"-->
-<!--                    android:background="#66000000" />-->
-
+<!--            &lt;!&ndash; This is the ProgressBar with id 'episode_progress_bar' &ndash;&gt;-->
 <!--            <ProgressBar-->
-<!--                    android:id="@+id/item_progress"-->
+<!--                    android:id="@+id/episode_progress_bar"-->
 <!--                    style="?android:attr/progressBarStyleHorizontal"-->
 <!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="4dp"-->
+<!--                    android:layout_height="5dp"-->
 <!--                    android:layout_gravity="bottom"-->
 <!--                    android:progressDrawable="@drawable/custom_seekbar_progress"-->
 <!--                    tools:progress="60" />-->
 
 <!--        </FrameLayout>-->
 
-<!--        <TextView-->
-<!--                android:id="@+id/item_title"-->
+<!--        <LinearLayout-->
 <!--                android:layout_width="match_parent"-->
 <!--                android:layout_height="wrap_content"-->
-<!--                android:paddingHorizontal="12dp"-->
-<!--                android:paddingTop="8dp"-->
-<!--                android:textAppearance="?attr/textAppearanceBodyLarge"-->
-<!--                android:maxLines="1"-->
-<!--                android:ellipsize="end"-->
-<!--                tools:text="Attack on Titan" />-->
+<!--                android:orientation="vertical"-->
+<!--                android:padding="12dp">-->
 
-<!--        <TextView-->
-<!--                android:id="@+id/item_episode_title"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:paddingHorizontal="12dp"-->
-<!--                android:paddingBottom="12dp"-->
-<!--                android:textAppearance="?attr/textAppearanceBodySmall"-->
-<!--                android:textColor="?attr/colorOnSurfaceVariant"-->
-<!--                android:maxLines="1"-->
-<!--                android:ellipsize="end"-->
-<!--                tools:text="Season 1: Episode 5" />-->
+<!--            &lt;!&ndash; This is the TextView with id 'anime_title_text' &ndash;&gt;-->
+<!--            <TextView-->
+<!--                    android:id="@+id/anime_title_text"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:textAppearance="?attr/textAppearanceTitleSmall"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:maxLines="1"-->
+<!--                    android:ellipsize="end"-->
+<!--                    tools:text="Attack on Titan" />-->
+
+<!--            &lt;!&ndash; This is the TextView with id 'episode_title' &ndash;&gt;-->
+<!--            <TextView-->
+<!--                    android:id="@+id/episode_title"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginTop="4dp"-->
+<!--                    android:textAppearance="?attr/textAppearanceBodyMedium"-->
+<!--                    android:textColor="?attr/colorOnSurfaceVariant"-->
+<!--                    android:maxLines="1"-->
+<!--                    android:ellipsize="end"-->
+<!--                    tools:text="Season 1: The Fall of Shiganshina" />-->
+
+<!--        </LinearLayout>-->
+
 <!--    </LinearLayout>-->
+
 <!--</com.google.android.material.card.MaterialCardView>-->
+
+<!--&lt;!&ndash;<?xml version="1.0" encoding="utf-8"?>&ndash;&gt;-->
+<!--&lt;!&ndash;<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"&ndash;&gt;-->
+<!--&lt;!&ndash;                                                   xmlns:app="http://schemas.android.com/apk/res-auto"&ndash;&gt;-->
+<!--&lt;!&ndash;                                                   xmlns:tools="http://schemas.android.com/tools"&ndash;&gt;-->
+<!--&lt;!&ndash;                                                   android:layout_width="280dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                                                   android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                                                   android:layout_margin="8dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                                                   app:cardCornerRadius="12dp">&ndash;&gt;-->
+
+<!--&lt;!&ndash;    <LinearLayout&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:orientation="vertical">&ndash;&gt;-->
+
+<!--&lt;!&ndash;        <FrameLayout&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_height="160dp">&ndash;&gt;-->
+
+<!--&lt;!&ndash;            <ImageView&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:id="@+id/item_image"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_height="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:scaleType="centerCrop"&ndash;&gt;-->
+<!--&lt;!&ndash;                    tools:src="@tools:sample/backgrounds/scenic" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;            <View&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_height="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:background="#66000000" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;            <ProgressBar&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:id="@+id/item_progress"&ndash;&gt;-->
+<!--&lt;!&ndash;                    style="?android:attr/progressBarStyleHorizontal"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_height="4dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_gravity="bottom"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:progressDrawable="@drawable/custom_seekbar_progress"&ndash;&gt;-->
+<!--&lt;!&ndash;                    tools:progress="60" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;        </FrameLayout>&ndash;&gt;-->
+
+<!--&lt;!&ndash;        <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;                android:id="@+id/item_title"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:paddingHorizontal="12dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:paddingTop="8dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:textAppearance="?attr/textAppearanceBodyLarge"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:maxLines="1"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:ellipsize="end"&ndash;&gt;-->
+<!--&lt;!&ndash;                tools:text="Attack on Titan" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;        <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;                android:id="@+id/item_episode_title"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:paddingHorizontal="12dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:paddingBottom="12dp"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:textAppearance="?attr/textAppearanceBodySmall"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:textColor="?attr/colorOnSurfaceVariant"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:maxLines="1"&ndash;&gt;-->
+<!--&lt;!&ndash;                android:ellipsize="end"&ndash;&gt;-->
+<!--&lt;!&ndash;                tools:text="Season 1: Episode 5" />&ndash;&gt;-->
+<!--&lt;!&ndash;    </LinearLayout>&ndash;&gt;-->
+<!--&lt;!&ndash;</com.google.android.material.card.MaterialCardView>&ndash;&gt;-->

@@ -1,15 +1,198 @@
 <resources>
-    <!-- What the user sees -->
+    <!-- Theme Options -->
     <string-array name="theme_entries">
         <item>Light</item>
         <item>Dark</item>
-        <item>System default</item>
+        <item>Follow System</item>
+    </string-array>
+    <string-array name="theme_values">
+        <item>LIGHT</item>
+        <item>DARK</item>
+        <item>SYSTEM</item>
     </string-array>
 
-    <!-- The actual values your app uses -->
-    <string-array name="theme_values">
-        <item>light</item>
-        <item>dark</item>
-        <item>system</item>
+    <!-- Cache Size Options -->
+    <string-array name="cache_size_entries">
+        <item>100 MB</item>
+        <item>250 MB</item>
+        <item>500 MB</item>
+        <item>1 GB</item>
+        <item>2 GB</item>
+        <item>5 GB</item>
+        <item>10 GB</item>
     </string-array>
+    <string-array name="cache_size_values">
+        <item>100</item>
+        <item>250</item>
+        <item>500</item>
+        <item>1024</item>
+        <item>2048</item>
+        <item>5120</item>
+        <item>10240</item>
+    </string-array>
+
+    <!-- Playback Speed Options -->
+    <string-array name="playback_speed_entries">
+        <item>0.25x</item>
+        <item>0.5x</item>
+        <item>0.75x</item>
+        <item>Normal (1.0x)</item>
+        <item>1.25x</item>
+        <item>1.5x</item>
+        <item>1.75x</item>
+        <item>2.0x</item>
+    </string-array>
+    <string-array name="playback_speed_values">
+        <item>0.25</item>
+        <item>0.5</item>
+        <item>0.75</item>
+        <item>1.0</item>
+        <item>1.25</item>
+        <item>1.5</item>
+        <item>1.75</item>
+        <item>2.0</item>
+    </string-array>
+
+    <!-- Video Quality Options -->
+    <string-array name="video_quality_entries">
+        <item>Auto (Recommended)</item>
+        <item>2160p (4K)</item>
+        <item>1440p (2K)</item>
+        <item>1080p (Full HD)</item>
+        <item>720p (HD)</item>
+        <item>480p</item>
+        <item>360p</item>
+        <item>240p</item>
+    </string-array>
+    <string-array name="video_quality_values">
+        <item>AUTO</item>
+        <item>2160p</item>
+        <item>1440p</item>
+        <item>1080p</item>
+        <item>720p</item>
+        <item>480p</item>
+        <item>360p</item>
+        <item>240p</item>
+    </string-array>
+
+    <!-- Buffer Size Options -->
+    <string-array name="buffer_size_entries">
+        <item>Small (Fast start, frequent buffering)</item>
+        <item>Normal (Balanced)</item>
+        <item>Large (Slow start, less buffering)</item>
+        <item>Extra Large (Very slow start, minimal buffering)</item>
+    </string-array>
+    <string-array name="buffer_size_values">
+        <item>SMALL</item>
+        <item>NORMAL</item>
+        <item>LARGE</item>
+        <item>EXTRA_LARGE</item>
+    </string-array>
+
+    <!-- Audio Output Options -->
+    <string-array name="audio_output_entries">
+        <item>Auto</item>
+        <item>Speaker</item>
+        <item>Headphones</item>
+        <item>Bluetooth</item>
+        <item>USB Audio</item>
+    </string-array>
+    <string-array name="audio_output_values">
+        <item>AUTO</item>
+        <item>SPEAKER</item>
+        <item>HEADPHONES</item>
+        <item>BLUETOOTH</item>
+        <item>USB</item>
+    </string-array>
+
+    <!-- Subtitle Language Options -->
+    <string-array name="subtitle_language_entries">
+        <item>English</item>
+        <item>Arabic</item>
+        <item>Spanish</item>
+        <item>French</item>
+        <item>German</item>
+        <item>Italian</item>
+        <item>Portuguese</item>
+        <item>Russian</item>
+        <item>Japanese</item>
+        <item>Korean</item>
+        <item>Chinese</item>
+    </string-array>
+    <string-array name="subtitle_language_values">
+        <item>en</item>
+        <item>ar</item>
+        <item>es</item>
+        <item>fr</item>
+        <item>de</item>
+        <item>it</item>
+        <item>pt</item>
+        <item>ru</item>
+        <item>ja</item>
+        <item>ko</item>
+        <item>zh</item>
+    </string-array>
+
+    <!-- Subtitle Size Options -->
+    <string-array name="subtitle_size_entries">
+        <item>Very Small</item>
+        <item>Small</item>
+        <item>Normal</item>
+        <item>Large</item>
+        <item>Very Large</item>
+    </string-array>
+    <string-array name="subtitle_size_values">
+        <item>VERY_SMALL</item>
+        <item>SMALL</item>
+        <item>NORMAL</item>
+        <item>LARGE</item>
+        <item>VERY_LARGE</item>
+    </string-array>
+
+    <!-- Connection Timeout Options -->
+    <string-array name="timeout_entries">
+        <item>15 seconds</item>
+        <item>30 seconds</item>
+        <item>45 seconds</item>
+        <item>60 seconds</item>
+        <item>90 seconds</item>
+    </string-array>
+    <string-array name="timeout_values">
+        <item>15</item>
+        <item>30</item>
+        <item>45</item>
+        <item>60</item>
+        <item>90</item>
+    </string-array>
+
+    <!-- Connection Count Options -->
+    <string-array name="connection_entries">
+        <item>2 connections</item>
+        <item>4 connections (Recommended)</item>
+        <item>6 connections</item>
+        <item>8 connections</item>
+    </string-array>
+    <string-array name="connection_values">
+        <item>2</item>
+        <item>4</item>
+        <item>6</item>
+        <item>8</item>
+    </string-array>
+
+    <!-- Mobile Data Quality Options -->
+    <string-array name="mobile_quality_entries">
+        <item>240p (Very low data usage)</item>
+        <item>360p (Low data usage)</item>
+        <item>480p (Medium data usage)</item>
+        <item>720p (High data usage)</item>
+        <item>No limit</item>
+    </string-array>
+    <string-array name="mobile_quality_values">
+        <item>240p</item>
+        <item>360p</item>
+        <item>480p</item>
+        <item>720p</item>
+        <item>UNLIMITED</item>
+    </string-array>
+
 </resources>

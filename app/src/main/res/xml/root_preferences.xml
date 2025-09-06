@@ -1,29 +1,296 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.preference.PreferenceScreen
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+                  xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <androidx.preference.PreferenceCategory
-            app:title="General Settings">
+    <!-- Source Selection -->
+    <PreferenceCategory app:title="Source Settings">
 
         <ListPreference
                 app:key="source_preference"
-                app:title="Video Source"
-                app:summary="Select the source for anime content"
-                app:useSimpleSummaryProvider="true"
-                app:icon="@drawable/ic_source"/>
+                app:title="Anime Source"
+                app:summary="Select your preferred anime streaming source"
+                app:icon="@drawable/ic_source"
+                app:defaultValue="FASEL_HD" />
+
+    </PreferenceCategory>
+
+    <!-- Theme Settings -->
+    <PreferenceCategory app:title="Appearance">
 
         <ListPreference
                 app:key="theme_preference"
-                app:title="App Theme"
-                app:summary="Choose between light, dark, or system default"
-                app:useSimpleSummaryProvider="true"
+                app:title="Theme"
+                app:summary="Choose app theme"
                 app:icon="@drawable/routine_24px"
                 app:entries="@array/theme_entries"
                 app:entryValues="@array/theme_values"
-                app:defaultValue="SYSTEM"/> <!-- Default to following the system theme -->
+                app:defaultValue="SYSTEM" />
 
-    </androidx.preference.PreferenceCategory>
+    </PreferenceCategory>
 
+    <!-- Cache Settings -->
+    <PreferenceCategory
+            app:key="cache_category"
+            app:title="Cache Settings">
 
+        <SwitchPreferenceCompat
+                app:key="cache_enabled"
+                app:title="Enable Video Caching"
+                app:summary="Cache videos for faster playback and offline viewing"
+                app:icon="@drawable/ic_cache"
+                app:defaultValue="true" />
 
-</androidx.preference.PreferenceScreen>
+        <ListPreference
+                app:key="cache_size"
+                app:title="Cache Size"
+                app:summary="Maximum storage space for cached videos"
+                app:icon="@drawable/ic_storage"
+                app:entries="@array/cache_size_entries"
+                app:entryValues="@array/cache_size_values"
+                app:defaultValue="500"
+                app:dependency="cache_enabled" />
+
+        <SwitchPreferenceCompat
+                app:key="cache_wifi_only"
+                app:title="Cache on WiFi Only"
+                app:summary="Only cache videos when connected to WiFi"
+                app:icon="@drawable/wifi_24px"
+                app:defaultValue="true"
+                app:dependency="cache_enabled" />
+
+        <SwitchPreferenceCompat
+                app:key="auto_cache_next_episode"
+                app:title="Auto-Cache Next Episode"
+                app:summary="Automatically cache the next episode while watching"
+                app:icon="@drawable/ic_auto_cache"
+                app:defaultValue="true"
+                app:dependency="cache_enabled" />
+
+        <Preference
+                app:key="cache_info"
+                app:title="Cache Information"
+                app:summary="View current cache usage and status"
+                app:icon="@drawable/info_24px"
+                app:dependency="cache_enabled" />
+
+        <Preference
+                app:key="clear_cache"
+                app:title="Clear Cache"
+                app:summary="Remove all cached video data"
+                app:icon="@drawable/ic_clear"
+                app:dependency="cache_enabled" />
+
+    </PreferenceCategory>
+
+    <!-- Player Settings -->
+    <PreferenceCategory app:title="Video Player">
+
+        <SwitchPreferenceCompat
+                app:key="auto_play_next_episode"
+                app:title="Auto-Play Next Episode"
+                app:summary="Automatically play the next episode when current episode ends"
+                app:icon="@drawable/ic_skip_next"
+                app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+                app:key="auto_skip_intro"
+                app:title="Auto-Skip Intro/Outro"
+                app:summary="Automatically skip intros and outros when detected"
+                app:icon="@drawable/ic_skip_next"
+                app:defaultValue="false" />
+
+        <ListPreference
+                app:key="default_playback_speed"
+                app:title="Default Playback Speed"
+                app:summary="Set default video playback speed"
+                app:icon="@drawable/speed_24px"
+                app:entries="@array/playback_speed_entries"
+                app:entryValues="@array/playback_speed_values"
+                app:defaultValue="1.0" />
+
+        <ListPreference
+                app:key="default_video_quality"
+                app:title="Preferred Video Quality"
+                app:summary="Automatically select this quality when available"
+                app:icon="@drawable/ic_video_quality"
+                app:entries="@array/video_quality_entries"
+                app:entryValues="@array/video_quality_values"
+                app:defaultValue="AUTO" />
+
+        <SwitchPreferenceCompat
+                app:key="hardware_acceleration"
+                app:title="Hardware Acceleration"
+                app:summary="Use hardware acceleration for video decoding (may improve performance)"
+                app:icon="@drawable/ic_hardware"
+                app:defaultValue="true" />
+
+        <ListPreference
+                app:key="buffer_size"
+                app:title="Buffer Size"
+                app:summary="Amount of video to buffer ahead"
+                app:icon="@drawable/ic_buffer"
+                app:entries="@array/buffer_size_entries"
+                app:entryValues="@array/buffer_size_values"
+                app:defaultValue="NORMAL" />
+
+    </PreferenceCategory>
+
+    <!-- Audio Settings -->
+    <PreferenceCategory app:title="Audio">
+
+        <SwitchPreferenceCompat
+                app:key="audio_boost"
+                app:title="Audio Boost"
+                app:summary="Enhance audio volume for better clarity"
+                app:icon="@drawable/ic_volume_up"
+                app:defaultValue="false" />
+
+        <ListPreference
+                app:key="audio_output"
+                app:title="Audio Output"
+                app:summary="Select audio output method"
+                app:icon="@drawable/ic_headphones"
+                app:entries="@array/audio_output_entries"
+                app:entryValues="@array/audio_output_values"
+                app:defaultValue="AUTO" />
+
+    </PreferenceCategory>
+
+    <!-- Subtitle Settings -->
+    <PreferenceCategory app:title="Subtitles">
+
+        <SwitchPreferenceCompat
+                app:key="subtitles_enabled"
+                app:title="Enable Subtitles by Default"
+                app:summary="Automatically enable subtitles when available"
+                app:icon="@drawable/ic_subtitles"
+                app:defaultValue="false" />
+
+        <ListPreference
+                app:key="subtitle_language"
+                app:title="Preferred Subtitle Language"
+                app:summary="Automatically select this subtitle language when available"
+                app:icon="@drawable/ic_language"
+                app:entries="@array/subtitle_language_entries"
+                app:entryValues="@array/subtitle_language_values"
+                app:defaultValue="en"
+                app:dependency="subtitles_enabled" />
+
+        <ListPreference
+                app:key="subtitle_size"
+                app:title="Subtitle Size"
+                app:summary="Adjust subtitle text size"
+                app:icon="@drawable/ic_text_size"
+                app:entries="@array/subtitle_size_entries"
+                app:entryValues="@array/subtitle_size_values"
+                app:defaultValue="NORMAL" />
+
+    </PreferenceCategory>
+
+    <!-- Network Settings -->
+    <PreferenceCategory app:title="Network">
+
+        <ListPreference
+                app:key="connection_timeout"
+                app:title="Connection Timeout"
+                app:summary="How long to wait for server response"
+                app:icon="@drawable/ic_timer"
+                app:entries="@array/timeout_entries"
+                app:entryValues="@array/timeout_values"
+                app:defaultValue="30" />
+
+        <SwitchPreferenceCompat
+                app:key="retry_failed_connections"
+                app:title="Auto-Retry Failed Connections"
+                app:summary="Automatically retry when connection fails"
+                app:icon="@drawable/ic_retry"
+                app:defaultValue="true" />
+
+        <ListPreference
+                app:key="max_concurrent_connections"
+                app:title="Max Concurrent Connections"
+                app:summary="Maximum number of simultaneous network connections"
+                app:icon="@drawable/ic_network"
+                app:entries="@array/connection_entries"
+                app:entryValues="@array/connection_values"
+                app:defaultValue="4" />
+
+    </PreferenceCategory>
+
+    <!-- Data Usage -->
+    <PreferenceCategory app:title="Data Usage">
+
+        <SwitchPreferenceCompat
+                app:key="data_saver_mode"
+                app:title="Data Saver Mode"
+                app:summary="Reduce data usage by lowering quality on mobile networks"
+                app:icon="@drawable/ic_data_usage"
+                app:defaultValue="false" />
+
+        <ListPreference
+                app:key="mobile_data_quality"
+                app:title="Mobile Data Quality Limit"
+                app:summary="Maximum quality when using mobile data"
+                app:icon="@drawable/ic_mobile_data"
+                app:entries="@array/mobile_quality_entries"
+                app:entryValues="@array/mobile_quality_values"
+                app:defaultValue="720p"
+                app:dependency="data_saver_mode" />
+
+    </PreferenceCategory>
+
+    <!-- Advanced Settings -->
+    <PreferenceCategory app:title="Advanced">
+
+        <SwitchPreferenceCompat
+                app:key="debug_mode"
+                app:title="Debug Mode"
+                app:summary="Enable debug logging and advanced options"
+                app:icon="@drawable/ic_bug_report"
+                app:defaultValue="false" />
+
+        <Preference
+                app:key="export_settings"
+                app:title="Export Settings"
+                app:summary="Export current settings to file"
+                app:icon="@drawable/ic_export" />
+
+        <Preference
+                app:key="import_settings"
+                app:title="Import Settings"
+                app:summary="Import settings from file"
+                app:icon="@drawable/ic_import" />
+
+        <Preference
+                app:key="reset_settings"
+                app:title="Reset to Defaults"
+                app:summary="Reset all settings to their default values"
+                app:icon="@drawable/ic_restore" />
+
+    </PreferenceCategory>
+
+    <!-- About -->
+    <PreferenceCategory app:title="About">
+
+        <Preference
+                app:key="app_version"
+                app:title="App Version"
+                app:summary="1.0.0"
+                app:icon="@drawable/info_24px"
+                app:selectable="false" />
+
+        <Preference
+                app:key="privacy_policy"
+                app:title="Privacy Policy"
+                app:summary="View our privacy policy"
+                app:icon="@drawable/ic_privacy" />
+
+        <Preference
+                app:key="open_source_licenses"
+                app:title="Open Source Licenses"
+                app:summary="View licenses for open source libraries"
+                app:icon="@drawable/ic_code" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

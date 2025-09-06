@@ -1,5 +1,6 @@
 package com.faselhd.app.utils
 
+import com.lagradost.nicehttp.ignoreAllSSLErrors
 import okhttp3.OkHttpClient
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -30,10 +31,13 @@ object NetworkUtils {
             sslContext.init(null, trustAllCerts, java.security.SecureRandom())
 
             // Create an ssl socket factory with our all-trusting manager
-            val sslSocketFactory = sslContext.socketFactory
+//            val sslSocketFactory = sslContext.socketFactory
 
             return OkHttpClient.Builder()
-                .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+                .followRedirects(true)
+                .followSslRedirects(true)
+                .ignoreAllSSLErrors()
+//                .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
                 .hostnameVerifier { _, _ -> true } // Also ignore hostname verification
                 .build()
         } catch (e: Exception) {

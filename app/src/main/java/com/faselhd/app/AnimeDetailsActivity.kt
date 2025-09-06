@@ -1,6 +1,7 @@
 package com.faselhd.app
 
 import DetailsFragmentAdapter
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -144,6 +145,27 @@ class AnimeDetailsActivity : AppCompatActivity() {
         }
     }
 
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_anime_details)
+//
+//        // Extract intent data with validation
+//        if (!extractIntentData()) {
+//            finish()
+//            return
+//        }
+//
+//        initViews()
+//        setupToolbar()
+//        setupRecyclerView()
+//        setupTabsAndViewPager()
+//        setupListeners()
+//        loadAnimeData()
+//        checkIfFavorite()
+//        initAudioPlayerViews()
+//        setupAudioPlayer()
+//    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_anime_details)
@@ -155,16 +177,18 @@ class AnimeDetailsActivity : AppCompatActivity() {
         }
 
         initViews()
+        // --- FIX: Initialize audio player views right after other views ---
+        initAudioPlayerViews()
+
         setupToolbar()
         setupRecyclerView()
         setupTabsAndViewPager()
         setupListeners()
         loadAnimeData()
         checkIfFavorite()
-        initAudioPlayerViews()
+        // setupAudioPlayer() is also dependent on the views, move it too.
         setupAudioPlayer()
     }
-
     private fun initAudioPlayerViews() {
         audioPlayerLayout = findViewById(R.id.audio_player_layout)
         btnPlayAudio = findViewById(R.id.btn_play_audio)
@@ -199,6 +223,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
 
 
 
+    @SuppressLint("WrongConstant")
     private fun setupAudioPlayer(url: String, title: String) {
         audioUrl = url
         audioTitle.text = title
@@ -221,6 +246,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
         btnPlayAudio.isEnabled = false
     }
 
+    @SuppressLint("WrongConstant")
     private fun hideAudioPlayer() {
         audioPlayerLayout.visibility = View.GONE
         releaseMediaPlayer()
@@ -798,6 +824,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
 
             } catch (e: Exception) {
                 Log.e("AnimeDetails", "Error loading anime data", e)
+                println()
                 showSnackbar("Failed to load anime details: ${e.localizedMessage}", isError = true)
             } finally {
                 setLoadingState(false)
@@ -823,6 +850,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
         resumeEpisodeUrl = null
     }
 
+    @SuppressLint("WrongConstant")
     private fun setLoadingState(loading: Boolean) {
         isLoading = loading
 

@@ -2,18 +2,20 @@ package com.faselhd.app.network.sources
 
 import android.content.Context
 import android.util.Log
+import androidx.preference.PreferenceManager
+import com.example.myapplication.R
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.CloudflareInterceptor
+import com.faselhd.app.utils.*
+import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.CookieJar
-import okhttp3.JavaNetCookieJar
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.io.File
 import java.net.CookieManager
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -37,27 +39,56 @@ class WitAnimeSource(private val context: Context) {
         init(null, trustAllCerts, SecureRandom())
     }
 
+    val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+    val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
     private val client: OkHttpClient by lazy {
-        val cookieManager = CookieManager()
-        val cookieJar: CookieJar = JavaNetCookieJar(cookieManager)
-
         OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .cookieJar(cookieJar)
-            .addInterceptor(CloudflareInterceptor(context, cookieJar))
-            .addInterceptor { chain ->
-                val originalRequest = chain.request()
-                val newRequest = originalRequest.newBuilder()
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-                    .header("Referer", baseUrl)
-                    .header("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
-                    .build()
-                chain.proceed(newRequest)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .ignoreAllSSLErrors()
+            .cache(
+                // Note that you need to add a ResponseInterceptor to make this 100% active.
+                // The server response dictates if and when stuff should be cached.
+                Cache(
+                    directory = File(context.cacheDir, "http_cache"),
+                    maxSize = 50L * 1024L * 1024L // 50 MiB
+                )
+            ).apply {
+                when (dns) {
+                    1 -> addGoogleDns()
+                    2 -> addCloudFlareDns()
+//                3 -> addOpenDns()
+                    4 -> addAdGuardDns()
+                    5 -> addDNSWatchDns()
+                    6 -> addQuad9Dns()
+                    7 -> addDnsSbDns()
+                    8 -> addCanadianShieldDns()
+                }
             }
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            // Needs to be build as otherwise the other builders will change this object
             .build()
     }
+//    private val client: OkHttpClient by lazy {
+//        val cookieManager = CookieManager()
+//        val cookieJar: CookieJar = JavaNetCookieJar(cookieManager)
+//
+//        OkHttpClient.Builder()
+//            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+//            .cookieJar(cookieJar)
+//            .addInterceptor(CloudflareInterceptor(context, cookieJar))
+//            .addInterceptor { chain ->
+//                val originalRequest = chain.request()
+//                val newRequest = originalRequest.newBuilder()
+//                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+//                    .header("Referer", baseUrl)
+//                    .header("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
+//                    .build()
+//                chain.proceed(newRequest)
+//            }
+//            .connectTimeout(30, TimeUnit.SECONDS)
+//            .readTimeout(30, TimeUnit.SECONDS)
+//            .build()
+//    }
 
     private val baseUrl = "https://witanime.red"
 

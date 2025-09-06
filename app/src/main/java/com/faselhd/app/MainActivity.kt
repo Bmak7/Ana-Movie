@@ -1,23 +1,25 @@
 package com.faselhd.app
 
+import android.annotation.SuppressLint
+import android.app.AlertDialog
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.faselhd.app.widgets.GridSpacingItemDecoration
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.view.KeyEvent
+import android.view.*
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.view.ViewCompat.performHapticFeedback
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -90,11 +92,18 @@ class MainActivity : AppCompatActivity() {
     private var currentFeaturedSource: AnimeSource? = null
     private var isRunningOnTV = false
 
-    // D-pad Navigation State
+    // Enhanced D-pad Navigation State
     private var currentFocusedSection = FocusSection.SIDEBAR_NAVIGATION
     private var currentButtonIndex = 0
     private var currentSidebarIndex = 0
     private var searchActionView: View? = null
+
+    // RecyclerView position tracking for better navigation
+    private var currentContinueWatchingPosition = 0
+    private var currentTopHitsPosition = 0
+    private var currentNewEpisodesPosition = 0
+    private var currentLatestGridPosition = 0
+    private var currentSliderPosition = 0
 
     // Focusable View Lists
     private lateinit var featuredButtons: List<View>
@@ -105,21 +114,24 @@ class MainActivity : AppCompatActivity() {
     // Focus Sections Enum for TV Navigation
     private enum class FocusSection {
         TOOLBAR, SIDEBAR_NAVIGATION, FEATURED_SLIDER, FEATURED_BUTTONS,
-        CONTINUE_WATCHING, TOP_HITS, NEW_EPISODES, LATEST_UPDATES
+        CONTINUE_WATCHING_SECTION, CONTINUE_WATCHING_ITEMS,
+        TOP_HITS_SECTION, TOP_HITS_ITEMS,
+        NEW_EPISODES_SECTION, NEW_EPISODES_ITEMS,
+        LATEST_SECTION, LATEST_ITEMS
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initViews() // Finds views and initializes view lists
+        initViews()
         setupToolbar()
         setupRecyclerViews()
         setupBottomNavigation()
         setupSeeAllButtons()
         setupFeaturedButtons()
         setupSwipeRefresh()
-        setupDpadNavigation() // Sets up listeners and initial focus
+        setupDpadNavigation()
         loadData()
         observeWatchHistory()
     }
@@ -160,51 +172,22 @@ class MainActivity : AppCompatActivity() {
         recyclerViews = listOf(continueWatchingRecyclerView, topHitsRecyclerView, newEpisodesRecyclerView, latestRecyclerView)
         sidebarItems = listOf(navItemHome, navItemMyList, navItemSearch, navItemDownloads, navItemSettings)
 
-        // Now, setup layouts and focusability
         setupTVLayout()
         setupViewFocusability()
     }
 
-    private fun setupTVLayout() {
-        isRunningOnTV = packageManager.hasSystemFeature("android.software.leanback") ||
-                packageManager.hasSystemFeature("android.software.leanback_only")
 
-        if (isRunningOnTV) {
-            tvSidebarNavigation.visibility = View.VISIBLE
-            bottomNavigationView.visibility = View.GONE
-            val params = mainContentContainer.layoutParams as CoordinatorLayout.LayoutParams
-            params.marginStart = resources.getDimensionPixelSize(R.dimen.tv_sidebar_width) // Make sure this exists in dimens.xml
-            mainContentContainer.layoutParams = params
-            setupTVSidebarNavigation()
-        } else {
-            tvSidebarNavigation.visibility = View.GONE
-            bottomNavigationView.visibility = View.VISIBLE
-            val params = mainContentContainer.layoutParams as CoordinatorLayout.LayoutParams
-            params.marginStart = 0
-            mainContentContainer.layoutParams = params
-        }
-    }
-
-    private fun setupViewFocusability() {
-        if (!isRunningOnTV) return
-
-        btnPlay.isFocusable = true
-        btnMyList.isFocusable = true
-        mainSliderViewPager.isFocusable = true
-        recyclerViews.forEach { it.isFocusable = true }
-        seeAllButtons.forEach { it.isFocusable = true }
-        sidebarItems.forEach { it.isFocusable = true }
-    }
 
     private fun setupDpadNavigation() {
         if (!isRunningOnTV) return
 
         setupFocusListeners()
+        setupRecyclerViewFocusHandling()
         setInitialFocus()
     }
 
     private fun setupFocusListeners() {
-        // Featured buttons
+        // Featured buttons focus handling
         featuredButtons.forEachIndexed { index, button ->
             button.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
@@ -219,7 +202,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Sidebar items
+        // Sidebar items focus handling
         sidebarItems.forEachIndexed { index, item ->
             item.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
@@ -232,7 +215,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Toolbar search icon
+        // See all buttons focus handling
+        seeAllButtons.forEachIndexed { index, button ->
+            button.setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    view.setBackgroundResource(R.drawable.rounded_background_focused)
+                    when (index) {
+                        0 -> currentFocusedSection = FocusSection.CONTINUE_WATCHING_SECTION
+                        1 -> currentFocusedSection = FocusSection.TOP_HITS_SECTION
+                        2 -> currentFocusedSection = FocusSection.NEW_EPISODES_SECTION
+                        3 -> currentFocusedSection = FocusSection.LATEST_SECTION
+                    }
+                } else {
+                    view.setBackgroundResource(android.R.color.transparent)
+                }
+            }
+        }
+
+        // Toolbar search focus handling
         searchActionView?.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
                 currentFocusedSection = FocusSection.TOOLBAR
@@ -242,28 +242,527 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Slider
+        // Slider focus handling
         mainSliderViewPager.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 currentFocusedSection = FocusSection.FEATURED_SLIDER
             }
         }
+    }
 
-        // RecyclerViews
-        recyclerViews.forEach { recyclerView ->
-            recyclerView.setOnFocusChangeListener { _, hasFocus ->
+    private fun setupViewFocusability() {
+        if (!isRunningOnTV) return
+
+        // Enhanced focus handling with visual feedback
+        btnPlay.apply {
+            isFocusable = true
+            setOnFocusChangeListener { view, hasFocus ->
+                animateButtonFocus(view, hasFocus)
+            }
+        }
+
+        btnMyList.apply {
+            isFocusable = true
+            setOnFocusChangeListener { view, hasFocus ->
+                animateButtonFocus(view, hasFocus)
+            }
+        }
+
+        mainSliderViewPager.apply {
+            isFocusable = true
+            setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
-                    currentFocusedSection = when (recyclerView) {
-                        continueWatchingRecyclerView -> FocusSection.CONTINUE_WATCHING
-                        topHitsRecyclerView -> FocusSection.TOP_HITS
-                        newEpisodesRecyclerView -> FocusSection.NEW_EPISODES
-                        latestRecyclerView -> FocusSection.LATEST_UPDATES
-                        else -> currentFocusedSection
-                    }
+                    view.elevation = 8f
+                    currentFocusedSection = FocusSection.FEATURED_SLIDER
+                } else {
+                    view.elevation = 4f
+                }
+            }
+        }
+
+        // Enhanced RecyclerView focus handling
+        recyclerViews.forEach { recyclerView ->
+            recyclerView.apply {
+                isFocusable = true
+                descendantFocusability = RecyclerView.FOCUS_AFTER_DESCENDANTS
+
+                // Add focus change listener for better visual feedback
+                setOnFocusChangeListener { view, hasFocus ->
+                    handleRecyclerViewFocus(recyclerView, hasFocus)
+                }
+            }
+        }
+
+        // Enhanced see-all button focus handling
+        seeAllButtons.forEach { button ->
+            button.apply {
+                isFocusable = true
+                setOnFocusChangeListener { view, hasFocus ->
+                    animateTextButtonFocus(view, hasFocus)
+                }
+            }
+        }
+
+        // Enhanced sidebar focus handling
+        sidebarItems.forEachIndexed { index, item ->
+            item.apply {
+                isFocusable = true
+                setOnFocusChangeListener { view, hasFocus ->
+                    animateSidebarItemFocus(view, hasFocus, index)
                 }
             }
         }
     }
+
+    private fun animateButtonFocus(view: View, hasFocus: Boolean) {
+        val scaleX = if (hasFocus) 1.1f else 1.0f
+        val scaleY = if (hasFocus) 1.1f else 1.0f
+        val elevation = if (hasFocus) 8f else 2f
+
+        view.animate()
+            .scaleX(scaleX)
+            .scaleY(scaleY)
+            .setDuration(200)
+            .start()
+
+        view.elevation = elevation
+    }
+
+    private fun animateTextButtonFocus(view: View, hasFocus: Boolean) {
+        val backgroundResource = if (hasFocus) {
+            R.drawable.rounded_background_focused
+        } else {
+            android.R.color.transparent
+        }
+
+        view.setBackgroundResource(backgroundResource)
+
+        val scaleX = if (hasFocus) 1.05f else 1.0f
+        val scaleY = if (hasFocus) 1.05f else 1.0f
+
+        view.animate()
+            .scaleX(scaleX)
+            .scaleY(scaleY)
+            .setDuration(150)
+            .start()
+    }
+
+    private fun animateSidebarItemFocus(view: View, hasFocus: Boolean, index: Int) {
+        val backgroundResource = if (hasFocus) {
+            R.color.green_play_button
+        } else {
+            android.R.color.transparent
+        }
+
+        view.setBackgroundResource(backgroundResource)
+
+        if (hasFocus) {
+            currentSidebarIndex = index
+            currentFocusedSection = FocusSection.SIDEBAR_NAVIGATION
+
+            // Add subtle animation
+            view.animate()
+                .scaleX(1.02f)
+                .scaleY(1.02f)
+                .setDuration(100)
+                .start()
+        } else {
+            view.animate()
+                .scaleX(1.0f)
+                .scaleY(1.0f)
+                .setDuration(100)
+                .start()
+        }
+    }
+
+    private fun handleRecyclerViewFocus(recyclerView: RecyclerView, hasFocus: Boolean) {
+        when (recyclerView) {
+            continueWatchingRecyclerView -> {
+                if (hasFocus) {
+                    currentFocusedSection = FocusSection.CONTINUE_WATCHING_ITEMS
+                    highlightRecyclerViewItem(recyclerView, currentContinueWatchingPosition)
+                }
+            }
+            topHitsRecyclerView -> {
+                if (hasFocus) {
+                    currentFocusedSection = FocusSection.TOP_HITS_ITEMS
+                    highlightRecyclerViewItem(recyclerView, currentTopHitsPosition)
+                }
+            }
+            newEpisodesRecyclerView -> {
+                if (hasFocus) {
+                    currentFocusedSection = FocusSection.NEW_EPISODES_ITEMS
+                    highlightRecyclerViewItem(recyclerView, currentNewEpisodesPosition)
+                }
+            }
+            latestRecyclerView -> {
+                if (hasFocus) {
+                    currentFocusedSection = FocusSection.LATEST_ITEMS
+                    highlightRecyclerViewItem(recyclerView, currentLatestGridPosition)
+                }
+            }
+        }
+
+        if (!hasFocus) {
+            removeHighlightFromRecyclerView(recyclerView)
+        }
+    }
+
+    @SuppressLint("WrongConstant")
+    private fun highlightRecyclerViewItem(recyclerView: RecyclerView, position: Int) {
+        recyclerView.post {
+            val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
+            viewHolder?.itemView?.let { itemView ->
+                // Enhanced visual feedback for TV navigation
+                itemView.animate()
+                    .scaleX(1.05f)
+                    .scaleY(1.05f)
+                    .setDuration(200)
+                    .start()
+
+                itemView.elevation = 8f
+
+                // Show focus indicator if available
+                val focusIndicator = itemView.findViewById<View>(R.id.focus_indicator)
+                focusIndicator?.let { indicator ->
+                    indicator.visibility = View.VISIBLE
+                    indicator.animate()
+                        .alpha(1.0f)
+                        .setDuration(150)
+                        .start()
+                }
+            }
+
+            // Ensure the item is visible
+            ensureItemVisible(recyclerView, position)
+        }
+    }
+
+    @SuppressLint("WrongConstant")
+    private fun removeHighlightFromRecyclerView(recyclerView: RecyclerView) {
+        recyclerView.post {
+            for (i in 0 until recyclerView.childCount) {
+                val childView = recyclerView.getChildAt(i)
+                childView.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(200)
+                    .start()
+
+                childView.elevation = 4f
+
+                // Hide focus indicator
+                val focusIndicator = childView.findViewById<View>(R.id.focus_indicator)
+                focusIndicator?.let { indicator ->
+                    indicator.animate()
+                        .alpha(0f)
+                        .setDuration(150)
+                        .withEndAction {
+                            indicator.visibility = View.GONE
+                        }
+                        .start()
+                }
+            }
+        }
+    }
+
+    // Enhanced grid layout for better TV/Phone experience
+    private fun setupRecyclerViews() {
+        // Continue watching with improved layout
+        continueWatchingAdapter = ContinueWatchingAdapter { watchHistory ->
+            openContinueWatchingItem(watchHistory)
+        }
+        continueWatchingRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = continueWatchingAdapter
+            isNestedScrollingEnabled = false
+
+            // Better spacing for TV
+            if (isRunningOnTV) {
+                val spacing = resources.getDimensionPixelSize(R.dimen.tv_item_spacing)
+                addItemDecoration(HorizontalSpaceItemDecoration(spacing))
+            }
+        }
+
+        // Top hits with improved layout
+        topHitsAdapter = AnimeAdapter(AnimeAdapter.ViewType.TOP_HIT) { anime ->
+            openAnimeDetails(anime)
+        }
+        topHitsRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = topHitsAdapter
+            isNestedScrollingEnabled = false
+
+            if (isRunningOnTV) {
+                val spacing = resources.getDimensionPixelSize(R.dimen.tv_item_spacing)
+                addItemDecoration(HorizontalSpaceItemDecoration(spacing))
+            }
+        }
+
+        // New episodes with improved layout
+        newEpisodesAdapter = AnimeAdapter(AnimeAdapter.ViewType.NEW_RELEASE) { anime ->
+            openAnimeDetails(anime)
+        }
+        newEpisodesRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = newEpisodesAdapter
+            isNestedScrollingEnabled = false
+
+            if (isRunningOnTV) {
+                val spacing = resources.getDimensionPixelSize(R.dimen.tv_item_spacing)
+                addItemDecoration(HorizontalSpaceItemDecoration(spacing))
+            }
+        }
+
+        // Latest updates with responsive grid
+        latestAdapter = AnimeAdapter(AnimeAdapter.ViewType.GRID) { anime ->
+            openAnimeDetails(anime)
+        }
+        latestRecyclerView.apply {
+            val spanCount = 3
+            layoutManager = GridLayoutManager(this@MainActivity, spanCount)
+            adapter = latestAdapter
+            isNestedScrollingEnabled = false
+            if (itemDecorationCount == 0) {
+                addItemDecoration(GridSpacingItemDecoration(spanCount, resources.getDimensionPixelSize(R.dimen.grid_spacing), true))
+            }
+        }
+    }
+
+    // Custom ItemDecoration for horizontal spacing
+    class HorizontalSpaceItemDecoration(private val horizontalSpaceHeight: Int) : RecyclerView.ItemDecoration() {
+        override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+            outRect.right = horizontalSpaceHeight
+
+            // Add left margin only for first item
+            if (parent.getChildAdapterPosition(view) == 0) {
+                outRect.left = horizontalSpaceHeight
+            }
+        }
+    }
+
+    // Enhanced TV layout setup
+    @SuppressLint("WrongConstant")
+    private fun setupTVLayout() {
+        isRunningOnTV = packageManager.hasSystemFeature("android.software.leanback") ||
+                packageManager.hasSystemFeature("android.software.leanback_only")
+
+        if (isRunningOnTV) {
+            // Show TV sidebar and adjust layout
+            tvSidebarNavigation.visibility = View.VISIBLE
+            bottomNavigationView.visibility = View.GONE
+
+            val sidebarWidth = resources.getDimensionPixelSize(R.dimen.tv_sidebar_width)
+            val params = mainContentContainer.layoutParams as CoordinatorLayout.LayoutParams
+            params.marginStart = sidebarWidth
+            mainContentContainer.layoutParams = params
+
+            // Disable swipe refresh on TV
+            swipeRefreshLayout.isEnabled = false
+
+            // Setup TV-specific styling
+            setupTVSidebarNavigation()
+            applyTVStyling()
+        } else {
+            // Phone/tablet layout
+            tvSidebarNavigation.visibility = View.GONE
+            bottomNavigationView.visibility = View.VISIBLE
+
+            val params = mainContentContainer.layoutParams as CoordinatorLayout.LayoutParams
+            params.marginStart = 0
+            mainContentContainer.layoutParams = params
+
+            swipeRefreshLayout.isEnabled = true
+        }
+    }
+
+    private fun applyTVStyling() {
+        // Increase text sizes for TV
+        featuredAnimeTitle.textSize = 28f
+        featuredAnimeGenre.textSize = 16f
+
+        // Adjust button sizes for TV
+        val buttonParams = btnPlay.layoutParams
+        buttonParams.height = resources.getDimensionPixelSize(R.dimen.tv_button_height)
+        btnPlay.layoutParams = buttonParams
+        btnMyList.layoutParams = buttonParams
+
+        // Increase section title sizes
+        findViewById<TextView>(R.id.see_all_top_hits)?.textSize = 18f
+        findViewById<TextView>(R.id.see_all_new_episodes)?.textSize = 18f
+        findViewById<TextView>(R.id.see_all_latest)?.textSize = 18f
+    }
+
+    // Enhanced keyboard navigation with better visual feedback
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (!isRunningOnTV) return super.onKeyDown(keyCode, event)
+
+        // Add haptic feedback for better user experience
+        window.decorView.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+
+        return when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_UP -> handleDpadUpWithFeedback()
+            KeyEvent.KEYCODE_DPAD_DOWN -> handleDpadDownWithFeedback()
+            KeyEvent.KEYCODE_DPAD_LEFT -> handleDpadLeftWithFeedback()
+            KeyEvent.KEYCODE_DPAD_RIGHT -> handleDpadRightWithFeedback()
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> handleDpadCenterWithFeedback()
+            KeyEvent.KEYCODE_BACK -> handleBackKeyWithFeedback()
+            KeyEvent.KEYCODE_MENU -> showTVHelp()
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    private fun handleDpadUpWithFeedback(): Boolean {
+        // Add visual feedback before navigation
+        val result = handleDpadUp()
+        if (result) {
+            // Add subtle animation to indicate navigation
+            animateNavigationFeedback()
+        }
+        return result
+    }
+
+    private fun handleDpadDownWithFeedback(): Boolean {
+        val result = handleDpadDown()
+        if (result) {
+            animateNavigationFeedback()
+        }
+        return result
+    }
+
+    private fun handleDpadLeftWithFeedback(): Boolean {
+        val result = handleDpadLeft()
+        if (result) {
+            animateNavigationFeedback()
+        }
+        return result
+    }
+
+    private fun handleDpadRightWithFeedback(): Boolean {
+        val result = handleDpadRight()
+        if (result) {
+            animateNavigationFeedback()
+        }
+        return result
+    }
+
+    private fun handleDpadCenterWithFeedback(): Boolean {
+        // Add press animation
+        val result = handleDpadCenter()
+        if (result) {
+            animateSelectionFeedback()
+        }
+        return result
+    }
+
+    private fun handleBackKeyWithFeedback(): Boolean {
+        val result = handleBackKey()
+        if (result) {
+            animateBackFeedback()
+        }
+        return result
+    }
+
+    private fun animateNavigationFeedback() {
+        // Subtle screen flash to indicate navigation
+        val overlay = View(this)
+        overlay.setBackgroundColor(Color.argb(20, 255, 255, 255))
+        val rootView = findViewById<ViewGroup>(android.R.id.content)
+        rootView.addView(overlay, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
+        overlay.animate()
+            .alpha(0f)
+            .setDuration(100)
+            .withEndAction { rootView.removeView(overlay) }
+            .start()
+    }
+
+    private fun animateSelectionFeedback() {
+        // More pronounced feedback for selection
+        val overlay = View(this)
+        overlay.setBackgroundColor(Color.argb(40, 0, 255, 0))
+        val rootView = findViewById<ViewGroup>(android.R.id.content)
+        rootView.addView(overlay, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
+        overlay.animate()
+            .alpha(0f)
+            .setDuration(200)
+            .withEndAction { rootView.removeView(overlay) }
+            .start()
+    }
+
+    private fun animateBackFeedback() {
+        // Different color for back navigation
+        val overlay = View(this)
+        overlay.setBackgroundColor(Color.argb(30, 255, 0, 0))
+        val rootView = findViewById<ViewGroup>(android.R.id.content)
+        rootView.addView(overlay, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
+        overlay.animate()
+            .alpha(0f)
+            .setDuration(150)
+            .withEndAction { rootView.removeView(overlay) }
+            .start()
+    }
+
+    private fun showTVHelp(): Boolean {
+        val helpDialog = AlertDialog.Builder(this)
+            .setTitle("TV Navigation Help")
+            .setMessage("""
+            🎮 D-pad Navigation:
+            ↑↓ - Navigate sections vertically
+            ←→ - Navigate items horizontally  
+            CENTER/ENTER - Select item
+            BACK - Go back to previous section
+            MENU - Show this help
+            
+            📱 Remote Tips:
+            • Use sidebar for main navigation
+            • Focus follows your movements
+            • Items highlight when selected
+        """.trimIndent())
+            .setPositiveButton("Got it!") { dialog, _ -> dialog.dismiss() }
+            .create()
+
+        helpDialog.show()
+        return true
+    }
+    private fun setupRecyclerViewFocusHandling() {
+        // Continue watching RecyclerView
+        continueWatchingRecyclerView.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                currentFocusedSection = FocusSection.CONTINUE_WATCHING_ITEMS
+                highlightRecyclerViewItem(continueWatchingRecyclerView, currentContinueWatchingPosition)
+            }
+        }
+
+        // Top hits RecyclerView
+        topHitsRecyclerView.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                currentFocusedSection = FocusSection.TOP_HITS_ITEMS
+                highlightRecyclerViewItem(topHitsRecyclerView, currentTopHitsPosition)
+            }
+        }
+
+        // New episodes RecyclerView
+        newEpisodesRecyclerView.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                currentFocusedSection = FocusSection.NEW_EPISODES_ITEMS
+                highlightRecyclerViewItem(newEpisodesRecyclerView, currentNewEpisodesPosition)
+            }
+        }
+
+        // Latest updates RecyclerView
+        latestRecyclerView.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                currentFocusedSection = FocusSection.LATEST_ITEMS
+                highlightRecyclerViewItem(latestRecyclerView, currentLatestGridPosition)
+            }
+        }
+    }
+
+
+
 
     private fun setInitialFocus() {
         if (isRunningOnTV) {
@@ -273,47 +772,89 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (!isRunningOnTV) return super.onKeyDown(keyCode, event)
 
-        return when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_UP -> handleDpadUp()
-            KeyEvent.KEYCODE_DPAD_DOWN -> handleDpadDown()
-            KeyEvent.KEYCODE_DPAD_LEFT -> handleDpadLeft()
-            KeyEvent.KEYCODE_DPAD_RIGHT -> handleDpadRight()
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> handleDpadCenter()
-            else -> super.onKeyDown(keyCode, event)
+
+    private fun handleBackKey(): Boolean {
+        // Custom back button behavior for TV
+        when (currentFocusedSection) {
+            FocusSection.CONTINUE_WATCHING_ITEMS,
+            FocusSection.TOP_HITS_ITEMS,
+            FocusSection.NEW_EPISODES_ITEMS,
+            FocusSection.LATEST_ITEMS -> {
+                // Go back to section header
+                focusOnSection(getSectionForItems(currentFocusedSection))
+                return true
+            }
+            else -> return false // Let default behavior handle it
         }
     }
 
-    // *** THIS IS THE MISSING FUNCTION ***
-    private fun getCurrentRecyclerView(): RecyclerView {
-        return when (currentFocusedSection) {
-            FocusSection.CONTINUE_WATCHING -> continueWatchingRecyclerView
-            FocusSection.TOP_HITS -> topHitsRecyclerView
-            FocusSection.NEW_EPISODES -> newEpisodesRecyclerView
-            FocusSection.LATEST_UPDATES -> latestRecyclerView
-            else -> topHitsRecyclerView // A safe default
+    private fun getSectionForItems(itemsSection: FocusSection): FocusSection {
+        return when (itemsSection) {
+            FocusSection.CONTINUE_WATCHING_ITEMS -> FocusSection.CONTINUE_WATCHING_SECTION
+            FocusSection.TOP_HITS_ITEMS -> FocusSection.TOP_HITS_SECTION
+            FocusSection.NEW_EPISODES_ITEMS -> FocusSection.NEW_EPISODES_SECTION
+            FocusSection.LATEST_ITEMS -> FocusSection.LATEST_SECTION
+            else -> itemsSection
         }
     }
 
     private fun handleDpadUp(): Boolean {
         when (currentFocusedSection) {
-            FocusSection.FEATURED_SLIDER -> focusOnSection(FocusSection.TOOLBAR)
-            FocusSection.FEATURED_BUTTONS -> focusOnSection(FocusSection.FEATURED_SLIDER)
-            FocusSection.CONTINUE_WATCHING -> focusOnSection(FocusSection.FEATURED_BUTTONS)
-            FocusSection.TOP_HITS -> focusOnSection(if (continueWatchingSection.visibility == View.VISIBLE) FocusSection.CONTINUE_WATCHING else FocusSection.FEATURED_BUTTONS)
-            FocusSection.NEW_EPISODES -> focusOnSection(FocusSection.TOP_HITS)
-            FocusSection.LATEST_UPDATES -> {
-                val layoutManager = latestRecyclerView.layoutManager as GridLayoutManager
-                val firstVisiblePos = layoutManager.findFirstVisibleItemPosition()
-                if (firstVisiblePos < layoutManager.spanCount) {
-                    focusOnSection(FocusSection.NEW_EPISODES)
-                } else {
-                    navigateGrid(-layoutManager.spanCount)
+            FocusSection.SIDEBAR_NAVIGATION -> {
+                if (currentSidebarIndex > 0) {
+                    sidebarItems[--currentSidebarIndex].requestFocus()
                 }
             }
-            else -> { /* Do nothing for SIDEBAR and TOOLBAR */ }
+            FocusSection.TOOLBAR -> {
+                // Stay in toolbar or go to sidebar
+                focusOnSection(FocusSection.SIDEBAR_NAVIGATION)
+            }
+            FocusSection.FEATURED_SLIDER -> {
+                focusOnSection(FocusSection.TOOLBAR)
+            }
+            FocusSection.FEATURED_BUTTONS -> {
+                focusOnSection(FocusSection.FEATURED_SLIDER)
+            }
+            FocusSection.CONTINUE_WATCHING_SECTION -> {
+                focusOnSection(FocusSection.FEATURED_BUTTONS)
+            }
+            FocusSection.CONTINUE_WATCHING_ITEMS -> {
+                focusOnSection(FocusSection.CONTINUE_WATCHING_SECTION)
+            }
+            FocusSection.TOP_HITS_SECTION -> {
+                if (continueWatchingSection.visibility == View.VISIBLE) {
+                    focusOnSection(FocusSection.CONTINUE_WATCHING_SECTION)
+                } else {
+                    focusOnSection(FocusSection.FEATURED_BUTTONS)
+                }
+            }
+            FocusSection.TOP_HITS_ITEMS -> {
+                focusOnSection(FocusSection.TOP_HITS_SECTION)
+            }
+            FocusSection.NEW_EPISODES_SECTION -> {
+                focusOnSection(FocusSection.TOP_HITS_SECTION)
+            }
+            FocusSection.NEW_EPISODES_ITEMS -> {
+                focusOnSection(FocusSection.NEW_EPISODES_SECTION)
+            }
+            FocusSection.LATEST_SECTION -> {
+                focusOnSection(FocusSection.NEW_EPISODES_SECTION)
+            }
+            FocusSection.LATEST_ITEMS -> {
+                // For grid, handle vertical navigation within grid
+                val layoutManager = latestRecyclerView.layoutManager as? GridLayoutManager
+                if (layoutManager != null) {
+                    val spanCount = layoutManager.spanCount
+                    val newPosition = currentLatestGridPosition - spanCount
+                    if (newPosition >= 0) {
+                        currentLatestGridPosition = newPosition
+                        scrollToGridPosition(latestRecyclerView, currentLatestGridPosition)
+                    } else {
+                        focusOnSection(FocusSection.LATEST_SECTION)
+                    }
+                }
+            }
         }
         return true
     }
@@ -325,15 +866,53 @@ class MainActivity : AppCompatActivity() {
                     sidebarItems[++currentSidebarIndex].requestFocus()
                 }
             }
-            FocusSection.TOOLBAR -> focusOnSection(FocusSection.FEATURED_SLIDER)
-            FocusSection.FEATURED_SLIDER -> focusOnSection(FocusSection.FEATURED_BUTTONS)
-            FocusSection.FEATURED_BUTTONS -> focusOnSection(if (continueWatchingSection.visibility == View.VISIBLE) FocusSection.CONTINUE_WATCHING else FocusSection.TOP_HITS)
-            FocusSection.CONTINUE_WATCHING -> focusOnSection(FocusSection.TOP_HITS)
-            FocusSection.TOP_HITS -> focusOnSection(FocusSection.NEW_EPISODES)
-            FocusSection.NEW_EPISODES -> focusOnSection(FocusSection.LATEST_UPDATES)
-            FocusSection.LATEST_UPDATES -> {
-                val layoutManager = latestRecyclerView.layoutManager as GridLayoutManager
-                navigateGrid(layoutManager.spanCount)
+            FocusSection.TOOLBAR -> {
+                focusOnSection(FocusSection.FEATURED_SLIDER)
+            }
+            FocusSection.FEATURED_SLIDER -> {
+                focusOnSection(FocusSection.FEATURED_BUTTONS)
+            }
+            FocusSection.FEATURED_BUTTONS -> {
+                if (continueWatchingSection.visibility == View.VISIBLE) {
+                    focusOnSection(FocusSection.CONTINUE_WATCHING_SECTION)
+                } else {
+                    focusOnSection(FocusSection.TOP_HITS_SECTION)
+                }
+            }
+            FocusSection.CONTINUE_WATCHING_SECTION -> {
+                focusOnSection(FocusSection.CONTINUE_WATCHING_ITEMS)
+            }
+            FocusSection.CONTINUE_WATCHING_ITEMS -> {
+                focusOnSection(FocusSection.TOP_HITS_SECTION)
+            }
+            FocusSection.TOP_HITS_SECTION -> {
+                focusOnSection(FocusSection.TOP_HITS_ITEMS)
+            }
+            FocusSection.TOP_HITS_ITEMS -> {
+                focusOnSection(FocusSection.NEW_EPISODES_SECTION)
+            }
+            FocusSection.NEW_EPISODES_SECTION -> {
+                focusOnSection(FocusSection.NEW_EPISODES_ITEMS)
+            }
+            FocusSection.NEW_EPISODES_ITEMS -> {
+                focusOnSection(FocusSection.LATEST_SECTION)
+            }
+            FocusSection.LATEST_SECTION -> {
+                focusOnSection(FocusSection.LATEST_ITEMS)
+            }
+            FocusSection.LATEST_ITEMS -> {
+                // For grid, handle vertical navigation within grid
+                val layoutManager = latestRecyclerView.layoutManager as? GridLayoutManager
+                if (layoutManager != null) {
+                    val spanCount = layoutManager.spanCount
+                    val adapter = latestRecyclerView.adapter
+                    val maxPosition = (adapter?.itemCount ?: 0) - 1
+                    val newPosition = currentLatestGridPosition + spanCount
+                    if (newPosition <= maxPosition) {
+                        currentLatestGridPosition = newPosition
+                        scrollToGridPosition(latestRecyclerView, currentLatestGridPosition)
+                    }
+                }
             }
         }
         return true
@@ -341,39 +920,39 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleDpadLeft(): Boolean {
         when (currentFocusedSection) {
-            FocusSection.FEATURED_SLIDER -> {
-                val newPos = (mainSliderViewPager.currentItem - 1)
-                if (newPos < 0) {
-                    focusOnSection(FocusSection.SIDEBAR_NAVIGATION)
-                } else {
-                    mainSliderViewPager.currentItem = newPos
-                }
-            }
-            FocusSection.FEATURED_BUTTONS -> {
-                if (currentButtonIndex > 0) {
-                    featuredButtons[--currentButtonIndex].requestFocus()
-                } else {
-                    focusOnSection(FocusSection.SIDEBAR_NAVIGATION)
-                }
-            }
-            FocusSection.CONTINUE_WATCHING, FocusSection.TOP_HITS, FocusSection.NEW_EPISODES, FocusSection.LATEST_UPDATES, FocusSection.TOOLBAR -> {
+            FocusSection.TOOLBAR,
+            FocusSection.FEATURED_SLIDER,
+            FocusSection.FEATURED_BUTTONS,
+            FocusSection.CONTINUE_WATCHING_SECTION,
+            FocusSection.CONTINUE_WATCHING_ITEMS,
+            FocusSection.TOP_HITS_SECTION,
+            FocusSection.TOP_HITS_ITEMS,
+            FocusSection.NEW_EPISODES_SECTION,
+            FocusSection.NEW_EPISODES_ITEMS,
+            FocusSection.LATEST_SECTION,
+            FocusSection.LATEST_ITEMS -> {
                 focusOnSection(FocusSection.SIDEBAR_NAVIGATION)
             }
-            else -> { /* Do nothing for SIDEBAR */ }
+            FocusSection.SIDEBAR_NAVIGATION -> {
+                // Stay in sidebar, don't move
+            }
         }
         return true
     }
 
     private fun handleDpadRight(): Boolean {
         when (currentFocusedSection) {
-            FocusSection.SIDEBAR_NAVIGATION -> focusOnSection(FocusSection.FEATURED_SLIDER)
-            FocusSection.TOOLBAR -> focusOnSection(FocusSection.FEATURED_SLIDER)
+            FocusSection.SIDEBAR_NAVIGATION -> {
+                focusOnSection(FocusSection.FEATURED_SLIDER)
+            }
             FocusSection.FEATURED_SLIDER -> {
-                (mainSliderViewPager.adapter?.itemCount)?.let { count ->
-                    val newPos = (mainSliderViewPager.currentItem + 1)
-                    if (newPos < count) {
-                        mainSliderViewPager.currentItem = newPos
-                    }
+                // Navigate through slider items
+                val adapter = mainSliderViewPager.adapter
+                if (adapter != null) {
+                    val currentItem = mainSliderViewPager.currentItem
+                    val nextItem = (currentItem + 1) % adapter.itemCount
+                    mainSliderViewPager.setCurrentItem(nextItem, true)
+                    currentSliderPosition = nextItem
                 }
             }
             FocusSection.FEATURED_BUTTONS -> {
@@ -381,73 +960,191 @@ class MainActivity : AppCompatActivity() {
                     featuredButtons[++currentButtonIndex].requestFocus()
                 }
             }
-            FocusSection.CONTINUE_WATCHING, FocusSection.TOP_HITS, FocusSection.NEW_EPISODES -> scrollRecyclerViewHorizontally(getCurrentRecyclerView(), 1)
-            FocusSection.LATEST_UPDATES -> navigateGrid(1)
+            FocusSection.CONTINUE_WATCHING_ITEMS -> {
+                navigateHorizontalRecyclerView(continueWatchingRecyclerView, 1) {
+                    currentContinueWatchingPosition = it
+                }
+            }
+            FocusSection.TOP_HITS_ITEMS -> {
+                navigateHorizontalRecyclerView(topHitsRecyclerView, 1) {
+                    currentTopHitsPosition = it
+                }
+            }
+            FocusSection.NEW_EPISODES_ITEMS -> {
+                navigateHorizontalRecyclerView(newEpisodesRecyclerView, 1) {
+                    currentNewEpisodesPosition = it
+                }
+            }
+            FocusSection.LATEST_ITEMS -> {
+                // Navigate right in grid
+                val adapter = latestRecyclerView.adapter
+                if (adapter != null) {
+                    val layoutManager = latestRecyclerView.layoutManager as? GridLayoutManager
+                    if (layoutManager != null) {
+                        val spanCount = layoutManager.spanCount
+                        val currentRow = currentLatestGridPosition / spanCount
+                        val currentCol = currentLatestGridPosition % spanCount
+                        if (currentCol < spanCount - 1) {
+                            val newPosition = currentLatestGridPosition + 1
+                            if (newPosition < adapter.itemCount) {
+                                currentLatestGridPosition = newPosition
+                                scrollToGridPosition(latestRecyclerView, currentLatestGridPosition)
+                            }
+                        }
+                    }
+                }
+            }
+            else -> {
+                // For section headers, move to items
+                when (currentFocusedSection) {
+                    FocusSection.CONTINUE_WATCHING_SECTION -> focusOnSection(FocusSection.CONTINUE_WATCHING_ITEMS)
+                    FocusSection.TOP_HITS_SECTION -> focusOnSection(FocusSection.TOP_HITS_ITEMS)
+                    FocusSection.NEW_EPISODES_SECTION -> focusOnSection(FocusSection.NEW_EPISODES_ITEMS)
+                    FocusSection.LATEST_SECTION -> focusOnSection(FocusSection.LATEST_ITEMS)
+                    else -> { /* Do nothing */ }
+                }
+            }
         }
         return true
     }
 
     private fun handleDpadCenter(): Boolean {
         when (currentFocusedSection) {
-            FocusSection.TOOLBAR -> searchActionView?.performClick()
-            FocusSection.SIDEBAR_NAVIGATION -> sidebarItems[currentSidebarIndex].performClick()
-            FocusSection.FEATURED_SLIDER -> focusOnSection(FocusSection.FEATURED_BUTTONS) // Pressing center on slider moves to buttons
-            FocusSection.FEATURED_BUTTONS -> featuredButtons[currentButtonIndex].performClick()
-            FocusSection.CONTINUE_WATCHING, FocusSection.TOP_HITS, FocusSection.NEW_EPISODES, FocusSection.LATEST_UPDATES -> clickCurrentRecyclerViewItem()
+            FocusSection.TOOLBAR -> {
+                searchActionView?.performClick()
+            }
+            FocusSection.SIDEBAR_NAVIGATION -> {
+                sidebarItems[currentSidebarIndex].performClick()
+            }
+            FocusSection.FEATURED_SLIDER -> {
+                // Move to featured buttons when center is pressed on slider
+                focusOnSection(FocusSection.FEATURED_BUTTONS)
+            }
+            FocusSection.FEATURED_BUTTONS -> {
+                featuredButtons[currentButtonIndex].performClick()
+            }
+            FocusSection.CONTINUE_WATCHING_SECTION -> {
+                seeAllContinueWatching.performClick()
+            }
+            FocusSection.TOP_HITS_SECTION -> {
+                seeAllTopHits.performClick()
+            }
+            FocusSection.NEW_EPISODES_SECTION -> {
+                seeAllNewEpisodes.performClick()
+            }
+            FocusSection.LATEST_SECTION -> {
+                seeAllLatest.performClick()
+            }
+            FocusSection.CONTINUE_WATCHING_ITEMS -> {
+                clickRecyclerViewItemAtPosition(continueWatchingRecyclerView, currentContinueWatchingPosition)
+            }
+            FocusSection.TOP_HITS_ITEMS -> {
+                clickRecyclerViewItemAtPosition(topHitsRecyclerView, currentTopHitsPosition)
+            }
+            FocusSection.NEW_EPISODES_ITEMS -> {
+                clickRecyclerViewItemAtPosition(newEpisodesRecyclerView, currentNewEpisodesPosition)
+            }
+            FocusSection.LATEST_ITEMS -> {
+                clickRecyclerViewItemAtPosition(latestRecyclerView, currentLatestGridPosition)
+            }
         }
         return true
     }
 
+    private fun navigateHorizontalRecyclerView(recyclerView: RecyclerView, direction: Int, updatePosition: (Int) -> Unit) {
+        val adapter = recyclerView.adapter ?: return
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+
+        val currentPos = when (recyclerView) {
+            continueWatchingRecyclerView -> currentContinueWatchingPosition
+            topHitsRecyclerView -> currentTopHitsPosition
+            newEpisodesRecyclerView -> currentNewEpisodesPosition
+            else -> 0
+        }
+
+        val newPosition = (currentPos + direction).coerceIn(0, adapter.itemCount - 1)
+        updatePosition(newPosition)
+
+        // Smooth scroll to new position
+        recyclerView.smoothScrollToPosition(newPosition)
+
+        // Update visual feedback
+        removeHighlightFromRecyclerView(recyclerView)
+        highlightRecyclerViewItem(recyclerView, newPosition)
+    }
+
+    private fun scrollToGridPosition(recyclerView: RecyclerView, position: Int) {
+        recyclerView.smoothScrollToPosition(position)
+        removeHighlightFromRecyclerView(recyclerView)
+        highlightRecyclerViewItem(recyclerView, position)
+    }
+
+    private fun clickRecyclerViewItemAtPosition(recyclerView: RecyclerView, position: Int) {
+        recyclerView.post {
+            val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
+            viewHolder?.itemView?.performClick()
+        }
+    }
+
     private fun focusOnSection(section: FocusSection) {
+        // Remove highlights from previous section
+        when (currentFocusedSection) {
+            FocusSection.CONTINUE_WATCHING_ITEMS -> removeHighlightFromRecyclerView(continueWatchingRecyclerView)
+            FocusSection.TOP_HITS_ITEMS -> removeHighlightFromRecyclerView(topHitsRecyclerView)
+            FocusSection.NEW_EPISODES_ITEMS -> removeHighlightFromRecyclerView(newEpisodesRecyclerView)
+            FocusSection.LATEST_ITEMS -> removeHighlightFromRecyclerView(latestRecyclerView)
+            else -> { /* No cleanup needed */ }
+        }
+
         currentFocusedSection = section
         val viewToFocus: View? = when (section) {
             FocusSection.TOOLBAR -> searchActionView
             FocusSection.SIDEBAR_NAVIGATION -> sidebarItems.getOrNull(currentSidebarIndex)
             FocusSection.FEATURED_SLIDER -> mainSliderViewPager
             FocusSection.FEATURED_BUTTONS -> featuredButtons.getOrNull(currentButtonIndex)
-            FocusSection.CONTINUE_WATCHING -> if (continueWatchingSection.visibility == View.VISIBLE) continueWatchingRecyclerView else null
-            FocusSection.TOP_HITS -> topHitsRecyclerView
-            FocusSection.NEW_EPISODES -> newEpisodesRecyclerView
-            FocusSection.LATEST_UPDATES -> latestRecyclerView
+            FocusSection.CONTINUE_WATCHING_SECTION -> seeAllContinueWatching
+            FocusSection.CONTINUE_WATCHING_ITEMS -> {
+                if (continueWatchingSection.visibility == View.VISIBLE) {
+                    highlightRecyclerViewItem(continueWatchingRecyclerView, currentContinueWatchingPosition)
+                    continueWatchingRecyclerView
+                } else null
+            }
+            FocusSection.TOP_HITS_SECTION -> seeAllTopHits
+            FocusSection.TOP_HITS_ITEMS -> {
+                highlightRecyclerViewItem(topHitsRecyclerView, currentTopHitsPosition)
+                topHitsRecyclerView
+            }
+            FocusSection.NEW_EPISODES_SECTION -> seeAllNewEpisodes
+            FocusSection.NEW_EPISODES_ITEMS -> {
+                highlightRecyclerViewItem(newEpisodesRecyclerView, currentNewEpisodesPosition)
+                newEpisodesRecyclerView
+            }
+            FocusSection.LATEST_SECTION -> seeAllLatest
+            FocusSection.LATEST_ITEMS -> {
+                highlightRecyclerViewItem(latestRecyclerView, currentLatestGridPosition)
+                latestRecyclerView
+            }
         }
+
         viewToFocus?.requestFocus()
 
-        // If a section is not visible (e.g., Continue Watching), move to the next logical one
-        if (viewToFocus == null && section == FocusSection.CONTINUE_WATCHING) {
-            focusOnSection(FocusSection.TOP_HITS)
-        }
-    }
-
-    private fun navigateGrid(direction: Int) {
-        val layoutManager = latestRecyclerView.layoutManager as? GridLayoutManager ?: return
-        val adapter = latestRecyclerView.adapter ?: return
-        val currentPosition = (layoutManager.findFirstVisibleItemPosition() + layoutManager.findLastVisibleItemPosition()) / 2
-        val newPosition = (currentPosition + direction).coerceIn(0, adapter.itemCount - 1)
-        latestRecyclerView.smoothScrollToPosition(newPosition)
-    }
-
-    private fun scrollRecyclerViewHorizontally(recyclerView: RecyclerView, direction: Int) {
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-        val currentCenter = (layoutManager.findFirstVisibleItemPosition() + layoutManager.findLastVisibleItemPosition()) / 2
-        val newPosition = (currentCenter + direction).coerceIn(0, (recyclerView.adapter?.itemCount ?: 1) - 1)
-        recyclerView.smoothScrollToPosition(newPosition)
-    }
-
-    private fun clickCurrentRecyclerViewItem() {
-        val recyclerView = getCurrentRecyclerView()
-        val layoutManager = recyclerView.layoutManager
-        val centerPosition = when (layoutManager) {
-            is LinearLayoutManager -> (layoutManager.findFirstVisibleItemPosition() + layoutManager.findLastVisibleItemPosition()) / 2
-            is GridLayoutManager -> (layoutManager.findFirstVisibleItemPosition() + layoutManager.findLastVisibleItemPosition()) / 2
-            else -> -1
-        }
-        if (centerPosition != -1) {
-            recyclerView.findViewHolderForAdapterPosition(centerPosition)?.itemView?.performClick()
+        // Handle case where section is not visible
+        if (viewToFocus == null) {
+            when (section) {
+                FocusSection.CONTINUE_WATCHING_SECTION,
+                FocusSection.CONTINUE_WATCHING_ITEMS -> {
+                    if (continueWatchingSection.visibility != View.VISIBLE) {
+                        focusOnSection(FocusSection.TOP_HITS_SECTION)
+                    }
+                }
+                else -> { /* Section should be visible */ }
+            }
         }
     }
 
     private fun setupTVSidebarNavigation() {
         sidebarItems.forEach { it.isFocusable = true }
+
         // Click listeners
         navItemHome.setOnClickListener { updateSidebarSelection(0) }
         navItemMyList.setOnClickListener {
@@ -471,12 +1168,63 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateSidebarSelection(selectedIndex: Int) {
         sidebarItems.forEachIndexed { index, item ->
-            item.setBackgroundResource(if (index == selectedIndex) R.color.green_play_button else android.R.color.transparent)
+            item.setBackgroundResource(
+                if (index == selectedIndex) R.color.green_play_button
+                else android.R.color.transparent
+            )
         }
         currentSidebarIndex = selectedIndex
     }
 
-    // --- (The rest of your code remains unchanged) ---
+    // --- Additional helper methods for better TV navigation ---
+
+    private fun ensureItemVisible(recyclerView: RecyclerView, position: Int) {
+        val layoutManager = recyclerView.layoutManager
+        when (layoutManager) {
+            is LinearLayoutManager -> {
+                val firstVisible = layoutManager.findFirstVisibleItemPosition()
+                val lastVisible = layoutManager.findLastVisibleItemPosition()
+
+                if (position < firstVisible || position > lastVisible) {
+                    recyclerView.smoothScrollToPosition(position)
+                }
+            }
+            is GridLayoutManager -> {
+                val firstVisible = layoutManager.findFirstVisibleItemPosition()
+                val lastVisible = layoutManager.findLastVisibleItemPosition()
+
+                if (position < firstVisible || position > lastVisible) {
+                    recyclerView.smoothScrollToPosition(position)
+                }
+            }
+        }
+    }
+
+    private fun resetNavigationPositions() {
+        currentContinueWatchingPosition = 0
+        currentTopHitsPosition = 0
+        currentNewEpisodesPosition = 0
+        currentLatestGridPosition = 0
+        currentSliderPosition = 0
+        currentButtonIndex = 0
+        currentSidebarIndex = 0
+    }
+
+    // Override onResume to ensure proper focus restoration
+    override fun onResume() {
+        super.onResume()
+        if (::sliderRunnable.isInitialized) {
+            sliderHandler.postDelayed(sliderRunnable, 3000)
+        }
+        if (isRunningOnTV) {
+            // Restore focus to the current section
+            Handler(Looper.getMainLooper()).postDelayed({
+                focusOnSection(currentFocusedSection)
+            }, 200)
+        }
+    }
+
+    // --- Rest of the original code (unchanged methods) ---
 
     private fun setupFeaturedButtons() {
         btnPlay.setOnClickListener {
@@ -598,6 +1346,11 @@ class MainActivity : AppCompatActivity() {
                     showWarning("Some content could not be loaded.")
                 }
 
+                // Reset navigation positions when new data is loaded
+                if (isRunningOnTV) {
+                    resetNavigationPositions()
+                }
+
             } catch (e: Exception) {
                 if (isActive) {
                     val message = when (e) {
@@ -713,6 +1466,9 @@ class MainActivity : AppCompatActivity() {
         seeAllLatest.setOnClickListener {
             startActivity(SeeAllActivity.newIntent(this, "LATEST_UPDATES", "Latest Updates"))
         }
+//        seeAllContinueWatching.setOnClickListener {
+//            startActivity(Intent(this, ContinueWatchingActivity::class.java))
+//        }
     }
 
     private fun setupToolbar() {
@@ -746,36 +1502,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupRecyclerViews() {
-        continueWatchingAdapter = ContinueWatchingAdapter { watchHistory -> openContinueWatchingItem(watchHistory) }
-        continueWatchingRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = continueWatchingAdapter
-            isNestedScrollingEnabled = false
-        }
-        topHitsAdapter = AnimeAdapter(AnimeAdapter.ViewType.TOP_HIT) { anime -> openAnimeDetails(anime) }
-        topHitsRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = topHitsAdapter
-            isNestedScrollingEnabled = false
-        }
-        newEpisodesAdapter = AnimeAdapter(AnimeAdapter.ViewType.NEW_RELEASE) { anime -> openAnimeDetails(anime) }
-        newEpisodesRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = newEpisodesAdapter
-            isNestedScrollingEnabled = false
-        }
-        latestAdapter = AnimeAdapter(AnimeAdapter.ViewType.GRID) { anime -> openAnimeDetails(anime) }
-        latestRecyclerView.apply {
-            val spanCount = 3
-            layoutManager = GridLayoutManager(this@MainActivity, spanCount)
-            adapter = latestAdapter
-            isNestedScrollingEnabled = false
-            if (itemDecorationCount == 0) {
-                addItemDecoration(GridSpacingItemDecoration(spanCount, resources.getDimensionPixelSize(R.dimen.grid_spacing), true))
-            }
-        }
-    }
+
 
     private fun setupBottomNavigation() {
         bottomNavigationView.setOnNavigationItemSelectedListener { item ->
@@ -798,6 +1525,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("WrongConstant")
     private fun observeWatchHistory() {
         lifecycleScope.launch {
             db.watchHistoryDao().getContinueWatchingHistory().collectLatest { historyList ->
@@ -847,6 +1575,7 @@ class MainActivity : AppCompatActivity() {
                 if (sliderItems.isNotEmpty() && position < sliderItems.size) {
                     updateFeaturedAnime(sliderItems[position], null)
                 }
+                currentSliderPosition = position
             }
         })
         sliderHandler.postDelayed(sliderRunnable, 3000)
@@ -863,6 +1592,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("WrongConstant")
     private fun showLoading(isLoading: Boolean) {
         swipeRefreshLayout.isRefreshing = isLoading
         val shimmerVisibility = if (isLoading) View.VISIBLE else View.GONE
@@ -894,12 +1624,6 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         if (::sliderRunnable.isInitialized) sliderHandler.removeCallbacks(sliderRunnable)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (::sliderRunnable.isInitialized) sliderHandler.postDelayed(sliderRunnable, 3000)
-        if (isRunningOnTV) setInitialFocus()
     }
 
     private fun setupSwipeRefresh() {

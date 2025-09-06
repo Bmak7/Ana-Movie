@@ -753,97 +753,175 @@ class VideoPlayerActivity : AppCompatActivity() {
     // In VideoPlayerActivity.kt
 
     // Enhanced initializePlayerForVideo method to handle offline content
+//    @androidx.annotation.OptIn(UnstableApi::class)
+//    private fun initializePlayerForVideo(video: Video) {
+//        player?.release()
+//        player = null
+//
+//        tvServerName.text = "${video.quality} (Auto)"
+//
+//        // Check if this is a local file (offline content)
+//        val isLocalFile = video.url.startsWith("file://") ||
+//                video.url.startsWith("content://") ||
+//                video.url.startsWith("/") ||
+//                File(video.url).exists()
+//
+//        val dataSourceFactory = if (isLocalFile) {
+//            // For local files, use a simple DefaultDataSource factory without network components
+//            Log.d("VideoPlayerActivity", "Playing offline content: ${video.url}")
+//            DefaultDataSource.Factory(this)
+//        } else {
+//            // For online content, use the existing network setup
+//            Log.d("VideoPlayerActivity", "Playing online content: ${video.url}")
+//            if (video.url.startsWith("https")) {
+//                val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
+//                val okHttpDataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
+//                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+//                video.headers?.let { okHttpDataSourceFactory.setDefaultRequestProperties(it) }
+//                DefaultDataSource.Factory(this, okHttpDataSourceFactory)
+//            } else {
+//                val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+//                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+//                video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
+//                DefaultDataSource.Factory(this, httpDataSourceFactory)
+//            }
+//        }
+//
+//        // Handle subtitles - only for online content or if subtitles are also stored locally
+//        val subtitleConfigurations = if (!isLocalFile) {
+//            video.subtitles?.mapNotNull { subtitle ->
+//                val subtitleUri = Uri.parse(subtitle.url)
+//                val mimeType = when {
+//                    subtitle.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
+//                    subtitle.url.contains(".srt", true) -> MimeTypes.APPLICATION_SUBRIP
+//                    else -> null
+//                }
+//                if (mimeType != null) {
+//                    MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+//                        .setMimeType(mimeType)
+//                        .setLanguage(subtitle.lang)
+//                        .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+//                        .build()
+//                } else {
+//                    null
+//                }
+//            } ?: emptyList()
+//        } else {
+//            // For offline content, check if there are local subtitle files
+//            findLocalSubtitleFiles(video.url)
+//        }
+//
+//        val mediaItem = MediaItem.Builder()
+//            .setUri(video.url)
+//            .setSubtitleConfigurations(subtitleConfigurations)
+//            .build()
+//
+//        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+//
+//        trackSelector = DefaultTrackSelector(this).apply {
+//            setParameters(
+//                buildUponParameters()
+//                    .setAllowMultipleAdaptiveSelections(true)
+//                    .setMaxVideoBitrate(Int.MAX_VALUE)
+//                    .setForceHighestSupportedBitrate(false)
+//            )
+//        }
+//
+//        player = ExoPlayer.Builder(this)
+//            .setTrackSelector(trackSelector)
+//            .setMediaSourceFactory(mediaSourceFactory)
+//            .build().apply {
+//                setMediaItem(mediaItem)
+//                addListener(playerListener)
+//                playWhenReady = true
+//                val seekPosition = if (startPosition != -1L) startPosition else 0L
+//                seekTo(seekPosition)
+//                startPosition = -1L
+//                prepare()
+//            }
+//
+//        playerView.player = player
+//        playerView.resizeMode = currentResizeMode
+//        updateProgress()
+//    }
+
+    // In VideoPlayerActivity.kt
+
     @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializePlayerForVideo(video: Video) {
+        // 1. Release any existing player instance
         player?.release()
         player = null
 
-        tvServerName.text = "${video.quality} (Auto)"
+        tvServerName.text = "${video.quality}"
 
-        // Check if this is a local file (offline content)
+        // 2. Determine if the content is local or online
         val isLocalFile = video.url.startsWith("file://") ||
                 video.url.startsWith("content://") ||
                 video.url.startsWith("/") ||
                 File(video.url).exists()
 
-        val dataSourceFactory = if (isLocalFile) {
-            // For local files, use a simple DefaultDataSource factory without network components
-            Log.d("VideoPlayerActivity", "Playing offline content: ${video.url}")
+        // 3. Create the appropriate DataSource.Factory
+        val dataSourceFactory: androidx.media3.datasource.DataSource.Factory = if (isLocalFile) {
+            // For local files, use a simple factory that only handles local data
+            Log.d("VideoPlayerActivity", "Using local data source for: ${video.url}")
             DefaultDataSource.Factory(this)
         } else {
-            // For online content, use the existing network setup
-            Log.d("VideoPlayerActivity", "Playing online content: ${video.url}")
-            if (video.url.startsWith("https")) {
-                val unsafeOkHttpClient = NetworkUtils.getUnsafeOkHttpClient()
-                val okHttpDataSourceFactory = OkHttpDataSource.Factory(unsafeOkHttpClient)
-                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-                video.headers?.let { okHttpDataSourceFactory.setDefaultRequestProperties(it) }
-                DefaultDataSource.Factory(this, okHttpDataSourceFactory)
-            } else {
-                val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-                video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
-                DefaultDataSource.Factory(this, httpDataSourceFactory)
+            // For online streams, create a factory that can handle HTTP requests
+            Log.d("VideoPlayerActivity", "Using network data source for: ${video.url}")
+
+            // Use OkHttpDataSource for better network handling and header management
+            val okHttpClient = NetworkUtils.getUnsafeOkHttpClient() // Assuming this provides a valid OkHttpClient
+            val httpDataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
+
+            // *** THIS IS THE CRITICAL FIX ***
+            // Apply the headers from the Video object to the data source factory.
+            // This ensures the "Referer" is sent with every request ExoPlayer makes.
+            video.headers?.let { headers ->
+                Log.d("VideoPlayerActivity", "Applying headers: $headers")
+                httpDataSourceFactory.setDefaultRequestProperties(headers)
             }
+
+            httpDataSourceFactory
         }
 
-        // Handle subtitles - only for online content or if subtitles are also stored locally
-        val subtitleConfigurations = if (!isLocalFile) {
-            video.subtitles?.mapNotNull { subtitle ->
-                val subtitleUri = Uri.parse(subtitle.url)
-                val mimeType = when {
-                    subtitle.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
-                    subtitle.url.contains(".srt", true) -> MimeTypes.APPLICATION_SUBRIP
-                    else -> null
-                }
-                if (mimeType != null) {
-                    MediaItem.SubtitleConfiguration.Builder(subtitleUri)
-                        .setMimeType(mimeType)
-                        .setLanguage(subtitle.lang)
-                        .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-                        .build()
-                } else {
-                    null
-                }
-            } ?: emptyList()
-        } else {
-            // For offline content, check if there are local subtitle files
-            findLocalSubtitleFiles(video.url)
-        }
+        // 4. Create the MediaSourceFactory using the configured DataSource.Factory
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
 
+        // 5. Build the MediaItem, including subtitle configurations
+        val subtitleConfigurations = findLocalSubtitleFiles(video.url) // Assuming this works for both local/remote
         val mediaItem = MediaItem.Builder()
             .setUri(video.url)
             .setSubtitleConfigurations(subtitleConfigurations)
             .build()
 
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
-
+        // 6. Setup TrackSelector for quality and track selection
         trackSelector = DefaultTrackSelector(this).apply {
-            setParameters(
-                buildUponParameters()
-                    .setAllowMultipleAdaptiveSelections(true)
-                    .setMaxVideoBitrate(Int.MAX_VALUE)
-                    .setForceHighestSupportedBitrate(false)
-            )
+            parameters = buildUponParameters()
+                .setAllowMultipleAdaptiveSelections(true)
+                .build()
         }
 
+        // 7. Build the ExoPlayer instance with the correct factories
         player = ExoPlayer.Builder(this)
             .setTrackSelector(trackSelector)
-            .setMediaSourceFactory(mediaSourceFactory)
+            .setMediaSourceFactory(mediaSourceFactory) // <-- Use the factory with headers
             .build().apply {
                 setMediaItem(mediaItem)
-                addListener(playerListener)
+                addListener(playerListener) // Use your existing enhanced listener
                 playWhenReady = true
-                val seekPosition = if (startPosition != -1L) startPosition else 0L
-                seekTo(seekPosition)
-                startPosition = -1L
+                seekTo(if (startPosition > 0) startPosition else 0L)
+                startPosition = 0L // Reset after seeking
                 prepare()
             }
 
+        // 8. Assign the player to the view
         playerView.player = player
         playerView.resizeMode = currentResizeMode
-        updateProgress()
+        updateProgress() // Start the progress updater
     }
+
 
     // Helper method to find local subtitle files
     private fun findLocalSubtitleFiles(videoPath: String): List<MediaItem.SubtitleConfiguration> {
