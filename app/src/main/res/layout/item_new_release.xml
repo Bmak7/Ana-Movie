@@ -38,5 +38,20 @@
                     tools:text="9.5"/>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Simplified TextView for title -->
+        <TextView
+                android:id="@+id/anime_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:background="#AA000000"
+        android:padding="8dp"
+        android:textColor="#FFFF00"
+        android:textSize="14sp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:gravity="center"
+        tools:text="Anime Title"/>
+
     </FrameLayout>
 </com.google.android.material.card.MaterialCardView>

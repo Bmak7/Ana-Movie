@@ -214,8 +214,57 @@ class DaddyLiveSource(private val context: Context) {
         try {
             Log.d("DDL", "fetchLiveStreamLink started for: ${channelJson.take(100)}...")
             val channel = json.decodeFromString(DaddyLiveChannel.serializer(), channelJson)
-            val channelUrl = "$baseUrl${channel.url}"
-            Log.d("DDL", "Parsed channel - name: ${channel.name}, url: $channelUrl")
+
+            // Extract the stream ID from the original URL (e.g., "/stream/stream-91.php" -> "91")
+            val streamIdPattern = Pattern.compile("stream-(\\d+)\\.php")
+            val streamIdMatcher = streamIdPattern.matcher(channel.url)
+            val streamId = if (streamIdMatcher.find()) {
+                streamIdMatcher.group(1) ?: run {
+                    Log.e("DDL", "Could not extract stream ID from URL: ${channel.url}")
+                    return@withContext null
+                }
+            } else {
+                Log.e("DDL", "Invalid URL format: ${channel.url}")
+                return@withContext null
+            }
+
+            Log.d("DDL", "Extracted stream ID: $streamId")
+
+            // List of player patterns to try
+            val playerPatterns = listOf(
+                "/stream/stream-$streamId.php",
+                "/cast/stream-$streamId.php",
+                "/hls/stream-$streamId.php",
+                "/player/stream-$streamId.php"
+            )
+
+            // Try each player pattern until one works
+            for (playerPattern in playerPatterns) {
+                Log.d("DDL", "Trying player pattern: $playerPattern")
+                val channelUrl = "$baseUrl$playerPattern"
+
+                val video = tryFetchFromPlayer(channelUrl, channel.name, streamId)
+                if (video != null) {
+                    Log.d("DDL", "Successfully got stream from player: $playerPattern")
+                    return@withContext video
+                } else {
+                    Log.d("DDL", "Failed to get stream from player: $playerPattern")
+                }
+            }
+
+            Log.e("DDL", "All players failed for channel: ${channel.name}")
+            return@withContext null
+
+        } catch (e: Exception) {
+            Log.e("DDL", "Exception in fetchLiveStreamLink: ${e.message}")
+            e.printStackTrace()
+            return@withContext null
+        }
+    }
+
+    private suspend fun tryFetchFromPlayer(channelUrl: String, channelName: String, streamId: String): Video? {
+        try {
+            Log.d("DDL", "Trying to fetch from URL: $channelUrl")
 
             // Step 1: Fetch the stream page and extract iframe src
             val request = Request.Builder()
@@ -224,35 +273,53 @@ class DaddyLiveSource(private val context: Context) {
                 .addHeader("Referer", baseUrl)
                 .addHeader("Origin", baseUrl)
                 .build()
+
             val response = client.newCall(request).execute()
             val pageContent = response.body?.string() ?: run {
-                Log.e("DDL", "Empty response body from channel page")
-                return@withContext null
+                Log.e("DDL", "Empty response body from channel page: $channelUrl")
+                response.close()
+                return null
             }
             response.close()
 
-            val iframePattern = Pattern.compile("<iframe[^>]*src=\"([^\"]+)\"")
-            val iframeMatcher = iframePattern.matcher(pageContent)
-            if (!iframeMatcher.find()) {
-                Log.e("DDL", "No iframe found in page content")
-                return@withContext null
+            Log.d("DDL", "Page content length: ${pageContent.length}")
+
+            // Look for iframe src - try multiple patterns
+            val iframePatterns = listOf(
+                Pattern.compile("<iframe[^>]*src=\"([^\"]+)\"", Pattern.CASE_INSENSITIVE),
+                Pattern.compile("<iframe[^>]*src='([^']+)'", Pattern.CASE_INSENSITIVE),
+                Pattern.compile("src=\"([^\"]*(?:premiumtv|player|stream)[^\"]*?)\"", Pattern.CASE_INSENSITIVE)
+            )
+
+            var iframeSrc: String? = null
+            for (pattern in iframePatterns) {
+                val matcher = pattern.matcher(pageContent)
+                if (matcher.find()) {
+                    iframeSrc = matcher.group(1)
+                    Log.d("DDL", "Found iframe with pattern: $pattern, src: $iframeSrc")
+                    break
+                }
             }
-            val iframeSrc = iframeMatcher.group(1) ?: run {
-                Log.e("DDL", "Iframe src is null")
-                return@withContext null
+
+            if (iframeSrc == null) {
+                Log.e("DDL", "No iframe found in page content for: $channelUrl")
+                // Log a snippet of the content for debugging
+                Log.d("DDL", "Page content snippet: ${pageContent.take(500)}")
+                return null
             }
+
             Log.d("DDL", "Iframe URL: $iframeSrc")
 
             // Extract final .m3u8 URL
             val finalUrl = extractFinalUrl(iframeSrc, channelUrl) ?: run {
-                Log.e("DDL", "extractFinalUrl returned null")
-                return@withContext null
+                Log.e("DDL", "extractFinalUrl returned null for iframe: $iframeSrc")
+                return null
             }
 
             val parsedUrl = URL(iframeSrc)
             val refererBase = "${parsedUrl.protocol}://${parsedUrl.host}"
 
-            return@withContext Video(
+            return Video(
                 url = finalUrl,
                 quality = "Live",
                 videoUrl = finalUrl,
@@ -262,13 +329,15 @@ class DaddyLiveSource(private val context: Context) {
                     "Origin" to refererBase
                 )
             )
+
         } catch (e: Exception) {
-            Log.e("DDL", "Exception in fetchLiveStreamLink: ${e.message}")
+            Log.e("DDL", "Exception in tryFetchFromPlayer for $channelUrl: ${e.message}")
             e.printStackTrace()
-            return@withContext null
+            return null
         }
     }
 
+    // Enhanced extractFinalUrl method with better error handling and multiple iframe formats
     private suspend fun extractFinalUrl(iframeSrc: String, referer: String): String? {
         try {
             Log.d("DDL", "extractFinalUrl started with iframeSrc: $iframeSrc, referer: $referer")
@@ -280,46 +349,88 @@ class DaddyLiveSource(private val context: Context) {
                 .addHeader("Referer", referer)
                 .addHeader("Origin", referer.substringBeforeLast("/"))
                 .build()
+
             val iframeResponse = client.newCall(iframeRequest).execute()
             val scriptContent = iframeResponse.body?.string() ?: run {
                 Log.e("DDL", "Empty response body from iframe")
+                iframeResponse.close()
                 return null
             }
             iframeResponse.close()
+
             Log.d("DDL", "Iframe response code: ${iframeResponse.code}, content length: ${scriptContent.length}")
 
-            val serverUrl = iframeSrc.substringBefore("/premiumtv")
+            // Log a snippet of the script content for debugging
+            Log.d("DDL", "Script content snippet: ${scriptContent.take(200)}")
+
+            // Extract server URL from iframe URL
+            val serverUrl = when {
+                iframeSrc.contains("/premiumtv") -> iframeSrc.substringBefore("/premiumtv")
+                iframeSrc.contains("/player") -> iframeSrc.substringBefore("/player")
+                iframeSrc.contains("/daddy") -> iframeSrc.substringBefore("/daddy")
+                else -> {
+                    val parsedUrl = URL(iframeSrc)
+                    "${parsedUrl.protocol}://${parsedUrl.host}"
+                }
+            }
             Log.d("DDL", "Extracted server URL: $serverUrl")
 
-            // Step 2: Extract BUNDLE (or alternative, e.g., XJZ) and CHANNEL_KEY
-            val bundlePattern = Pattern.compile("""const\s+\w+\s*=\s*"([^"]+)"""")
-            val bundleMatcher = bundlePattern.matcher(scriptContent)
+            // Step 2: Extract BUNDLE/XJZ and CHANNEL_KEY with multiple patterns
             var bundle: String? = null
-            if (bundleMatcher.find()) {
-                bundle = bundleMatcher.group(1)
-                Log.d("DDL", "Bundle found: ${bundle.take(50)}...")
+            val bundlePatterns = listOf(
+                Pattern.compile("""const\s+BUNDLE\s*=\s*["']([^"']+)["']"""),
+                Pattern.compile("""const\s+XJZ\s*=\s*["']([^"']+)["']"""),
+                Pattern.compile("""const\s+\w+\s*=\s*["']([^"']+)["']"""),
+                Pattern.compile("""var\s+\w+\s*=\s*["']([^"']+)["']""")
+            )
+
+            for (pattern in bundlePatterns) {
+                val matcher = pattern.matcher(scriptContent)
+                if (matcher.find()) {
+                    bundle = matcher.group(1)
+                    Log.d("DDL", "Bundle found with pattern: $pattern, value: ${bundle.take(50)}...")
+                    break
+                }
             }
 
-            val channelKeyPattern = Pattern.compile("""const CHANNEL_KEY\s*=\s*"([^"]+)"""")
-            val channelKeyMatcher = channelKeyPattern.matcher(scriptContent)
             var channelKey: String? = null
-            if (channelKeyMatcher.find()) {
-                channelKey = channelKeyMatcher.group(1)
-                Log.d("DDL", "Channel Key: $channelKey")
+            val channelKeyPatterns = listOf(
+                Pattern.compile("""const\s+CHANNEL_KEY\s*=\s*["']([^"']+)["']"""),
+                Pattern.compile("""const\s+CHANNEL_ID\s*=\s*["']([^"']+)["']"""),
+                Pattern.compile("""channel_id["']\s*:\s*["']([^"']+)["']"""),
+                Pattern.compile("""id["']\s*:\s*["']([^"']+)["']""")
+            )
+
+            for (pattern in channelKeyPatterns) {
+                val matcher = pattern.matcher(scriptContent)
+                if (matcher.find()) {
+                    channelKey = matcher.group(1)
+                    Log.d("DDL", "Channel Key found with pattern: $pattern, value: $channelKey")
+                    break
+                }
             }
 
-            // Fallback for channelKey from iframe URL
+            // Fallback: Extract channel key from iframe URL parameters
             if (channelKey == null) {
-                val channelIdPattern = Pattern.compile("""id=(\d+)""")
-                val channelIdMatcher = channelIdPattern.matcher(iframeSrc)
-                if (channelIdMatcher.find()) {
-                    channelKey = channelIdMatcher.group(1)
-                    Log.d("DDL", "Fallback Channel Key from URL: $channelKey")
+                val urlPatterns = listOf(
+                    Pattern.compile("""[?&]id=(\d+)"""),
+                    Pattern.compile("""[?&]a=(\d+)"""),
+                    Pattern.compile("""[?&]channel=(\d+)""")
+                )
+
+                for (pattern in urlPatterns) {
+                    val matcher = pattern.matcher(iframeSrc)
+                    if (matcher.find()) {
+                        channelKey = matcher.group(1)
+                        Log.d("DDL", "Fallback Channel Key from URL with pattern: $pattern, value: $channelKey")
+                        break
+                    }
                 }
             }
 
             if (bundle == null || channelKey == null) {
-                Log.e("DDL", "Missing BUNDLE or CHANNEL_KEY in script content")
+                Log.e("DDL", "Missing BUNDLE ($bundle) or CHANNEL_KEY ($channelKey) in script content")
+                Log.d("DDL", "Full script content for debugging: $scriptContent")
                 return null
             }
 
@@ -339,37 +450,32 @@ class DaddyLiveSource(private val context: Context) {
                 return null
             }
 
-            val authTs = try {
-                String(Base64.decode(bundleObj.bTs, Base64.DEFAULT))
-            } catch (e: Exception) {
-                Log.e("DDL", "Failed to decode b_ts: ${e.message}")
+            // Step 4: Decode auth parameters
+            val authTs = base64Decode(bundleObj.bTs)
+            val authRnd = base64Decode(bundleObj.bRnd)
+            val authSig = base64Decode(bundleObj.bSig)
+
+            if (authTs.isEmpty() || authRnd.isEmpty() || authSig.isEmpty()) {
+                Log.e("DDL", "Failed to decode auth parameters")
                 return null
             }
-            val authRnd = try {
-                String(Base64.decode(bundleObj.bRnd, Base64.DEFAULT))
-            } catch (e: Exception) {
-                Log.e("DDL", "Failed to decode b_rnd: ${e.message}")
-                return null
-            }
-            val authSig = try {
-                String(Base64.decode(bundleObj.bSig, Base64.DEFAULT))
-            } catch (e: Exception) {
-                Log.e("DDL", "Failed to decode b_sig: ${e.message}")
-                return null
-            }
+
             Log.d("DDL", "Decoded auth params - ts: $authTs, rnd: $authRnd, sig: ${authSig.take(20)}...")
 
-            // Step 4: Make the authentication request
+            // Step 5: Make the authentication request
             val authUrl = "https://top2new.newkso.ru/auth.php?channel_id=$channelKey&ts=$authTs&rnd=$authRnd&sig=${URLEncoder.encode(authSig, "UTF-8")}"
             Log.d("DDL", "Auth URL: $authUrl")
+
             val authRequest = Request.Builder()
                 .url(authUrl)
                 .addHeader("User-Agent", userAgent)
                 .addHeader("Referer", "$serverUrl/")
                 .addHeader("Origin", serverUrl)
                 .build()
+
             val authResponse = client.newCall(authRequest).execute()
             Log.d("DDL", "Auth response code: ${authResponse.code}")
+
             if (authResponse.code == 403) {
                 Log.e("DDL", "Auth request failed with 403 Forbidden")
                 authResponse.close()
@@ -377,15 +483,17 @@ class DaddyLiveSource(private val context: Context) {
             }
             authResponse.close()
 
-            // Step 5: Make the server lookup request
+            // Step 6: Make the server lookup request
             val serverLookupUrl = "$serverUrl/server_lookup.php?channel_id=$channelKey"
             Log.d("DDL", "Server lookup URL: $serverLookupUrl")
+
             val serverKeyRequest = Request.Builder()
                 .url(serverLookupUrl)
                 .addHeader("User-Agent", userAgent)
                 .addHeader("Referer", "$serverUrl/")
                 .addHeader("Origin", serverUrl)
                 .build()
+
             val serverKeyResponse = client.newCall(serverKeyRequest).execute()
             val serverKeyJson = serverKeyResponse.body?.string() ?: run {
                 Log.e("DDL", "Empty response from server lookup")
@@ -401,23 +509,234 @@ class DaddyLiveSource(private val context: Context) {
                 Log.e("DDL", "Failed to parse server key JSON: ${e.message}")
                 return null
             }
+
             val serverKey = serverData.serverKey
             Log.d("DDL", "Extracted server key: $serverKey")
 
-            // Step 6: Construct the final M3U8 URL
+            // Step 7: Construct the final M3U8 URL
             val finalUrl = if (serverKey == "top1/cdn") {
                 "https://top1.newkso.ru/top1/cdn/$channelKey/mono.m3u8"
             } else {
                 "https://$serverKey.newkso.ru/$serverKey/$channelKey/mono.m3u8"
             }
+
             Log.d("DDL", "Final URL constructed: $finalUrl")
             return finalUrl
+
         } catch (e: Exception) {
             Log.e("DDL", "Exception in extractFinalUrl: ${e.message}")
             e.printStackTrace()
             return null
         }
     }
+//    suspend fun fetchLiveStreamLink(channelJson: String): Video? = withContext(Dispatchers.IO) {
+//        try {
+//            Log.d("DDL", "fetchLiveStreamLink started for: ${channelJson.take(100)}...")
+//            val channel = json.decodeFromString(DaddyLiveChannel.serializer(), channelJson)
+//            val channelUrl = "$baseUrl${channel.url}"
+//            Log.d("DDL", "Parsed channel - name: ${channel.name}, url: $channelUrl")
+//
+//            // Step 1: Fetch the stream page and extract iframe src
+//            val request = Request.Builder()
+//                .url(channelUrl)
+//                .addHeader("User-Agent", userAgent)
+//                .addHeader("Referer", baseUrl)
+//                .addHeader("Origin", baseUrl)
+//                .build()
+//            val response = client.newCall(request).execute()
+//            val pageContent = response.body?.string() ?: run {
+//                Log.e("DDL", "Empty response body from channel page")
+//                return@withContext null
+//            }
+//            response.close()
+//
+//            val iframePattern = Pattern.compile("<iframe[^>]*src=\"([^\"]+)\"")
+//            val iframeMatcher = iframePattern.matcher(pageContent)
+//            if (!iframeMatcher.find()) {
+//                Log.e("DDL", "No iframe found in page content")
+//                return@withContext null
+//            }
+//            val iframeSrc = iframeMatcher.group(1) ?: run {
+//                Log.e("DDL", "Iframe src is null")
+//                return@withContext null
+//            }
+//            Log.d("DDL", "Iframe URL: $iframeSrc")
+//
+//            // Extract final .m3u8 URL
+//            val finalUrl = extractFinalUrl(iframeSrc, channelUrl) ?: run {
+//                Log.e("DDL", "extractFinalUrl returned null")
+//                return@withContext null
+//            }
+//
+//            val parsedUrl = URL(iframeSrc)
+//            val refererBase = "${parsedUrl.protocol}://${parsedUrl.host}"
+//
+//            return@withContext Video(
+//                url = finalUrl,
+//                quality = "Live",
+//                videoUrl = finalUrl,
+//                headers = mapOf(
+//                    "Referer" to "$refererBase/",
+//                    "User-Agent" to userAgent,
+//                    "Origin" to refererBase
+//                )
+//            )
+//        } catch (e: Exception) {
+//            Log.e("DDL", "Exception in fetchLiveStreamLink: ${e.message}")
+//            e.printStackTrace()
+//            return@withContext null
+//        }
+//    }
+//
+//    private suspend fun extractFinalUrl(iframeSrc: String, referer: String): String? {
+//        try {
+//            Log.d("DDL", "extractFinalUrl started with iframeSrc: $iframeSrc, referer: $referer")
+//
+//            // Step 1: Fetch the iframe page content
+//            val iframeRequest = Request.Builder()
+//                .url(iframeSrc)
+//                .addHeader("User-Agent", userAgent)
+//                .addHeader("Referer", referer)
+//                .addHeader("Origin", referer.substringBeforeLast("/"))
+//                .build()
+//            val iframeResponse = client.newCall(iframeRequest).execute()
+//            val scriptContent = iframeResponse.body?.string() ?: run {
+//                Log.e("DDL", "Empty response body from iframe")
+//                return null
+//            }
+//            iframeResponse.close()
+//            Log.d("DDL", "Iframe response code: ${iframeResponse.code}, content length: ${scriptContent.length}")
+//
+//            val serverUrl = iframeSrc.substringBefore("/premiumtv")
+//            Log.d("DDL", "Extracted server URL: $serverUrl")
+//
+//            // Step 2: Extract BUNDLE (or alternative, e.g., XJZ) and CHANNEL_KEY
+//            val bundlePattern = Pattern.compile("""const\s+\w+\s*=\s*"([^"]+)"""")
+//            val bundleMatcher = bundlePattern.matcher(scriptContent)
+//            var bundle: String? = null
+//            if (bundleMatcher.find()) {
+//                bundle = bundleMatcher.group(1)
+//                Log.d("DDL", "Bundle found: ${bundle.take(50)}...")
+//            }
+//
+//            val channelKeyPattern = Pattern.compile("""const CHANNEL_KEY\s*=\s*"([^"]+)"""")
+//            val channelKeyMatcher = channelKeyPattern.matcher(scriptContent)
+//            var channelKey: String? = null
+//            if (channelKeyMatcher.find()) {
+//                channelKey = channelKeyMatcher.group(1)
+//                Log.d("DDL", "Channel Key: $channelKey")
+//            }
+//
+//            // Fallback for channelKey from iframe URL
+//            if (channelKey == null) {
+//                val channelIdPattern = Pattern.compile("""id=(\d+)""")
+//                val channelIdMatcher = channelIdPattern.matcher(iframeSrc)
+//                if (channelIdMatcher.find()) {
+//                    channelKey = channelIdMatcher.group(1)
+//                    Log.d("DDL", "Fallback Channel Key from URL: $channelKey")
+//                }
+//            }
+//
+//            if (bundle == null || channelKey == null) {
+//                Log.e("DDL", "Missing BUNDLE or CHANNEL_KEY in script content")
+//                return null
+//            }
+//
+//            // Step 3: Decode the bundle
+//            val bundleJson = try {
+//                String(Base64.decode(bundle, Base64.DEFAULT))
+//            } catch (e: Exception) {
+//                Log.e("DDL", "Failed to decode bundle: ${e.message}")
+//                return null
+//            }
+//            Log.d("DDL", "Decoded bundle JSON: $bundleJson")
+//
+//            val bundleObj = try {
+//                json.decodeFromString<Bundle>(bundleJson)
+//            } catch (e: Exception) {
+//                Log.e("DDL", "Failed to parse bundle JSON: ${e.message}")
+//                return null
+//            }
+//
+//            val authTs = try {
+//                String(Base64.decode(bundleObj.bTs, Base64.DEFAULT))
+//            } catch (e: Exception) {
+//                Log.e("DDL", "Failed to decode b_ts: ${e.message}")
+//                return null
+//            }
+//            val authRnd = try {
+//                String(Base64.decode(bundleObj.bRnd, Base64.DEFAULT))
+//            } catch (e: Exception) {
+//                Log.e("DDL", "Failed to decode b_rnd: ${e.message}")
+//                return null
+//            }
+//            val authSig = try {
+//                String(Base64.decode(bundleObj.bSig, Base64.DEFAULT))
+//            } catch (e: Exception) {
+//                Log.e("DDL", "Failed to decode b_sig: ${e.message}")
+//                return null
+//            }
+//            Log.d("DDL", "Decoded auth params - ts: $authTs, rnd: $authRnd, sig: ${authSig.take(20)}...")
+//
+//            // Step 4: Make the authentication request
+//            val authUrl = "https://top2new.newkso.ru/auth.php?channel_id=$channelKey&ts=$authTs&rnd=$authRnd&sig=${URLEncoder.encode(authSig, "UTF-8")}"
+//            Log.d("DDL", "Auth URL: $authUrl")
+//            val authRequest = Request.Builder()
+//                .url(authUrl)
+//                .addHeader("User-Agent", userAgent)
+//                .addHeader("Referer", "$serverUrl/")
+//                .addHeader("Origin", serverUrl)
+//                .build()
+//            val authResponse = client.newCall(authRequest).execute()
+//            Log.d("DDL", "Auth response code: ${authResponse.code}")
+//            if (authResponse.code == 403) {
+//                Log.e("DDL", "Auth request failed with 403 Forbidden")
+//                authResponse.close()
+//                return null
+//            }
+//            authResponse.close()
+//
+//            // Step 5: Make the server lookup request
+//            val serverLookupUrl = "$serverUrl/server_lookup.php?channel_id=$channelKey"
+//            Log.d("DDL", "Server lookup URL: $serverLookupUrl")
+//            val serverKeyRequest = Request.Builder()
+//                .url(serverLookupUrl)
+//                .addHeader("User-Agent", userAgent)
+//                .addHeader("Referer", "$serverUrl/")
+//                .addHeader("Origin", serverUrl)
+//                .build()
+//            val serverKeyResponse = client.newCall(serverKeyRequest).execute()
+//            val serverKeyJson = serverKeyResponse.body?.string() ?: run {
+//                Log.e("DDL", "Empty response from server lookup")
+//                serverKeyResponse.close()
+//                return null
+//            }
+//            Log.d("DDL", "Server lookup response code: ${serverKeyResponse.code}, content: $serverKeyJson")
+//            serverKeyResponse.close()
+//
+//            val serverData = try {
+//                json.decodeFromString<ServerKeyResponse>(serverKeyJson)
+//            } catch (e: Exception) {
+//                Log.e("DDL", "Failed to parse server key JSON: ${e.message}")
+//                return null
+//            }
+//            val serverKey = serverData.serverKey
+//            Log.d("DDL", "Extracted server key: $serverKey")
+//
+//            // Step 6: Construct the final M3U8 URL
+//            val finalUrl = if (serverKey == "top1/cdn") {
+//                "https://top1.newkso.ru/top1/cdn/$channelKey/mono.m3u8"
+//            } else {
+//                "https://$serverKey.newkso.ru/$serverKey/$channelKey/mono.m3u8"
+//            }
+//            Log.d("DDL", "Final URL constructed: $finalUrl")
+//            return finalUrl
+//        } catch (e: Exception) {
+//            Log.e("DDL", "Exception in extractFinalUrl: ${e.message}")
+//            e.printStackTrace()
+//            return null
+//        }
+//    }
 
     private fun base64Decode(encoded: String): String {
         return try {

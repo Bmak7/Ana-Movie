@@ -218,7 +218,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         // **** THIS IS THE KEY CHANGE ****
         // Determine the correct source to save. Prioritize the one passed via intent.
         val sourceToSave = specificSource?.displayName ?: sourceManager.getCurrentSourceName()
-
+        println("source tv : $sourceToSave")
         val progressPercentage = (position * 100) / duration
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -853,7 +853,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         player?.release()
         player = null
 
-        tvServerName.text = "${video.quality}"
+        tvServerName.text = video.quality
 
         // 2. Determine if the content is local or online
         val isLocalFile = video.url.startsWith("file://") ||
@@ -863,53 +863,68 @@ class VideoPlayerActivity : AppCompatActivity() {
 
         // 3. Create the appropriate DataSource.Factory
         val dataSourceFactory: androidx.media3.datasource.DataSource.Factory = if (isLocalFile) {
-            // For local files, use a simple factory that only handles local data
             Log.d("VideoPlayerActivity", "Using local data source for: ${video.url}")
             DefaultDataSource.Factory(this)
         } else {
-            // For online streams, create a factory that can handle HTTP requests
             Log.d("VideoPlayerActivity", "Using network data source for: ${video.url}")
-
-            // Use OkHttpDataSource for better network handling and header management
-            val okHttpClient = NetworkUtils.getUnsafeOkHttpClient() // Assuming this provides a valid OkHttpClient
+            val okHttpClient = NetworkUtils.getUnsafeOkHttpClient()
             val httpDataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
                 .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
 
-            // *** THIS IS THE CRITICAL FIX ***
-            // Apply the headers from the Video object to the data source factory.
-            // This ensures the "Referer" is sent with every request ExoPlayer makes.
             video.headers?.let { headers ->
                 Log.d("VideoPlayerActivity", "Applying headers: $headers")
                 httpDataSourceFactory.setDefaultRequestProperties(headers)
             }
-
             httpDataSourceFactory
         }
 
-        // 4. Create the MediaSourceFactory using the configured DataSource.Factory
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+        // 4. *** THIS IS THE CRITICAL FIX ***
+        //    Choose the subtitle source based on whether the file is local or online.
+        val subtitleConfigurations = if (isLocalFile) {
+            // For local files, search the device storage.
+            findLocalSubtitleFiles(video.url)
+        } else {
+            // For online streams, map the subtitle data received from the network.
+            video.subtitles?.mapNotNull { subtitle ->
+                val subtitleUri = Uri.parse(subtitle.url)
+                val mimeType = when {
+                    subtitle.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
+                    subtitle.url.contains(".srt", true) -> MimeTypes.APPLICATION_SUBRIP
+                    else -> null // Ignore unknown subtitle formats
+                }
+                if (mimeType != null) {
+                    MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+                        .setMimeType(mimeType)
+                        .setLanguage(subtitle.lang)
+                        .setSelectionFlags(C.SELECTION_FLAG_DEFAULT) // Attempt to select it by default
+                        .build()
+                } else {
+                    null
+                }
+            } ?: emptyList()
+        }
 
-        // 5. Build the MediaItem, including subtitle configurations
-        val subtitleConfigurations = findLocalSubtitleFiles(video.url) // Assuming this works for both local/remote
+        // 5. Build the MediaItem with the URI and the correctly sourced subtitles
         val mediaItem = MediaItem.Builder()
             .setUri(video.url)
             .setSubtitleConfigurations(subtitleConfigurations)
             .build()
 
-        // 6. Setup TrackSelector for quality and track selection
+        // 6. Setup MediaSourceFactory and TrackSelector
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
         trackSelector = DefaultTrackSelector(this).apply {
             parameters = buildUponParameters()
                 .setAllowMultipleAdaptiveSelections(true)
                 .build()
         }
 
-        // 7. Build the ExoPlayer instance with the correct factories
+        // 7. Build and prepare the ExoPlayer instance
         player = ExoPlayer.Builder(this)
             .setTrackSelector(trackSelector)
-            .setMediaSourceFactory(mediaSourceFactory) // <-- Use the factory with headers
+            .setMediaSourceFactory(mediaSourceFactory)
             .build().apply {
                 setMediaItem(mediaItem)
-                addListener(playerListener) // Use your existing enhanced listener
+                addListener(enhancedPlayerListener) // Use your enhanced listener
                 playWhenReady = true
                 seekTo(if (startPosition > 0) startPosition else 0L)
                 startPosition = 0L // Reset after seeking
@@ -919,7 +934,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         // 8. Assign the player to the view
         playerView.player = player
         playerView.resizeMode = currentResizeMode
-        updateProgress() // Start the progress updater
+        updateProgress()
     }
 
 
@@ -1733,3 +1748,4 @@ class VideoPlayerActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 }
+

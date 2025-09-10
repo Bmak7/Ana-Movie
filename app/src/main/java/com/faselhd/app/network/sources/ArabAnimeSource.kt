@@ -357,6 +357,7 @@ class ArabAnimeSource(private val context: Context) {
         if (serversJson.ep_info.isEmpty() || serversJson.ep_info[0].stream_servers.isEmpty()) {
             return@withContext emptyList()
         }
+        println("aaaa")
         val selectServer = serversJson.ep_info[0].stream_servers[0].decodeBase64()
 
         val watchPageResponse = client.newCall(Request.Builder().url(selectServer).build()).execute()

@@ -1,4 +1,8 @@
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <stroke android:width="3dp" android:color="@color/green_play_button" />
-    <corners android:radius="12dp" />
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+       android:shape="rectangle">
+    <stroke
+            android:width="4dp"
+            android:color="@color/green_play_button" /> <!-- Or any highlight color you prefer -->
+    <corners android:radius="16dp" /> <!-- Match the corner radius of your cards -->
 </shape>

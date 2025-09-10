@@ -105,6 +105,25 @@ class OkAnimeSource(private val context: Context) {
     private val doodExtractor by lazy { DoodExtractor(client) }
     private val vidBomExtractor by lazy { VidBomExtractor(client) }
     private val okruExtractor by lazy { OkruExtractor(client) }
+    private val uqloadExtractor by lazy { UqloadExtractor(client) }
+    private val mixDropExtractor by lazy { MixDropExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
+    private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
+    private val streamTapeExtractor by lazy { StreamTapeExtractor(client) }
+    private val streamWishExtractor by lazy { StreamWishExtractor(client) }
+    private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
+    val megaMaxExtractor = MegaMaxExtractor(
+        client = client,
+        doodExtractor = doodExtractor,
+        voeExtractor = voeExtractor,
+        mixDropExtractor = mixDropExtractor,
+        streamWishExtractor = streamWishExtractor,
+        streamTapeExtractor = streamTapeExtractor,
+        mp4uploadExtractor = mp4uploadExtractor,
+        vidTubeExtractor = vidTubeExtractor,
+        mivalyoExtractor = mivalyoExtractor,
+        // ... pass others here
+    )
 
 
     // ============================== Popular ===============================
@@ -263,6 +282,7 @@ class OkAnimeSource(private val context: Context) {
 
     private fun extractVideosFromUrl(url: String, selection: Set<String>): List<Video> {
         return when {
+
             "mp4upload" in url && selection.contains("Mp4upload") -> {
                 mp4uploadExtractor.videosFromUrl(url, prefix = "Okanime")
             }
@@ -270,15 +290,21 @@ class OkAnimeSource(private val context: Context) {
                 voeExtractor.videosFromUrl(url)
             }
             // UNCOMMENT THE BLOCKS BELOW
-            "https://doo" in url && "/e/" in url && selection.contains("Dood") -> {
+            "https://doo" in url || "https://d" in url  || selection.contains("Dood") -> {
                 doodExtractor.videosFromUrl(url, "Doodstream")
             }
             "ok.ru" in url && selection.contains("Okru") -> {
                 okruExtractor.videosFromUrl(url, prefix = "Okanime:")
             }
+            "uqload" in url  -> {
+                uqloadExtractor.videosFromUrl(url, prefix = "Okanime:")
+            }
+            "4shared" in url -> fourSharedExtractor.videosFromUrl(url)
             VID_BOM_DOMAINS.any(url::contains) && selection.contains("VidBom") -> {
                 vidBomExtractor.videosFromUrl(url)
             }
+            "megamax" in url -> megaMaxExtractor.videosFromUrl(url)
+
             else -> emptyList()
         }
     }

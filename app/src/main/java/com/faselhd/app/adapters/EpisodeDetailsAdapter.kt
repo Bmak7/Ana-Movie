@@ -31,7 +31,6 @@ class EpisodeDetailsAdapter(
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val thumbnail: ImageView = itemView.findViewById(R.id.episode_thumbnail)
         private val name: TextView = itemView.findViewById(R.id.episode_name)
-        // 3. Find the new ProgressBar
         private val progressBar: ProgressBar = itemView.findViewById(R.id.episode_progress_bar)
 
         init {
@@ -53,29 +52,16 @@ class EpisodeDetailsAdapter(
                 .error(R.drawable.placeholder_anime)
                 .into(thumbnail)
 
-            // --- Handle Watched State & Progress Bar ---
             val history = item.history
             if (history != null && history.duration > 0) {
                 val progressPercentage = (history.lastWatchedPosition * 100) / history.duration
-
-                // Show and set the progress bar
                 progressBar.visibility = View.VISIBLE
-
                 progressBar.progress = progressPercentage.toInt()
-
-                // If episode is more than 90% watched, dim the item
-                if (progressPercentage > 90) {
-                    itemView.alpha = 0.6f
-                } else {
-                    itemView.alpha = 1.0f
-                }
+                itemView.alpha = if (progressPercentage > 90) 0.6f else 1.0f
             } else {
-                // No history, hide progress bar and ensure item is fully opaque
                 progressBar.visibility = View.GONE
                 itemView.alpha = 1.0f
             }
         }
     }
 }
-
-// You can reuse your old DiffCallback, just make sure it's accessible

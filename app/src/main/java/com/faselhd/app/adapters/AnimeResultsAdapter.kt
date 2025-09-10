@@ -31,7 +31,7 @@ class AnimeResultsAdapter(
     class AnimeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val animeImage: ImageView = itemView.findViewById(R.id.anime_image)
         private val animeTitle: TextView = itemView.findViewById(R.id.anime_title)
-        private val animeYear: TextView = itemView.findViewById(R.id.anime_year)
+//        private val animeYear: TextView = itemView.findViewById(R.id.anime_year)
         private val animeRating: TextView = itemView.findViewById(R.id.anime_rating)
 
         fun bind(anime: SAnime, onAnimeClick: (SAnime) -> Unit) {

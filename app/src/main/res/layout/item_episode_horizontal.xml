@@ -7,7 +7,9 @@
         android:layout_height="120dp"
         android:layout_marginEnd="12dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="2dp">
+        app:cardElevation="2dp"
+        android:focusable="true"
+        android:clickable="true">
 
     <FrameLayout
             android:layout_width="match_parent"
@@ -43,7 +45,6 @@
                 android:textStyle="bold"
                 tools:text="Episode 1"/>
 
-        <!-- 2. ADD THIS PROGRESS BAR -->
         <ProgressBar
                 android:id="@+id/episode_progress_bar"
                 style="?android:attr/progressBarStyleHorizontal"
@@ -54,6 +55,15 @@
                 android:visibility="gone"
                 tools:progress="60"
                 tools:visibility="visible"/>
+
+        <!-- Focus indicator for TV navigation -->
+        <View
+                android:id="@+id/focus_indicator"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/tv_focus_indicator"
+                android:visibility="gone"
+                android:alpha="0" />
 
     </FrameLayout>
 </com.google.android.material.card.MaterialCardView>

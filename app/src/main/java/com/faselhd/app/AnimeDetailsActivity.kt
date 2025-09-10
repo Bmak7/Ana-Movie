@@ -4,6 +4,7 @@ import DetailsFragmentAdapter
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -50,6 +51,10 @@ import com.faselhd.app.adapters.EpisodeSelectionAdapter
 import com.faselhd.app.adapters.SelectableEpisode
 import com.google.gson.Gson
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
+import android.view.KeyEvent
+import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.core.view.isVisible
 import java.io.IOException
@@ -82,7 +87,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
     private var allEpisodes: List<SEpisode> = emptyList()
 
     // --- Adapters ---
-    private lateinit var episodeAdapter: EpisodeDetailsAdapter
+
     private lateinit var fragmentAdapter: DetailsFragmentAdapter
 
     // --- Utilities ---
@@ -93,6 +98,8 @@ class AnimeDetailsActivity : AppCompatActivity() {
     private var episodesBySeason: Map<String, List<EpisodeWithHistory>> = emptyMap()
     private var isFavorite = false
     private var isLoading = false
+    private var isRunningOnTV = false
+
 
     // --- State ---
     private var isEpisodeLayoutHorizontal = true // Default to horizontal
@@ -118,9 +125,19 @@ class AnimeDetailsActivity : AppCompatActivity() {
     private lateinit var searchContainer: LinearLayout
     private lateinit var btnToggleSearch: ImageButton
 
+    // --- Adapters ---
+    private lateinit var horizontalEpisodeAdapter: EpisodeDetailsAdapter
+    private lateinit var verticalEpisodeAdapter: EpisodeAdapter
+
+
     // Add this to track search state
     private var isSearchVisible = false
     private var originalEpisodesList: List<EpisodeWithHistory> = emptyList()
+
+    // --- TV Navigation State ---
+    private var currentEpisodePosition = 0
+
+
 
 
 
@@ -145,60 +162,146 @@ class AnimeDetailsActivity : AppCompatActivity() {
         }
     }
 
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContentView(R.layout.activity_anime_details)
-//
-//        // Extract intent data with validation
-//        if (!extractIntentData()) {
-//            finish()
-//            return
-//        }
-//
-//        initViews()
-//        setupToolbar()
-//        setupRecyclerView()
-//        setupTabsAndViewPager()
-//        setupListeners()
-//        loadAnimeData()
-//        checkIfFavorite()
-//        initAudioPlayerViews()
-//        setupAudioPlayer()
-//    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_anime_details)
 
-        // Extract intent data with validation
         if (!extractIntentData()) {
             finish()
             return
         }
 
+        // Single call to initialize ALL views
         initViews()
-        // --- FIX: Initialize audio player views right after other views ---
-        initAudioPlayerViews()
 
         setupToolbar()
+        setupAdapters() // Changed this from setupRecyclerView
         setupRecyclerView()
         setupTabsAndViewPager()
         setupListeners()
         loadAnimeData()
         checkIfFavorite()
-        // setupAudioPlayer() is also dependent on the views, move it too.
         setupAudioPlayer()
+
+        if (isRunningOnTV) {
+            setupTVFocusListeners()
+        }
     }
-    private fun initAudioPlayerViews() {
-        audioPlayerLayout = findViewById(R.id.audio_player_layout)
-        btnPlayAudio = findViewById(R.id.btn_play_audio)
-        btnDownloadAudio = findViewById(R.id.btn_download_audio)
-        audioSeekBar = findViewById(R.id.audio_seek_bar)
-        audioTitle = findViewById(R.id.audio_title)
-        audioProgress = findViewById(R.id.audio_progress)
-        audioDuration = findViewById(R.id.audio_duration)
+//    private fun initAudioPlayerViews() {
+//        audioPlayerLayout = findViewById(R.id.audio_player_layout)
+//        btnPlayAudio = findViewById(R.id.btn_play_audio)
+//        btnDownloadAudio = findViewById(R.id.btn_download_audio)
+//        audioSeekBar = findViewById(R.id.audio_seek_bar)
+//        audioTitle = findViewById(R.id.audio_title)
+//        audioProgress = findViewById(R.id.audio_progress)
+//        audioDuration = findViewById(R.id.audio_duration)
+//    }
+
+    private fun setupTVFocusListeners() {
+        val focusables = listOf(btnPlay, btnDownload, btnBookmark, btnShare, seasonSpinner, btnToggleSearch, btnToggleEpisodesLayout, episodesRecyclerView)
+        focusables.forEach {
+            it.setOnFocusChangeListener { view, hasFocus ->
+                val scale = if (hasFocus) 1.1f else 1.0f
+                view.animate().scaleX(scale).scaleY(scale).setDuration(200).start()
+            }
+        }
+
+        for (i in 0 until tabLayout.tabCount) {
+            tabLayout.getTabAt(i)?.view?.setOnFocusChangeListener { view, hasFocus ->
+                val scale = if (hasFocus) 1.1f else 1.0f
+                view.animate().scaleX(scale).scaleY(scale).setDuration(200).start()
+            }
+        }
     }
 
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (!isRunningOnTV) return super.onKeyDown(keyCode, event)
+
+        if (handleDpadNavigation(keyCode)) {
+            return true
+        }
+
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun handleDpadNavigation(keyCode: Int): Boolean {
+        val currentFocus = currentFocus ?: return false
+
+        // Handle navigation within RecyclerView first
+        if (currentFocus == episodesRecyclerView && episodesRecyclerView.adapter is EpisodeDetailsAdapter) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                return navigateHorizontalRecyclerView(keyCode)
+            }
+        }
+
+        return false // Let the system handle focus change for other views
+    }
+
+    private fun navigateHorizontalRecyclerView(keyCode: Int): Boolean {
+        val adapter = episodesRecyclerView.adapter ?: return false
+        val newPosition = if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            (currentEpisodePosition + 1).coerceAtMost(adapter.itemCount - 1)
+        } else {
+            (currentEpisodePosition - 1).coerceAtLeast(0)
+        }
+
+        if (newPosition != currentEpisodePosition) {
+            currentEpisodePosition = newPosition
+            episodesRecyclerView.smoothScrollToPosition(currentEpisodePosition)
+            highlightRecyclerViewItem(episodesRecyclerView, currentEpisodePosition)
+            return true
+        }
+        return false
+    }
+
+    @SuppressLint("WrongConstant")
+    private fun highlightRecyclerViewItem(recyclerView: RecyclerView, position: Int) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            removeHighlightFromRecyclerView(recyclerView) // Clear previous highlights
+            val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
+            viewHolder?.itemView?.let { itemView ->
+                val focusIndicator = itemView.findViewById<View>(R.id.focus_indicator)
+                focusIndicator?.visibility = View.VISIBLE
+                focusIndicator?.animate()?.alpha(1.0f)?.setDuration(150)?.start()
+            }
+        }, 50) // Delay to ensure view is bound
+    }
+
+    @SuppressLint("WrongConstant")
+    private fun removeHighlightFromRecyclerView(recyclerView: RecyclerView) {
+        for (i in 0 until recyclerView.childCount) {
+            val child = recyclerView.getChildAt(i)
+            val focusIndicator = child.findViewById<View>(R.id.focus_indicator)
+            focusIndicator?.animate()?.alpha(0f)?.setDuration(150)?.withEndAction {
+                focusIndicator.visibility = View.GONE
+            }?.start()
+        }
+    }
+
+    private fun handleEpisodeDownloadClick(episode: SEpisode) {
+        lifecycleScope.launch {
+            try {
+                val videos = sourceManager.fetchVideoList(episode.url!!, specificSource)
+                if (videos.isEmpty()) {
+                    showSnackbar("No video links found for this episode", isError = true)
+                    return@launch
+                }
+                // For simplicity on TV, let's just pick the first available quality
+                val videoToDownload = videos.first()
+                queueEpisodesForDownload(listOf(episode), videoToDownload.quality)
+            } catch (e: Exception) {
+                showSnackbar("Failed to get download links: ${e.message}", isError = true)
+            } finally {
+                // Find the item in adapter and reset its download indicator state
+                val position = verticalEpisodeAdapter.currentList.indexOfFirst { it.episode.url == episode.url }
+                if (position != -1) {
+                    verticalEpisodeAdapter.currentList[position].isFetchingDownload = false
+                    val viewHolder = episodesRecyclerView.findViewHolderForAdapterPosition(position) as? EpisodeAdapter.ViewHolder
+                    viewHolder?.setDownloadingState(false)
+                }
+            }
+        }
+    }
     private fun setupAudioPlayer() {
         btnPlayAudio.setOnClickListener {
             toggleAudioPlayback()
@@ -371,17 +474,17 @@ class AnimeDetailsActivity : AppCompatActivity() {
         resumeEpisodeUrl = intent.getStringExtra(EXTRA_RESUME_EPISODE_URL)
 
         if (currentAnime == null) {
-            showSnackbar("Error: No anime data provided", isError = true)
+            Toast.makeText(this, "Error: No anime data provided", Toast.LENGTH_LONG).show()
             return false
         }
         return true
     }
 
     private fun initViews() {
+        // --- Standard Views ---
+        rootLayout = findViewById(android.R.id.content)
         animeImage = findViewById(R.id.anime_image)
         animeTitle = findViewById(R.id.anime_title)
-//        animeRating = findViewById(R.id.anime_rating)
-//        animeYear = findViewById(R.id.anime_year)
         tagsChipGroup = findViewById(R.id.anime_tags_chip_group)
         btnPlay = findViewById(R.id.btn_play)
         btnDownload = findViewById(R.id.btn_download)
@@ -394,18 +497,22 @@ class AnimeDetailsActivity : AppCompatActivity() {
         viewPager = findViewById(R.id.view_pager)
         composeProgress = findViewById(R.id.compose_progress)
         episodesProgressBar = findViewById(R.id.episodes_progress_bar)
-        rootLayout = findViewById(android.R.id.content)
         btnToggleEpisodesLayout = findViewById(R.id.btn_toggle_episodes_layout)
         episodesListContainer = findViewById(R.id.episodes_list_container)
 
-        // Add these new view initializations
+        // --- Search Views ---
         searchView = findViewById(R.id.search_view)
         searchContainer = findViewById(R.id.search_container)
         btnToggleSearch = findViewById(R.id.btn_toggle_search)
 
-        rootLayout = findViewById(android.R.id.content)
-
-
+        // --- Audio Player Views (MERGED HERE) ---
+        audioPlayerLayout = findViewById(R.id.audio_player_layout)
+        btnPlayAudio = findViewById(R.id.btn_play_audio)
+        btnDownloadAudio = findViewById(R.id.btn_download_audio)
+        audioSeekBar = findViewById(R.id.audio_seek_bar)
+        audioTitle = findViewById(R.id.audio_title)
+        audioProgress = findViewById(R.id.audio_progress)
+        audioDuration = findViewById(R.id.audio_duration)
     }
 
     private fun setupToolbar() {
@@ -418,63 +525,25 @@ class AnimeDetailsActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { onBackPressed() }
     }
 
-//    private fun setupRecyclerView() {
-//        episodeAdapter = EpisodeDetailsAdapter { episode ->
-//            if (!isLoading) {
-//                playEpisode(episode)
-//            }
-//        }
-//        episodesRecyclerView.apply {
-//            layoutManager = LinearLayoutManager(
-//                this@AnimeDetailsActivity,
-//                LinearLayoutManager.HORIZONTAL,
-//                false
-//            )
-//            adapter = episodeAdapter
-//        }
-//    }
+    private fun setupAdapters() {
+        horizontalEpisodeAdapter = EpisodeDetailsAdapter { episode ->
+            if (!isLoading) playEpisode(episode)
+        }
+
+        verticalEpisodeAdapter = EpisodeAdapter(
+            onClick = { episode -> if (!isLoading) playEpisode(episode) },
+            onDownloadClick = { episode ->
+                // You can add download logic here or in the listener setup
+//                showSnackbar("Download clicked for ${it.name}", false)
+            }
+        )
+    }
 
     private fun setupRecyclerView() {
-        episodeAdapter = EpisodeDetailsAdapter { episode ->
-            if (!isLoading) {
-                playEpisode(episode)
-            }
-        }
-        episodesRecyclerView.adapter = episodeAdapter
-        // Set the initial layout based on the default state
-        updateEpisodesLayout()
+        updateEpisodesLayout() // Set initial layout
     }
 
-    private fun updateEpisodesLayout() {
-        if (isEpisodeLayoutHorizontal) {
-            // --- SETUP HORIZONTAL LAYOUT ---
-            episodesRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-            // Enable nested scrolling for horizontal, as it doesn't conflict with the main scroll view
-            episodesRecyclerView.isNestedScrollingEnabled = true
 
-            // Change the button icon to indicate the next state (vertical)
-            btnToggleEpisodesLayout.setImageResource(R.drawable.ic_view_list)
-
-            // Set a fixed height for the horizontal layout (e.g., 140dp)
-            val layoutParams = episodesListContainer.layoutParams
-            layoutParams.height = (140 * resources.displayMetrics.density).toInt() // Convert 140dp to pixels
-            episodesListContainer.layoutParams = layoutParams
-
-        } else {
-            // --- SETUP VERTICAL LAYOUT ---
-            episodesRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-            // IMPORTANT: Disable nested scrolling for the vertical RecyclerView to allow the parent NestedScrollView to handle all vertical scrolling.
-            episodesRecyclerView.isNestedScrollingEnabled = false
-
-            // Change the button icon to indicate the next state (horizontal)
-            btnToggleEpisodesLayout.setImageResource(R.drawable.ic_view_module)
-
-            // Set the height to wrap_content to show all items in the vertical list
-            val layoutParams = episodesListContainer.layoutParams
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT
-            episodesListContainer.layoutParams = layoutParams
-        }
-    }
     private fun setupTabsAndViewPager() {
         fragmentAdapter = DetailsFragmentAdapter(this)
         viewPager.adapter = fragmentAdapter
@@ -557,22 +626,26 @@ class AnimeDetailsActivity : AppCompatActivity() {
             // Show search
             searchContainer.isVisible = true
             searchView.requestFocus()
-            searchView.isIconified = false
+            searchView.isIconified = false // Expands the search view
             btnToggleSearch.setImageResource(R.drawable.ic_close)
 
-            // Store original list for filtering
+            // Store the current list as the original list for filtering
             val currentSeason = getCurrentSelectedSeason()
             originalEpisodesList = episodesBySeason[currentSeason] ?: emptyList()
         } else {
             // Hide search
             searchContainer.isVisible = false
-            searchView.setQuery("", false)
+            searchView.setQuery("", false) // Clear the search query
             searchView.clearFocus()
-            searchView.isIconified = true
+            searchView.isIconified = true // Collapse the search view
             btnToggleSearch.setImageResource(R.drawable.ic_search)
 
-            // Restore original list
-            episodeAdapter.submitList(originalEpisodesList)
+            // Restore the original, unfiltered list to the currently active adapter
+            if (isEpisodeLayoutHorizontal) {
+                horizontalEpisodeAdapter.submitList(originalEpisodesList)
+            } else {
+                verticalEpisodeAdapter.submitList(originalEpisodesList)
+            }
         }
     }
 
@@ -584,25 +657,22 @@ class AnimeDetailsActivity : AppCompatActivity() {
         } else {
             originalEpisodesList.filter { episodeWithHistory ->
                 val episode = episodeWithHistory.episode
-
-                // Search in episode name
                 val nameMatch = episode.name?.contains(query, ignoreCase = true) == true
-
-                // Search in episode number (extract number from name)
-                val numberMatch = try {
-                    val episodeNumber = extractEpisodeNumber(episode.name ?: "")
-                    episodeNumber?.toString()?.contains(query, ignoreCase = true) == true
-                } catch (e: Exception) {
-                    false
-                }
+                val numberMatch = (episode.episode_number.toInt().toString() == query) ||
+                        ("Episode ${episode.episode_number.toInt()}".contains(query, ignoreCase = true))
 
                 nameMatch || numberMatch
             }
         }
 
-        episodeAdapter.submitList(filteredList)
+        // Submit the filtered list to the currently active adapter
+        if (isEpisodeLayoutHorizontal) {
+            horizontalEpisodeAdapter.submitList(filteredList)
+        } else {
+            verticalEpisodeAdapter.submitList(filteredList)
+        }
 
-        // Show empty state if no results
+        // Show a message if the filtered list is empty
         if (filteredList.isEmpty() && query.isNotBlank()) {
             showSnackbar("No episodes found for '$query'", false)
         }
@@ -745,6 +815,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
 
             for (episode in episodes) {
                 try {
+
                     val videos = sourceManager.fetchVideoList(episode.url!!, specificSource)
                     val selectedVideo = videos.find { it.quality.contains(quality, ignoreCase = true) }
                         ?: videos.firstOrNull()
@@ -810,7 +881,7 @@ class AnimeDetailsActivity : AppCompatActivity() {
             var success = false
             try {
                 Log.d("AnimeDetails", "Loading anime: ${currentAnime!!.url}")
-
+                Log.d("AnimeDetails", "specificSource: ${specificSource}")
                 val detailedAnime = sourceManager.fetchAnimeDetails(currentAnime!!.url!!, specificSource)
                 currentAnime = detailedAnime
                 populateUiDetails(detailedAnime)
@@ -990,7 +1061,6 @@ class AnimeDetailsActivity : AppCompatActivity() {
 
     private fun setupSeasonSpinner() {
         val seasonNames = episodesBySeason.keys.toList().sorted()
-
         val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, seasonNames)
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         seasonSpinner.adapter = spinnerAdapter
@@ -1000,30 +1070,79 @@ class AnimeDetailsActivity : AppCompatActivity() {
                 if (position < seasonNames.size) {
                     val selectedSeason = seasonNames[position]
                     val episodes = episodesBySeason[selectedSeason] ?: emptyList()
-
-                    // Update original list for search
                     originalEpisodesList = episodes
 
-                    // If search is active, re-filter with current query
-                    if (isSearchVisible && !searchView.query.isNullOrBlank()) {
-                        filterEpisodes(searchView.query.toString())
+                    // Submit list to the currently active adapter
+                    if (isEpisodeLayoutHorizontal) {
+                        horizontalEpisodeAdapter.submitList(episodes)
                     } else {
-                        episodeAdapter.submitList(episodes)
+                        verticalEpisodeAdapter.submitList(episodes)
                     }
                 }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // Set initial selection
+        // Set initial list after the listener is set
         if (seasonNames.isNotEmpty()) {
             val initialEpisodes = episodesBySeason[seasonNames.first()] ?: emptyList()
             originalEpisodesList = initialEpisodes
-            episodeAdapter.submitList(initialEpisodes)
+            if (isEpisodeLayoutHorizontal) {
+                horizontalEpisodeAdapter.submitList(initialEpisodes)
+            } else {
+                verticalEpisodeAdapter.submitList(initialEpisodes)
+            }
         }
     }
 
+    private fun updateEpisodesLayout() {
+        // 1. Determine the list of episodes to preserve from the PREVIOUS adapter.
+        //    Since `isEpisodeLayoutHorizontal` has already been flipped for the new state,
+        //    we check the opposite to find the old adapter.
+        val listToSubmit = if (isEpisodeLayoutHorizontal) {
+            // We are switching TO horizontal, so the OLD adapter was the vertical one.
+            verticalEpisodeAdapter.currentList
+        } else {
+            // We are switching TO vertical, so the OLD adapter was the horizontal one.
+            horizontalEpisodeAdapter.currentList
+        }.ifEmpty {
+            // This is a fallback for the very first run when both adapter lists are empty.
+            originalEpisodesList
+        }
 
+        // Reset the focus position for TV navigation
+        currentEpisodePosition = 0
+
+        // 2. Apply the new layout and submit the preserved list.
+        if (isEpisodeLayoutHorizontal) {
+            // --- SETUP HORIZONTAL LAYOUT ---
+            episodesRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            episodesRecyclerView.adapter = horizontalEpisodeAdapter
+            horizontalEpisodeAdapter.submitList(listToSubmit) // Use the preserved list
+
+            btnToggleEpisodesLayout.setImageResource(R.drawable.ic_view_list)
+
+            val layoutParams = episodesListContainer.layoutParams
+            layoutParams.height = (140 * resources.displayMetrics.density).toInt() // 140dp in pixels
+            episodesListContainer.layoutParams = layoutParams
+
+        } else {
+            // --- SETUP VERTICAL LAYOUT ---
+            episodesRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+            episodesRecyclerView.adapter = verticalEpisodeAdapter
+            verticalEpisodeAdapter.submitList(listToSubmit) // Use the preserved list
+
+            // IMPORTANT: Disable nested scrolling for the vertical list to allow parent scroll
+            episodesRecyclerView.isNestedScrollingEnabled = false
+
+            btnToggleEpisodesLayout.setImageResource(R.drawable.ic_view_module)
+
+            // Set the height to wrap_content to show all items in the vertical list
+            val layoutParams = episodesListContainer.layoutParams
+            layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            episodesListContainer.layoutParams = layoutParams
+        }
+    }
 
     private fun checkIfFavorite() {
         lifecycleScope.launch {

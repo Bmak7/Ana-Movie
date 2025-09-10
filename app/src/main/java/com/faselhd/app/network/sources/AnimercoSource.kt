@@ -93,7 +93,23 @@ class AnimercoSource(private val context: Context) {
     private val okruExtractor by lazy { OkruExtractor(client) }
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val yourUploadExtractor by lazy { YourUploadExtractor(client) }
+    private val voeExtractor by lazy { VoeExtractor(client) }
+    private val mixDropExtractor by lazy { MixDropExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
+    private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
     // GdrivePlayerExtractor and YourUploadExtractor can be added if you have them
+    val megaMaxExtractor = MegaMaxExtractor(
+        client = client,
+        doodExtractor = doodExtractor,
+        voeExtractor = voeExtractor,
+        mixDropExtractor = mixDropExtractor,
+        streamWishExtractor = streamWishExtractor,
+        streamTapeExtractor = streamTapeExtractor,
+        mp4uploadExtractor = mp4uploadExtractor,
+        vidTubeExtractor = vidTubeExtractor,
+        mivalyoExtractor = mivalyoExtractor,
+        // ... pass others here
+    )
 
     // ============================== Popular & Latest ===============================
     suspend fun fetchPopularSeries(page: Int): MangaPage = withContext(Dispatchers.IO) {
@@ -331,7 +347,7 @@ class AnimercoSource(private val context: Context) {
                     Log.d("VideoDebug", "MP4Upload extracted ${it.size} videos")
                 }
             }
-            "dood" in url -> {
+            "https://doo" in url || "https://d" in url || "dood" in url-> {
                 Log.d("VideoDebug", "Detected Dood URL")
                 doodExtractor.videosFromUrl(url).also {
                     Log.d("VideoDebug", "Dood extracted ${it.size} videos")
@@ -349,6 +365,7 @@ class AnimercoSource(private val context: Context) {
                     Log.d("VideoDebug", "Uqload extracted ${it.size} videos")
                 }
             }
+            "megamax" in url -> megaMaxExtractor.videosFromUrl(url)
             "yourupload" in url -> {
                 Log.d("VideoDebug", "Detected YourUpload URL")
                 yourUploadExtractor.videosFromUrl(url)
