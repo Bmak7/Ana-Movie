@@ -242,7 +242,8 @@ class Asia2TvSource(private val context: Context) {
     }
 
     private val domainMappings = mapOf(
-        "dood.li" to "d-s.io",
+
+        "dood" to "d-s.io",
         "dood.to" to "d-s.io",
         "dood.ws" to "d-s.io",
         "dood.stream" to "d-s.io",
@@ -317,7 +318,7 @@ class Asia2TvSource(private val context: Context) {
                     vidmolyExtractor.videosFromUrl(url)
                 }
 
-                "mivalyo" in host || "mival" in host -> {
+                url.contains("vidhi") || url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> {                println("mivalyo mivalyo url: $url")
                     println("DEBUG: Using mivalyoExtractor for: $host")
                     mivalyoExtractor.videosFromUrl(url)
                 }

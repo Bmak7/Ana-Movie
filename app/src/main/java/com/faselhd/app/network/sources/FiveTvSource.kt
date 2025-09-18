@@ -605,7 +605,9 @@ class FiveTvSource(private val context: Context) {
                     println("[DEBUG]     -> Using Vidmoly extractor.")
                     vidmolyExtractor.videosFromUrl(url)
                 }
-                "mivalyo" in url || "movearnpre" in url -> {
+                url.contains("movearnpre") || url.contains("vidhi") || url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> {
+                    println("mivalyo mivalyo url: $url")
+
                     println("[DEBUG]     -> Using Vidmoly extractor.")
                     mivalyoExtractor.videosFromUrl(url)
                 }

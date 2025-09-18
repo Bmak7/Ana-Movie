@@ -337,7 +337,7 @@ class EgyDeadSource(private val context: Context) {
 //                println("DEBUG: BigWarp extraction result: ${result.size} videos found")
 //                result
 //            }
-            url.contains("mivalyo") || url.contains("mivalyo.com") -> {
+            url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> {
                 println("DEBUG: Processing Mivalyo URL: $url")
                 val result = mivalyoExtractor.videosFromUrl(url)
                 println("DEBUG: Mivalyo extraction result: ${result.size} videos found")

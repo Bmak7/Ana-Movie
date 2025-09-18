@@ -31,6 +31,7 @@ import com.faselhd.app.models.Video
 import java.io.File
 import androidx.media3.exoplayer.offline.DownloadManager // Make sure this is imported
 import com.faselhd.app.models.DownloadState
+import com.faselhd.app.utils.PlayerDataHolder
 
 
 class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
@@ -146,7 +147,7 @@ class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
         }
 
         // Determine if this is audio or video content
-        val isAudio = isAudioFile(playableUri)
+        val isAudio = isAudioFile(playableUri) // Assuming you have this helper function
 
         // Create the Video object for offline playback
         val offlineSource = Video(
@@ -168,21 +169,32 @@ class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
         val offlineEpisode = SEpisode(
             name = download.episodeName,
             url = download.episodeUrl, // Keep original URL for progress tracking
-//            episode_number = 1
+            // episode_number = download.episodeNumber // if you store this
         )
 
-        // Launch the video player
+        // =======================================================
+        // ++ SOLUTION IMPLEMENTED HERE ++
+        // =======================================================
+
+        // 1. Populate the singleton holder with the offline data.
+        PlayerDataHolder.videos = listOf(offlineSource)
+        PlayerDataHolder.anime = offlineAnime
+        // Pass a list containing just this episode so the player knows its context.
+        PlayerDataHolder.episodeList = listOf(offlineEpisode)
+
+        // 2. Launch the video player with the new, lightweight intent.
         val intent = VideoPlayerActivity.newIntent(
             context = this,
-            videos = listOf(offlineSource),
-            anime = offlineAnime,
-            currentEpisode = offlineEpisode,
-            episodeListForSeason = arrayListOf(), // No episode navigation for downloads
-            startPosition = 0L,
+            currentEpisodeUrl = offlineEpisode.url!!, // Pass the unique URL
+            startPosition = 0L, // Or load saved progress for the downloaded file if you track it
             source = null // No source needed for offline content
         )
 
         startActivity(intent)
+
+        // =======================================================
+        // -- END OF FIX --
+        // =======================================================
     }
 
     // Helper method to detect audio files
@@ -201,8 +213,9 @@ class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
 
         val file = File(download.localFilePath)
         val fileUri = Uri.fromFile(file)
-        val isAudio = isAudioFile(file.name)
+        val isAudio = isAudioFile(file.name) // Assuming you have this helper function
 
+        // Create the necessary data objects first
         val localVideo = Video(
             url = fileUri.toString(),
             quality = if (isAudio) "Downloaded Audio" else "Downloaded Video",
@@ -212,15 +225,33 @@ class DownloadsActivity : AppCompatActivity(), DownloadManager.Listener {
             subtitles = null
         )
 
+        val offlineAnime = SAnime(title = download.animeTitle, url = "")
+        val offlineEpisode = SEpisode(name = download.episodeName, url = download.episodeUrl)
+
+
+        // =======================================================
+        // ++ SOLUTION IMPLEMENTED HERE ++
+        // =======================================================
+
+        // 1. Populate the singleton holder with the offline data.
+        PlayerDataHolder.videos = listOf(localVideo)
+        PlayerDataHolder.anime = offlineAnime
+        PlayerDataHolder.episodeList = listOf(offlineEpisode)
+
+        // 2. Create the Intent using the new, lightweight method.
         val intent = VideoPlayerActivity.newIntent(
             context = this,
-            videos = listOf(localVideo),
-            anime = SAnime(title = download.animeTitle, url = ""),
-            currentEpisode = SEpisode(name = download.episodeName, url = download.episodeUrl),
-            episodeListForSeason = arrayListOf(),
+            currentEpisodeUrl = offlineEpisode.url!!, // Pass the unique URL
             startPosition = 0L,
+            source = null
         )
+
+        // 3. Start the activity.
         startActivity(intent)
+
+        // =======================================================
+        // -- END OF FIX --
+        // =======================================================
     }
 
     // Enhanced method for external player with better MIME type detection

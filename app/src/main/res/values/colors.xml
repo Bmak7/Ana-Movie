@@ -154,5 +154,8 @@
     <color name="material_deep_teal_500">#009688</color>
 
 
+    <color name="dialogBackground">#E6000000</color>
+
+
 
 </resources>

@@ -4,18 +4,85 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.*
 import com.example.myapplication.R
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.SourceManager
+import com.faselhd.app.utils.DatabaseHelper // Import the helper
 import com.faselhd.app.utils.VideoCacheManager
+import android.text.InputType
+import androidx.appcompat.app.AlertDialog
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
     private val sourceManager by lazy { SourceManager(requireContext().applicationContext) }
+    private val databaseHelper by lazy { DatabaseHelper(requireContext()) } // Instantiate the helper
 
+    // Launcher for exporting the database
+    private val exportDbLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument()) { uri ->
+        uri?.let {
+            if (databaseHelper.performExport(it)) {
+                Toast.makeText(requireContext(), "Database exported successfully.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Database export failed.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Launcher for importing the database
+    private val importDbLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            if (databaseHelper.performImport(it)) {
+                Toast.makeText(requireContext(), "Database imported successfully. App will restart.", Toast.LENGTH_LONG).show()
+                // Restart the app to load the new database
+                Handler(Looper.getMainLooper()).postDelayed({
+                    val packageManager = requireActivity().packageManager
+                    val intent = packageManager.getLaunchIntentForPackage(requireActivity().packageName)
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    startActivity(intent!!)
+                    requireActivity().finishAffinity()
+                }, 1000)
+            } else {
+                Toast.makeText(requireContext(), "Database import failed. Please restart the app.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+
+    private fun showSecretCodeDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Enter Secret Code")
+
+        val input = EditText(requireContext())
+        input.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        builder.setView(input)
+
+        builder.setPositiveButton("OK") { dialog, _ ->
+            val code = input.text.toString()
+            if (code == "********") {
+                SourceManager.setAdultContentUnlocked(requireContext(), true)
+                Toast.makeText(requireContext(), "Adult content unlocked. Please restart the app.", Toast.LENGTH_LONG).show()
+                // Restart the app to apply changes
+                Handler(Looper.getMainLooper()).postDelayed({
+                    val packageManager = requireActivity().packageManager
+                    val intent = packageManager.getLaunchIntentForPackage(requireActivity().packageName)
+                    intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    startActivity(intent!!)
+                    requireActivity().finishAffinity()
+                }, 800)
+            } else {
+                Toast.makeText(requireContext(), "Invalid code", Toast.LENGTH_SHORT).show()
+            }
+            dialog.dismiss()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
+
+        builder.show()
+    }
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
@@ -23,6 +90,39 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setupThemePreference()
         setupCachePreferences()
         setupPlayerPreferences()
+        setupAdvancedPreferences() // Add this call
+        setupSecretPreference()
+
+    }
+
+    // New function to handle advanced settings like import/export
+    private fun setupAdvancedPreferences() {
+        val exportPref: Preference? = findPreference("export_settings")
+        exportPref?.setOnPreferenceClickListener {
+            databaseHelper.exportDatabase(exportDbLauncher)
+            true
+        }
+
+        val importPref: Preference? = findPreference("import_settings")
+        importPref?.setOnPreferenceClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Import Database")
+                .setMessage("Are you sure? Importing a database will overwrite all your current history, favorites, and downloads. This action cannot be undone.")
+                .setPositiveButton("Import") { _, _ ->
+                    databaseHelper.importDatabase(importDbLauncher)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            true
+        }
+    }
+
+    private fun setupSecretPreference() {
+        val secretPreference: Preference? = findPreference("secret_code_preference")
+        secretPreference?.setOnPreferenceClickListener {
+            showSecretCodeDialog()
+            true
+        }
     }
 
     private fun setupSourcePreference() {

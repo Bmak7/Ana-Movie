@@ -5,17 +5,12 @@ import android.util.Log
 import androidx.preference.PreferenceManager
 import com.example.myapplication.R
 import com.faselhd.app.models.*
-import com.faselhd.app.network.extractors.StreamTapeExtractor
-import com.faselhd.app.network.extractors.UqloadExtractor
-import com.faselhd.app.network.extractors.VidTubeExtractor
+import com.faselhd.app.network.extractors.*
 import com.faselhd.app.utils.*
 import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Cache
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.io.File
@@ -86,9 +81,18 @@ class TopCinemaSource(private val context: Context) {
 
 
     // These would be implemented to extract video links from specific hosts
+    private val doodExtractor by lazy { DoodExtractor(client) }
     private val uqloadExtractor by lazy { UqloadExtractor(client) }
     private val streamtapeExtractor by lazy { StreamTapeExtractor(client) }
     private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
+    private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
+    private val okruExtractor by lazy { OkruExtractor(client) }
+    private val streamWishExtractor by lazy { StreamWishExtractor(client) }
+    private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+    private val filemoonExtractor by lazy { FileMoonExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
+
+
 
     // ============================== Main Slider ==============================
     suspend fun fetchMainSlider(): List<SAnime> = withContext(Dispatchers.IO) {
@@ -296,41 +300,129 @@ class TopCinemaSource(private val context: Context) {
         val request = Request.Builder().url(watchUrl).build()
         val response = client.newCall(request).execute()
 
-        val videos = videoListParse(response)
-        Log.d("VideoFetcher", "✅ Extracted ${videos.size} videos from $watchUrl")
+        // Pass the response AND the watchUrl to the parsing function
+        val videos = videoListParse(response, watchUrl)
+        Log.d("VideoFetcher", "✅ Extracted ${videos.size} total videos from $watchUrl")
 
         return@withContext videos
     }
 
-    private fun videoListParse(response: Response): List<Video> {
+    private fun videoListParse(response: Response, watchUrl: String): List<Video> {
         val document = Jsoup.parse(response.body!!.string(), response.request.url.toString())
-        val videos = mutableListOf<Video>()
+        val allVideos = mutableListOf<Video>()
         val servers = document.select("div.watch--servers--list li.server--item")
 
-        // Get the initially loaded iframe (default server)
-        val initialIframe = document.selectFirst("div.player--iframe iframe")?.attr("src")
-        Log.d("VideoFetcher", "🎬 Found servers: ${servers.eachText()}")
-        Log.d("VideoFetcher", "🎬 Initial iframe: $initialIframe")
+        Log.d("VideoFetcher", "🎬 Found ${servers.size} servers: ${servers.eachText()}")
 
-        if (initialIframe != null) {
-            val serverName = servers.firstOrNull()?.text() ?: "Default Server"
-            videos.addAll(extractVideosFromServer(initialIframe, serverName))
+        // Loop through each server element found on the page
+        for (serverElement in servers) {
+            val postId = serverElement.attr("data-id")
+            val serverIndex = serverElement.attr("data-server")
+            val serverName = serverElement.text()
+
+            if (postId.isBlank() || serverIndex.isBlank()) {
+                Log.w("VideoFetcher", "⚠️ Skipping a server due to missing data-id or data-server attributes.")
+                continue
+            }
+
+            var iframeUrl: String?
+
+            if (serverElement.hasClass("active")) {
+                // This is the default, pre-loaded server. We can get its iframe directly.
+                Log.d("VideoFetcher", "-> Processing default server: $serverName")
+                iframeUrl = document.selectFirst("div.player--iframe iframe")?.attr("src")
+            } else {
+                // This is another server. We must make an AJAX call to get its iframe.
+                Log.d("VideoFetcher", "-> Making AJAX call for server: $serverName (id=$postId, i=$serverIndex)")
+                try {
+                    val ajaxUrl = "$BASE_URL/wp-content/themes/movies2023/Ajaxat/Single/Server.php"
+                    val formBody = FormBody.Builder()
+                        .add("id", postId)
+                        .add("i", serverIndex)
+                        .build()
+
+                    val ajaxRequest = Request.Builder()
+                        .url(ajaxUrl)
+                        .post(formBody)
+                        // These headers are crucial to mimic the browser's request
+                        .header("Referer", watchUrl)
+                        .header("X-Requested-With", "XMLHttpRequest")
+                        .header("Accept", "*/*")
+                        .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+                        .build()
+
+                    // Execute the request and get the response body
+                    val ajaxResponse = client.newCall(ajaxRequest).execute()
+                    val ajaxResponseBody = ajaxResponse.body?.string()
+
+                    // The response body is the iframe tag itself, so we parse it to get the src
+                    iframeUrl = if (ajaxResponseBody != null) {
+                        Jsoup.parse(ajaxResponseBody).selectFirst("iframe")?.attr("src")
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    Log.e("VideoFetcher", "AJAX request for server '$serverName' failed", e)
+                    iframeUrl = null
+                }
+            }
+
+            // If we successfully got an iframe URL, extract the video from it
+            if (iframeUrl != null) {
+                allVideos.addAll(extractVideosFromServer(iframeUrl, serverName))
+            } else {
+                Log.w("VideoFetcher", "⚠️ Could not get iframe URL for server: $serverName")
+            }
         }
 
-        return videos
+        return allVideos
     }
 
     private fun extractVideosFromServer(url: String, quality: String): List<Video> {
         Log.d("VideoFetcher", "🔎 Extracting from server ($quality): $url")
 
         return when {
-            "uqload" in url -> uqloadExtractor.videosFromUrl(url, quality)
-            "streamtape" in url -> streamtapeExtractor.videosFromUrl(url)
-
             // vidtube extractor (iframe inside the watch page)
             "vidtube" in url || "vidbam" in url || "vidshar" in url -> {
                 Log.d("VideoFetcher", "🔎 Extracting from vidtube server ($quality): $url")
                 vidTubeExtractor.videosFromUrl(url)
+            }
+            "uqload" in url -> uqloadExtractor.videosFromUrl(url, quality)
+            "streamtape" in url -> streamtapeExtractor.videosFromUrl(url)
+            "wish" in url || "videas" in url -> {
+                println("DEBUG: Using streamwish extractor")
+                streamWishExtractor.videosFromUrl(url)
+            }
+            "ok.ru" in url -> {
+                Log.d("VideoDebug", "Detected OK.ru URL")
+                okruExtractor.videosFromUrl(url).also {
+                    Log.d("VideoDebug", "OK.ru extracted ${it.size} videos")
+                }
+            }
+            "mp4upload" in url -> {
+                Log.d("VideoDebug", "Detected MP4Upload URL")
+                mp4uploadExtractor.videosFromUrl(url).also {
+                    Log.d("VideoDebug", "MP4Upload extracted ${it.size} videos")
+                }
+            }
+            "https://doo" in url || "https://d" in url || "dood" in url-> {
+                Log.d("VideoDebug", "Detected Dood URL")
+                doodExtractor.videosFromUrl(url).also {
+                    Log.d("VideoDebug", "Dood extracted ${it.size} videos")
+                }
+            }
+
+
+            "lulu" in url || "lulustream"  in url -> {
+                println("DEBUG: Using luluStream1Extractor for: $url")
+                luluStream1Extractor.videosFromUrl(url, url)
+            }
+            "filemoon" in url || "filemoon.sx" in url -> filemoonExtractor.videosFromUrl(url, "FileMoon") // Assuming you have a Filemoon extractor
+
+
+            url.contains("movearnpre") || url.contains("vidhi") || url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> {
+                println("DEBUG: Using mivalyoExtractor for: $url")
+                mivalyoExtractor.videosFromUrl(url)
             }
 
             else -> {

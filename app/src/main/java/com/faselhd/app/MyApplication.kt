@@ -1,6 +1,7 @@
 package com.faselhd.app // Or your main package name
 
 import android.app.Application
+import com.faselhd.app.utils.VideoCacheManager
 import kotlinx.serialization.json.Json
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
@@ -10,6 +11,7 @@ import uy.kohesive.injekt.api.addSingletonFactory
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        VideoCacheManager.initializeCache(this)
 
         // Setup Injekt
         Injekt.importModule(object : InjektModule { // <-- CORRECT: Implement InjektModule here
@@ -27,5 +29,11 @@ class MyApplication : Application() {
                 // You can register other dependencies here as well in the future.
             }
         })
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        // Release cache resources when the app is terminated
+        VideoCacheManager.release()
     }
 }

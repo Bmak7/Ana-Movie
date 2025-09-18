@@ -123,6 +123,28 @@ class IsqSource(private val context: Context) {
     private val streamtapeExtractor by lazy { StreamTapeExtractor(client) }
     private val streamwishExtractor by lazy { StreamWishExtractor(client) }
     private val vidbomExtractor by lazy { VidBomExtractor(client) }
+    private val mixDropExtractor by lazy { MixDropExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
+    private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
+    private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
+    private val streamTapeExtractor by lazy { StreamTapeExtractor(client) }
+    private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
+    private val streamWishExtractor by lazy { StreamWishExtractor(client) }
+    private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+
+    val megaMaxExtractor = MegaMaxExtractor(
+        client = client,
+        doodExtractor = doodExtractor,
+        voeExtractor = voeExtractor,
+        mixDropExtractor = mixDropExtractor,
+        streamWishExtractor = streamWishExtractor,
+        streamTapeExtractor = streamTapeExtractor,
+        mp4uploadExtractor = mp4uploadExtractor,
+        vidTubeExtractor = vidTubeExtractor,
+        mivalyoExtractor = mivalyoExtractor,
+        luluStream1Extractor,
+        // ... pass others here
+    )
     //endregion
 
     // ============================== Popular ===============================
@@ -214,7 +236,7 @@ class IsqSource(private val context: Context) {
 
                 this.episode_number = it.select("div.number em").text().toFloatOrNull() ?: 0f
             }
-        }.reversed() // Episodes are usually listed newest first
+        } // Episodes are usually listed newest first
     }
 
     private  val TAG = "VideoFetcher"
@@ -278,6 +300,7 @@ class IsqSource(private val context: Context) {
                     Log.d(TAG, "🎯 Using uqloadExtractor")
                     uqloadExtractor.videosFromUrl(url)
                 }
+                "megamax" in url -> megaMaxExtractor.videosFromUrl(url)
                 "voe" in url -> {
                     Log.d(TAG, "🎯 Using voeExtractor r https://jilliandescribecompany.com/e/${extractVoeId(url)}")
                     voeExtractor.videosFromUrl("https://jilliandescribecompany.com/e/${extractVoeId(url)}")

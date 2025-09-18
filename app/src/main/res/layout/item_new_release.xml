@@ -46,7 +46,7 @@
                 android:layout_gravity="bottom"
                 android:background="#AA000000"
         android:padding="8dp"
-        android:textColor="#FFFF00"
+        android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:ellipsize="end"
         android:maxLines="2"

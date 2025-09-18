@@ -12,6 +12,13 @@
                 app:icon="@drawable/ic_source"
                 app:defaultValue="FASEL_HD" />
 
+        <!-- ADD THIS PREFERENCE FOR THE SECRET CODE -->
+        <Preference
+                app:key="secret_code_preference"
+                app:title="*****"
+                app:summary="Unlock additional content"
+                app:icon="@drawable/key_24px" /> <!-- Make sure you have an icon named ic_key or choose another -->
+
     </PreferenceCategory>
 
     <!-- Theme Settings -->

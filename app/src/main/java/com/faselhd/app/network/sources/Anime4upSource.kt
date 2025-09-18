@@ -93,6 +93,7 @@ class Anime4upSource(private val context: Context) {
     private val vidmolyExtractor by lazy { VidmolyExtractor(client) }
     private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
     private val okruExtractor by lazy { OkruExtractor(client) }
+    private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val yourUploadExtractor by lazy { YourUploadExtractor(client) }
     private val voeExtractor by lazy { VoeExtractor(client) }
@@ -113,6 +114,7 @@ class Anime4upSource(private val context: Context) {
         mp4uploadExtractor = mp4uploadExtractor,
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
+        luluStream1Extractor = luluStream1Extractor,
         // ... pass others here
     )
 

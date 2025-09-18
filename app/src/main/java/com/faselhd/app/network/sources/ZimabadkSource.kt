@@ -102,7 +102,9 @@ class ZimabadkSource(private val context: Context) {
     private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
     private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
     private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
-    private val megaMaxExtractor by lazy { MegaMaxExtractor(client, doodExtractor, voeExtractor, mixDropExtractor, streamWishExtractor, streamTapeExtractor, mp4uploadExtractor, vidTubeExtractor, mivalyoExtractor) }
+    private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+
+    private val megaMaxExtractor by lazy { MegaMaxExtractor(client, doodExtractor, voeExtractor, mixDropExtractor, streamWishExtractor, streamTapeExtractor, mp4uploadExtractor, vidTubeExtractor, mivalyoExtractor, luluStream1Extractor) }
 
     // ============================== Popular & Latest ===============================
 

@@ -25,8 +25,10 @@ class MegaMaxExtractor(
     private val streamTapeExtractor: StreamTapeExtractor,
     private val mp4uploadExtractor: Mp4uploadExtractor,
     private val vidTubeExtractor: VidTubeExtractor,
-    private val mivalyoExtractor: MivalyoExtractor
-    // Add other extractors here as you create them...
+    private val mivalyoExtractor: MivalyoExtractor,
+    private val luluStream1Extractor: LuluStream1Extractor,
+
+// Add other extractors here as you create them...
     // private val filemoonExtractor: FilemoonExtractor,
 ) {
 
@@ -105,9 +107,16 @@ class MegaMaxExtractor(
             host.contains("streamtape") -> streamTapeExtractor.videosFromUrl(url, quality)
             host.contains("mp4upload") -> mp4uploadExtractor.videosFromUrl(url, quality)
             host.contains("vidtube")  -> vidTubeExtractor.videosFromUrl(url)
-            host.contains("mivalyo") || host.contains("vidhide") -> {
-                println("mivalyo mivalyo url: $url")
+            url.contains("vidhi") || url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> {                println("mivalyo mivalyo url: $url")
                 mivalyoExtractor.videosFromUrl(url)
+            }
+//            host.contains("lulu") || host.contains("lulustream") -> {
+//                println("mivalyo mivalyo url: $url")
+//                luluStream1Extractor.videosFromUrl(url, url)
+//            }
+            "lulu" in url || "lulustream"  in url -> {
+                println("DEBUG: Using luluStream1Extractor for: $url")
+                luluStream1Extractor.videosFromUrl(url, url)
             }
             // Add cases for other extractors here
             // host.contains("filemoon") -> filemoonExtractor.videosFromUrl(url, quality)

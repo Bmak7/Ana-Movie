@@ -29,13 +29,12 @@ import com.faselhd.app.adapters.AnimeAdapter
 import com.faselhd.app.adapters.ContinueWatchingAdapter
 import com.faselhd.app.adapters.SliderAdapter
 import com.faselhd.app.db.AppDatabase
-import com.faselhd.app.models.SAnime
-import com.faselhd.app.models.WatchHistory
-import com.faselhd.app.models.Favorite
 import com.faselhd.app.network.SourceManager
 import com.example.myapplication.R
 import com.facebook.shimmer.ShimmerFrameLayout
+import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
+import com.faselhd.app.utils.PlayerDataHolder
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.*
@@ -941,6 +940,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     private fun handlePlayButtonClick(anime: SAnime) {
         lifecycleScope.launch {
             if (!isNetworkAvailable()) {
@@ -955,24 +955,19 @@ class MainActivity : AppCompatActivity() {
                 val result = withContext(Dispatchers.IO) {
                     val recentHistory = db.watchHistoryDao().getRecentWatchHistoryForAnime(anime.url!!)
                     if (recentHistory != null && recentHistory.lastWatchedPosition > 0) {
-                        // Resume scenario: return the episode URL to resume from
+                        // Scenario 1: Resume - This part is fine.
                         Triple(recentHistory.episodeUrl, null, null)
                     } else {
-                        // Start from first episode scenario
+                        // Scenario 2: Start from the first episode
                         val episodes = sourceManager.fetchEpisodeList(anime.url!!, currentFeaturedSource)
                         if (episodes.isNotEmpty()) {
                             val firstEpisode = episodes.first()
                             val videos = sourceManager.fetchVideoList(firstEpisode.url!!, currentFeaturedSource)
-                            if (videos.isNotEmpty()) {
-                                // Success: return video list and episode list
-                                Triple(null, videos, episodes)
-                            } else {
-                                // No videos found for the first episode
-                                Triple(null, emptyList<Any>(), emptyList<Any>())
-                            }
+                            // Pass all necessary data back to the main thread
+                            Triple(null, videos, episodes)
                         } else {
-                            // No episodes found for the anime
-                            Triple(null, null, emptyList<Any>())
+                            // No episodes found
+                            Triple(null, emptyList<Video>(), emptyList<SEpisode>())
                         }
                     }
                 }
@@ -981,6 +976,7 @@ class MainActivity : AppCompatActivity() {
                 val (resumeUrl, videos, episodes) = result
 
                 if (resumeUrl != null) {
+                    // Resume logic remains unchanged
                     Toast.makeText(this@MainActivity, "Resuming...", Toast.LENGTH_SHORT).show()
                     val intent = AnimeDetailsActivity.newIntentWithResume(
                         context = this@MainActivity,
@@ -990,33 +986,37 @@ class MainActivity : AppCompatActivity() {
                     )
                     startActivity(intent)
                     overridePendingTransition(R.anim.scale_in, R.anim.fade_out)
-                } else if (videos != null && episodes != null) {
+                } else if (!videos.isNullOrEmpty() && !episodes.isNullOrEmpty()) {
+                    // This block is now fixed and more efficient
                     Toast.makeText(this@MainActivity, "Starting Episode 1...", Toast.LENGTH_SHORT).show()
-                    val episodes = sourceManager.fetchEpisodeList(anime.url!!, currentFeaturedSource)
-                    if (episodes.isNotEmpty()) {
-                        val firstEpisode = episodes.first()
-                        val videos = sourceManager.fetchVideoList(firstEpisode.url!!, currentFeaturedSource)
-                        if (videos.isNotEmpty()) {
-                            val intent = VideoPlayerActivity.newIntent(
-                                context = this@MainActivity,
-                                videos = videos,
-                                anime = anime,
-                                currentEpisode = firstEpisode,
-                                episodeListForSeason = ArrayList(episodes),
-                                startPosition = 0L,
-                                source = currentFeaturedSource
-                            )
-                            startActivity(intent)
-                        } else {
-                            Toast.makeText(this@MainActivity, "No video sources available.", Toast.LENGTH_SHORT).show()
-                            openAnimeDetailsAsFallback(anime)
-                        }
-                    } else {
-                        Toast.makeText(this@MainActivity, "No episodes found.", Toast.LENGTH_SHORT).show()
-                        openAnimeDetailsAsFallback(anime)
-                    }
+                    val firstEpisode = episodes.first()
+
+                    // =======================================================
+                    // ++ SOLUTION IMPLEMENTED HERE ++
+                    // =======================================================
+
+                    // 1. Populate the singleton holder
+                    PlayerDataHolder.videos = videos
+                    PlayerDataHolder.anime = anime
+                    PlayerDataHolder.episodeList = episodes
+
+                    // 2. Create the lightweight intent
+                    val intent = VideoPlayerActivity.newIntent(
+                        context = this@MainActivity,
+                        currentEpisodeUrl = firstEpisode.url!!,
+                        startPosition = 0L,
+                        source = currentFeaturedSource
+                    )
+
+                    // 3. Start the activity
+                    startActivity(intent)
+
+                    // =======================================================
+                    // -- END OF FIX --
+                    // =======================================================
+
                 } else {
-                    Toast.makeText(this@MainActivity, "No episodes found.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "No episodes or video sources found.", Toast.LENGTH_SHORT).show()
                     openAnimeDetailsAsFallback(anime)
                 }
             } catch (e: Exception) {

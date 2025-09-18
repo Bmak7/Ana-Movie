@@ -97,6 +97,8 @@ class AnimercoSource(private val context: Context) {
     private val mixDropExtractor by lazy { MixDropExtractor(client) }
     private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
     private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
+    private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+
     // GdrivePlayerExtractor and YourUploadExtractor can be added if you have them
     val megaMaxExtractor = MegaMaxExtractor(
         client = client,
@@ -108,6 +110,7 @@ class AnimercoSource(private val context: Context) {
         mp4uploadExtractor = mp4uploadExtractor,
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
+        luluStream1Extractor = luluStream1Extractor,
         // ... pass others here
     )
 

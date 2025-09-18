@@ -57,6 +57,7 @@ import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.core.view.isVisible
+import com.faselhd.app.utils.PlayerDataHolder
 import java.io.IOException
 
 
@@ -959,16 +960,30 @@ class AnimeDetailsActivity : AppCompatActivity() {
                     setLoadingState(false)
 
                     if (videos.isNotEmpty()) {
+                        // =======================================================
+                        // ++ SOLUTION IMPLEMENTED HERE ++
+                        // =======================================================
+
+                        // 1. Populate the singleton holder with the large data
+                        PlayerDataHolder.videos = videos
+                        PlayerDataHolder.anime = currentAnime
+                        PlayerDataHolder.episodeList = episodeListForPlayer
+
+                        // 2. Create the Intent using the new, lightweight method
                         val intent = VideoPlayerActivity.newIntent(
                             context = this@AnimeDetailsActivity,
-                            videos = videos,
-                            anime = currentAnime!!,
-                            currentEpisode = episode,
-                            episodeListForSeason = ArrayList(episodeListForPlayer),
+                            currentEpisodeUrl = episode.url!!, // Pass only the unique URL
                             startPosition = history?.lastWatchedPosition ?: 0L,
                             source = specificSource
                         )
+
+                        // 3. Start the activity. The player will retrieve data from the holder.
                         startActivity(intent)
+
+                        // =======================================================
+                        // -- END OF FIX --
+                        // =======================================================
+
                     } else {
                         showSnackbar("No video links found for this episode", isError = true)
                     }

@@ -7,6 +7,7 @@ import com.example.myapplication.R
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.CloudflareInterceptor
+import com.faselhd.app.network.extractors.*
 import com.faselhd.app.utils.*
 import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,11 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 import kotlin.text.Regex
+import java.util.Base64
+import java.nio.charset.StandardCharsets
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
 
 class WitAnimeSource(private val context: Context) {
 
@@ -68,36 +74,27 @@ class WitAnimeSource(private val context: Context) {
             // Needs to be build as otherwise the other builders will change this object
             .build()
     }
-//    private val client: OkHttpClient by lazy {
-//        val cookieManager = CookieManager()
-//        val cookieJar: CookieJar = JavaNetCookieJar(cookieManager)
-//
-//        OkHttpClient.Builder()
-//            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-//            .cookieJar(cookieJar)
-//            .addInterceptor(CloudflareInterceptor(context, cookieJar))
-//            .addInterceptor { chain ->
-//                val originalRequest = chain.request()
-//                val newRequest = originalRequest.newBuilder()
-//                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
-//                    .header("Referer", baseUrl)
-//                    .header("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
-//                    .build()
-//                chain.proceed(newRequest)
-//            }
-//            .connectTimeout(30, TimeUnit.SECONDS)
-//            .readTimeout(30, TimeUnit.SECONDS)
-//            .build()
-//    }
+
 
     private val baseUrl = "https://witanime.red"
 
     // Data class for server information
-    data class ServerInfo(
-        val name: String,
-        val serverId: String,
-    )
-        suspend fun fetchMainSlider(): List<SAnime> = withContext(Dispatchers.IO) {
+    //region Extractors
+    private val doodExtractor by lazy { DoodExtractor(client) }
+    private val uqloadExtractor by lazy { UqloadExtractor(client) }
+    private val voeExtractor by lazy { VoeExtractor(client) }
+    private val vidmolyExtractor by lazy { VidmolyExtractor(client) }
+    private val streamtapeExtractor by lazy { StreamTapeExtractor(client) }
+    private val streamwishExtractor by lazy { StreamWishExtractor(client) }
+    private val vidbomExtractor by lazy { VidBomExtractor(client) }
+    private val mixDropExtractor by lazy { MixDropExtractor(client) }
+    private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
+    private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
+    private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
+    private val streamTapeExtractor by lazy { StreamTapeExtractor(client) }
+    private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
+    private val streamWishExtractor by lazy { StreamWishExtractor(client) }
+    suspend fun fetchMainSlider(): List<SAnime> = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder().url(baseUrl).build()
             val document = Jsoup.parse(client.newCall(request).execute().body!!.string())
@@ -159,16 +156,96 @@ class WitAnimeSource(private val context: Context) {
     suspend fun fetchEpisodeList(animeUrl: String): List<SEpisode> = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder().url(animeUrl).build()
-            val document = Jsoup.parse(client.newCall(request).execute().body!!.string())
+            val responseHtml = client.newCall(request).execute().body!!.string()
+            val document = Jsoup.parse(responseHtml)
 
-            val animeTitle = document.selectFirst("h1, .title-name")?.text() ?: "Unknown"
+            // Get the anime title, which can be found in different places on each page type
+            val animeTitle = document.selectFirst(".anime-page-link a")?.text() // From episode page
+                ?: document.selectFirst("h1.anime-details-title")?.text() // From main anime page
+                ?: "Unknown Anime"
 
-            document.select(".all-episodes-list li a").mapNotNull { element ->
-                createEpisode(element, animeTitle)
-            }.sortedBy { it.episode_number }
+            // --- METHOD 1: Check for encrypted data on the main anime page ---
+            val scriptRegex = """var processedEpisodeData = '(.+?)';""".toRegex()
+            val matchResult = scriptRegex.find(responseHtml)
+
+            if (matchResult != null) {
+                val encodedString = matchResult.groups[1]?.value
+                if (encodedString != null && encodedString.contains(".")) {
+                    val parts = encodedString.split('.')
+                    if (parts.size == 2) {
+                        try {
+                            val encodedData = parts[0]
+                            val encodedKey = parts[1]
+                            val dataBytes = Base64.getDecoder().decode(encodedData)
+                            val keyBytes = Base64.getDecoder().decode(encodedKey)
+
+                            val decryptedBytes = ByteArray(dataBytes.size)
+                            for (i in dataBytes.indices) {
+                                decryptedBytes[i] = (dataBytes[i].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
+                            }
+
+                            val decodedHtml = String(decryptedBytes, StandardCharsets.UTF_8)
+                            val episodesDocument = Jsoup.parse(decodedHtml, animeUrl)
+
+                            return@withContext episodesDocument.select("a").map { element ->
+                                createEpisode(element, animeTitle)
+                            }.sortedBy { it.episode_number }
+                        } catch (e: Exception) {
+                            Log.e("WitAnimeSource", "Failed to decrypt episode data. Falling back to other method.", e)
+                        }
+                    }
+                }
+            }
+
+            // --- METHOD 2: Fallback for episode watch pages (Base64 in onclick) ---
+            val episodeLinks = document.select("ul#ULEpisodesList li a")
+            if (episodeLinks.isNotEmpty()) {
+                val episodes = mutableListOf<SEpisode>()
+                val onclickRegex = """openEpisode\('([^']+)'\)""".toRegex()
+
+                episodeLinks.forEach { element ->
+                    val onclickAttr = element.attr("onclick")
+                    val b64Match = onclickRegex.find(onclickAttr)
+                    if (b64Match != null) {
+                        val b64Url = b64Match.groupValues[1]
+                        try {
+                            val decodedUrl = String(Base64.getDecoder().decode(b64Url), StandardCharsets.UTF_8)
+                            episodes.add(createEpisode(element, animeTitle, episodeUrl = decodedUrl))
+                        } catch (e: IllegalArgumentException) {
+                            Log.e("WitAnimeSource", "Failed to decode Base64 URL from onclick: $b64Url")
+                        }
+                    }
+                }
+                if (episodes.isNotEmpty()) {
+                    return@withContext episodes.sortedBy { it.episode_number }
+                }
+            }
+
+            // If neither method found episodes, return an empty list
+            Log.w("WitAnimeSource", "No episodes found on page: $animeUrl")
+            return@withContext emptyList()
+
         } catch (e: Exception) {
             e.printStackTrace()
-            emptyList()
+            return@withContext emptyList()
+        }
+    }
+
+    /**
+     * Helper function to create an SEpisode object. It can now take an optional
+     * explicit URL for cases where the element's href is not the real link.
+     */
+    private fun createEpisode(element: Element, seriesName: String, episodeUrl: String = ""): SEpisode {
+        val episodeText = element.text()
+        // Use the provided episodeUrl if it's not empty, otherwise get it from the element's href
+        val finalUrl = episodeUrl.ifEmpty { element.attr("abs:href") }
+        println("final episode url: $finalUrl")
+        return SEpisode().apply {
+            url = finalUrl
+            name = "$seriesName: $episodeText"
+            episode_number = Regex("""الحلقة\s+(\d+)""").find(episodeText)?.groupValues?.get(1)?.toFloatOrNull()
+                ?: Regex("""(\d+)""").find(episodeText)?.value?.toFloatOrNull()
+                        ?: 0f
         }
     }
 
@@ -195,194 +272,152 @@ class WitAnimeSource(private val context: Context) {
         }
     }
 
+    // The DecryptionParams data class remains the same
+    // The DecryptionParams data class remains the same
+    // Data class for the main decryption parameters from _zH
+    // The 'd' and 'x' arrays are no longer needed.
+    data class DecryptionParams(
+        val k: String,
+        val v: String
+    )
+
+    // Data class to parse the salt from the _m variable
+    data class SaltParams(
+        val r: String
+    )
+
+    /**
+     * FINAL CORRECTED FUNCTION
+     * This version correctly extracts the necessary data and applies the RC4
+     * decryption directly to the encrypted URL data.
+     */
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
         try {
+            Log.d("WitAnime", "Starting video fetch for URL: $episodeUrl")
             val request = Request.Builder().url(episodeUrl).build()
-            val document = Jsoup.parse(client.newCall(request).execute().body!!.string())
-
+            val responseHtml = client.newCall(request).execute().body!!.string()
+            val document = Jsoup.parse(responseHtml)
             val videos = mutableListOf<Video>()
 
-            // Extract server information
-            val servers = extractServers(document)
-            Log.d("WitAnime", "Found ${servers.size} servers")
+            // 1. Find and extract the primary data variables (_zG, _zH, _m)
+            val zGRegex = """var _zG\s*=\s*"([^"]+)";""".toRegex()
+            val zHRegex = """var _zH\s*=\s*"([^"]+)";""".toRegex()
+            val mRegex = """var _m\s*=\s*(\{.+\});""".toRegex()
 
-            // For each server, try to get the video URL
-            for (server in servers) {
-                try {
-                    val videoUrl = getServerVideoUrl(episodeUrl, server.serverId, server.name)
-                    if (videoUrl.isNotEmpty()) {
-                        videos.add(Video(
-                            url = videoUrl,
-                            quality = "${server.serverId} - ${server.name}",
-                            videoUrl = videoUrl,
-                            headers = mapOf(
-                                "Referer" to episodeUrl,
-                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            val zGMatch = zGRegex.find(responseHtml)
+            val zHMatch = zHRegex.find(responseHtml)
+            val mMatch = mRegex.find(responseHtml)
+
+            if (zGMatch == null || zHMatch == null || mMatch == null) {
+                Log.e("WitAnime", "Failed to find one or more required JS variables (_zG, _zH, _m).")
+                return@withContext emptyList()
+            }
+            Log.d("WitAnime", "Successfully found all required JS variables.")
+
+            // 2. Base64 decode the data to get JSON strings
+            val jsonZG = String(Base64.getDecoder().decode(zGMatch.groupValues[1]), StandardCharsets.UTF_8)
+            val jsonZH = String(Base64.getDecoder().decode(zHMatch.groupValues[1]), StandardCharsets.UTF_8)
+
+            // 3. Parse the JSON strings into Kotlin objects
+            val gson = Gson()
+            val urlListType = object : TypeToken<List<String>>() {}.type
+            val paramsListType = object : TypeToken<List<DecryptionParams>>() {}.type
+            val saltType = object : TypeToken<SaltParams>() {}.type
+
+            val encryptedUrls: List<String> = gson.fromJson(jsonZG, urlListType)
+            val decryptionParams: List<DecryptionParams> = gson.fromJson(jsonZH, paramsListType)
+            val saltParams: SaltParams = gson.fromJson(mMatch.groupValues[1], saltType)
+            val salt = String(Base64.getDecoder().decode(saltParams.r), StandardCharsets.UTF_8)
+
+            Log.d("WitAnime", "Parsed ${encryptedUrls.size} encrypted URLs and ${decryptionParams.size} parameter sets.")
+            Log.d("WitAnime", "Extracted salt: $salt")
+
+            // 4. Iterate through servers and decrypt the URLs
+            document.select("ul#episode-servers a.server-link").forEach { serverElement ->
+                val serverId = serverElement.attr("data-server-id").toIntOrNull()
+                val serverName = serverElement.text().trim()
+
+                if (serverId != null && serverId < encryptedUrls.size && serverId < decryptionParams.size) {
+                    val encryptedUrlData = encryptedUrls[serverId]
+                    val params = decryptionParams[serverId]
+
+                    Log.d("WitAnime", "Processing Server: '$serverName' (ID: $serverId)")
+
+                    // --- DECRYPT THE URL DIRECTLY ---
+                    val decryptedUrl = decryptUrl(encryptedUrlData, params, salt)
+
+                    if (decryptedUrl.isNotEmpty() && (decryptedUrl.startsWith("http") || decryptedUrl.startsWith("//"))) {
+                        Log.i("WitAnime", " -> SUCCESS: Decrypted URL: $decryptedUrl")
+                        videos.add(
+                            Video(
+                                url = decryptedUrl,
+                                quality = serverName,
+                                videoUrl = decryptedUrl,
+                                headers = mapOf("Referer" to episodeUrl)
                             )
-                        ))
+                        )
+                    } else {
+                        Log.w("WitAnime", " -> FAILED: Decryption returned invalid URL for server '$serverName'. Result: '$decryptedUrl'")
                     }
-                } catch (e: Exception) {
-                    Log.e("WitAnime", "Error extracting video from server ${server.name}", e)
                 }
             }
 
-            // Also extract download links
-            extractDownloadLinks(document).forEach { video ->
-                videos.add(video)
-            }
+            Log.i("WitAnime", "Finished processing. Found ${videos.size} unique video links.")
+            return@withContext videos.distinctBy { it.url }
 
-            Log.d("WitAnime", "Total videos found: ${videos.size}")
-            videos.distinctBy { it.url }
         } catch (e: Exception) {
-            Log.e("WitAnime", "Error fetching video list", e)
-            emptyList()
+            Log.e("WitAnime", "A critical error occurred while fetching the video list.", e)
+            return@withContext emptyList()
         }
     }
 
+    /**
+     * UNCHANGED
+     * This function correctly implements the RC4 cipher. The key was to provide it
+     * with the correctly encoded ciphertext.
+     */
+    private fun decryptUrl(encryptedUrl: String, params: DecryptionParams, salt: String): String {
+        try {
+            // Step 1: Get raw bytes from the encrypted string using ISO_8859_1 to prevent corruption.
+            val encryptedBytes = encryptedUrl.toByteArray(StandardCharsets.ISO_8859_1)
 
-    private suspend fun extractServers(document: Document): List<ServerInfo> {
-        return document.select("ul#episode-servers a.server-link").map { serverElement ->
-            val serverName = serverElement.selectFirst("span.ser")?.text()?.trim() ?: "Unknown"
-            val serverId = serverElement.attr("data-server-id")
-            val quality = extractQualityFromServerName(serverName)
+            // Step 2: Construct the full RC4 key.
+            val keyPart1 = String(Base64.getDecoder().decode(params.v), StandardCharsets.UTF_8)
+            val keyPart2 = String(Base64.getDecoder().decode(params.k), StandardCharsets.UTF_8)
+            val key = (keyPart1 + keyPart2 + salt).toByteArray(StandardCharsets.UTF_8)
 
-            ServerInfo(serverName, serverId)
-        }
-    }
-
-    private suspend fun getServerVideoUrl(episodeUrl: String, serverId: String, serverName: String): String {
-        return try {
-            // This simulates clicking on a server tab
-            // In a real implementation, you might need to make additional requests
-            // or use JavaScript execution to get the actual video URL
-
-            when {
-                serverName.contains("videa", ignoreCase = true) -> {
-                    extractVideaUrl(episodeUrl, serverId)
-                }
-                serverName.contains("ok.ru", ignoreCase = true) -> {
-                    extractOkRuUrl(episodeUrl, serverId)
-                }
-                serverName.contains("dailymotion", ignoreCase = true) -> {
-                    extractDailymotionUrl(episodeUrl, serverId)
-                }
-                serverName.contains("streamwish", ignoreCase = true) -> {
-                    extractStreamwishUrl(episodeUrl, serverId)
-                }
-                else -> {
-                    extractGenericServerUrl(episodeUrl, serverId)
-                }
+            // Step 3: RC4 Key-Scheduling Algorithm (KSA).
+            val s = IntArray(256) { it }
+            var j = 0
+            for (i in 0..255) {
+                val keyByte = key[i % key.size].toInt() and 0xFF
+                j = (j + s[i] + keyByte) % 256
+                s[i] = s[j].also { s[j] = s[i] } // Swap
             }
+
+            // Step 4: RC4 Pseudo-Random Generation Algorithm (PRGA) and XORing.
+            var i = 0
+            j = 0
+            val decryptedBytes = ByteArray(encryptedBytes.size)
+            for (byteIndex in encryptedBytes.indices) {
+                i = (i + 1) % 256
+                j = (j + s[i]) % 256
+                s[i] = s[j].also { s[j] = s[i] } // Swap
+                val keystreamByte = s[(s[i] + s[j]) % 256]
+                decryptedBytes[byteIndex] = (encryptedBytes[byteIndex].toInt() xor keystreamByte).toByte()
+            }
+
+            // The final result is a readable UTF-8 string (the URL).
+            return String(decryptedBytes, StandardCharsets.UTF_8)
+
         } catch (e: Exception) {
-            Log.e("WitAnime", "Error getting video URL for server $serverName", e)
-            ""
+            Log.e("WitAnimeDecrypt", "Failed to decrypt URL.", e)
+            return ""
         }
     }
 
-    private suspend fun extractVideaUrl(episodeUrl: String, serverId: String): String {
-        // Make a request that simulates server selection
-        val request = Request.Builder()
-            .url(episodeUrl)
-            .header("X-Requested-With", "XMLHttpRequest")
-            .build()
 
-        val response = client.newCall(request).execute()
-        val html = response.body!!.string()
 
-        // Look for videa.hu URLs in the response
-        val videaRegex = """https://videa\.hu/player\?v=([^"'\s]+)""".toRegex()
-        val match = videaRegex.find(html)
-
-        return match?.value ?: ""
-    }
-
-    private suspend fun extractOkRuUrl(episodeUrl: String, serverId: String): String {
-        val request = Request.Builder().url(episodeUrl).build()
-        val response = client.newCall(request).execute()
-        val html = response.body!!.string()
-
-        val okruRegex = """https://ok\.ru/videoembed/[^"'\s]+""".toRegex()
-        val match = okruRegex.find(html)
-
-        return match?.value ?: ""
-    }
-
-    private suspend fun extractDailymotionUrl(episodeUrl: String, serverId: String): String {
-        val request = Request.Builder().url(episodeUrl).build()
-        val response = client.newCall(request).execute()
-        val html = response.body!!.string()
-
-        val dailymotionRegex = """https://www\.dailymotion\.com/embed/[^"'\s]+""".toRegex()
-        val match = dailymotionRegex.find(html)
-
-        return match?.value ?: ""
-    }
-
-    private suspend fun extractStreamwishUrl(episodeUrl: String, serverId: String): String {
-        val request = Request.Builder().url(episodeUrl).build()
-        val response = client.newCall(request).execute()
-        val html = response.body!!.string()
-
-        val streamwishRegex = """https://[^"'\s]*streamwish[^"'\s]+""".toRegex()
-        val match = streamwishRegex.find(html)
-
-        return match?.value ?: ""
-    }
-
-    private suspend fun extractGenericServerUrl(episodeUrl: String, serverId: String): String {
-        // Generic extraction for unknown servers
-        val request = Request.Builder().url(episodeUrl).build()
-        val response = client.newCall(request).execute()
-        val html = response.body!!.string()
-
-        // Look for common video URL patterns
-        val urlPatterns = listOf(
-            """https://[^"'\s]+\.mp4[^"'\s]*""".toRegex(),
-            """https://[^"'\s]+\.m3u8[^"'\s]*""".toRegex(),
-            """https://[^"'\s]+/embed/[^"'\s]+""".toRegex()
-        )
-
-        for (pattern in urlPatterns) {
-            val match = pattern.find(html)
-            if (match != null) {
-                return match.value
-            }
-        }
-
-        return ""
-    }
-
-    private fun extractDownloadLinks(document: Document): List<Video> {
-        val videos = mutableListOf<Video>()
-
-        document.select(".download-link").forEach { downloadElement ->
-            val dataIndex = downloadElement.attr("data-index")
-            val providerElement = downloadElement.selectFirst(".notice")
-            val provider = providerElement?.text() ?: "Unknown"
-
-            // Find the quality section this download belongs to
-            val qualitySection = downloadElement.closest(".col-md-6")
-            val qualityHeader = qualitySection?.selectFirst("li")?.text() ?: ""
-
-            val quality = when {
-                qualityHeader.contains("FHD") -> "1080p"
-                qualityHeader.contains("HD") && !qualityHeader.contains("FHD") -> "720p"
-                qualityHeader.contains("SD") -> "480p"
-                else -> "Unknown"
-            }
-
-            // Note: The actual download URL would need to be resolved
-            // This is a placeholder - you'd need to handle the JavaScript
-            // that resolves the actual download URLs
-            videos.add(Video(
-                url = "download_link_$dataIndex", // Placeholder
-                quality = "$quality - $provider (Download)",
-                videoUrl = "download_link_$dataIndex"
-            ))
-        }
-
-        return videos
-    }
 
     private fun toAnime(element: Element): SAnime {
         return SAnime().apply {
@@ -397,89 +432,6 @@ class WitAnimeSource(private val context: Context) {
         }
     }
 
-    private fun createEpisode(element: Element, seriesName: String, episodeUrl: String = ""): SEpisode {
-        val episodeText = element.text()
-        val finalUrl = episodeUrl.ifEmpty { element.attr("abs:href") }
-
-        return SEpisode().apply {
-            url = finalUrl
-            name = "$seriesName: $episodeText"
-
-            // Extract episode number from Arabic text like "الحلقة 8"
-            episode_number = Regex("""الحلقة\s+(\d+)""").find(episodeText)?.groupValues?.get(1)?.toFloatOrNull()
-                ?: Regex("""(\d+)""").find(episodeText)?.value?.toFloatOrNull()
-                        ?: 0f
-        }
-    }
-
-
-    // Additional utility functions for better video extraction
-    suspend fun getDirectVideoUrl(embedUrl: String): String = withContext(Dispatchers.IO) {
-        try {
-            when {
-                embedUrl.contains("videa.hu") -> {
-                    // Extract direct video URL from Videa player
-                    extractVideaDirect(embedUrl)
-                }
-                embedUrl.contains("ok.ru") -> {
-                    // Extract direct video URL from OK.ru
-                    extractOkRuDirect(embedUrl)
-                }
-                embedUrl.contains("dailymotion") -> {
-                    // Extract direct video URL from Dailymotion
-                    extractDailymotionDirect(embedUrl)
-                }
-                else -> embedUrl
-            }
-        } catch (e: Exception) {
-            Log.e("WitAnime", "Error extracting direct video URL", e)
-            embedUrl
-        }
-    }
-
-    private suspend fun extractVideaDirect(embedUrl: String): String {
-        val request = Request.Builder()
-            .url(embedUrl)
-            .header("Referer", baseUrl)
-            .build()
-
-        val response = client.newCall(request).execute()
-        val html = response.body!!.string()
-
-        // Look for direct video URL in Videa player
-        val videoRegex = """["'](?:video_url|src)["']:\s*["']([^"']+\.mp4[^"']*)["']""".toRegex()
-        val match = videoRegex.find(html)
-
-        return match?.groupValues?.get(1) ?: embedUrl
-    }
-
-    private suspend fun extractOkRuDirect(embedUrl: String): String {
-        // OK.ru direct extraction would require more complex parsing
-        // This is a simplified version
-        return embedUrl
-    }
-
-    private suspend fun extractDailymotionDirect(embedUrl: String): String {
-        // Dailymotion direct extraction would require API calls
-        // This is a simplified version
-        return embedUrl
-    }
-
-
-
-    private fun createEpisode(element: Element, seriesName: String): SEpisode {
-        val episodeText = element.text()
-
-        return SEpisode().apply {
-            url = element.attr("abs:href")
-            name = "$seriesName: $episodeText"
-
-            // Extract episode number from text like "الحلقة 8"
-            episode_number = Regex("""الحلقة\s+(\d+)""").find(episodeText)?.groupValues?.get(1)?.toFloatOrNull()
-                ?: Regex("""(\d+)""").find(episodeText)?.value?.toFloatOrNull()
-                        ?: 0f
-        }
-    }
 
     private fun getStatus(statusString: String): Int {
         return when {

@@ -128,6 +128,27 @@
 <!--        <item name="android:windowLightNavigationBar">false</item>-->
     </style>
 
+    <style name="CustomAlertDialog" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowTitleStyle">@style/CustomDialogTitle</item>
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">@color/colorAccent</item>
+        <item name="colorAccent">@color/colorPrimary</item>
+    </style>
+
+    <style name="CustomDialogTitle" parent="@android:style/TextAppearance.DialogWindowTitle">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="DialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+
     <!-- Search Activity Theme -->
     <style name="SearchActivityTheme" parent="AppTheme">
         <item name="android:windowSoftInputMode">adjustResize</item>
@@ -284,12 +305,12 @@
     </style>
 
     <!-- Dialog Styles -->
-    <style name="CustomAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="materialAlertDialogTitleTextStyle">@style/DialogTitleText</item>
-        <item name="materialAlertDialogBodyTextStyle">@style/DialogBodyText</item>
-        <item name="buttonBarPositiveButtonStyle">@style/DialogPositiveButton</item>
-        <item name="buttonBarNegativeButtonStyle">@style/DialogNegativeButton</item>
-    </style>
+<!--    <style name="CustomAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">-->
+<!--        <item name="materialAlertDialogTitleTextStyle">@style/DialogTitleText</item>-->
+<!--        <item name="materialAlertDialogBodyTextStyle">@style/DialogBodyText</item>-->
+<!--        <item name="buttonBarPositiveButtonStyle">@style/DialogPositiveButton</item>-->
+<!--        <item name="buttonBarNegativeButtonStyle">@style/DialogNegativeButton</item>-->
+<!--    </style>-->
 
     <style name="DialogTitleText" parent="MaterialAlertDialog.Material3.Title.Text">
         <item name="android:fontFamily">sans-serif-medium</item>

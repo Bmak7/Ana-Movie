@@ -124,6 +124,8 @@ class ArabSeedSource(private val context: Context) {
     private val doodExtractor by lazy { DoodExtractor(client) }
     private val streamwishExtractor by lazy { StreamWishExtractor(client) }
     private val voeExtractor by lazy { VoeExtractor(client) }
+    private val bigWarpExtractor by lazy { BigWarpExtractor(client) }
+
 
     // ============================== Main Slider ==============================
     suspend fun fetchMainSlider(): List<SAnime> = withContext(Dispatchers.IO) {
@@ -412,7 +414,7 @@ class ArabSeedSource(private val context: Context) {
 
                             if (embedUrl.startsWith("http")) {
                                 Log.d("ArabSeed", "Success for $serverName ($qualityName). Got embed URL: $embedUrl")
-                                videos.addAll(extractVideosFromUrl(embedUrl, "ArabSeed server - $qualityName"))
+                                videos.addAll(extractVideosFromUrl(embedUrl, "ArabSeed server - $qualityName").reversed())
                             }
                         }
                     }
@@ -436,13 +438,18 @@ class ArabSeedSource(private val context: Context) {
         return try {
             when {
                 // Arabseed's own server (gamehub) and StreamWish are often the same extractor
-                "gamehub" in url  -> extractVideoFromIframe(url, qualityLabel)
+                "embed" in url  -> extractVideoFromIframe(url, qualityLabel)
 
                 "vidmoly" in url -> vidmolyExtractor.videosFromUrl(url)
                 "voe.sx" in url -> voeExtractor.videosFromUrl(url)
                 "dood" in url || "d-s.io" in url-> doodExtractor.videosFromUrl(url, qualityLabel)
                 "filemoon" in url || "filemoon.sx" in url -> filemoonExtractor.videosFromUrl(url, qualityLabel) // Assuming you have a Filemoon extractor
-
+                "bigwarp" in url -> {
+                println("DEBUG: Processing BigWarp URL: $url")
+                val result = bigWarpExtractor.videosFromUrl(url)
+                println("DEBUG: BigWarp extraction result: ${result.size} videos found")
+                result
+            }
                 // Add other extractors as needed
                 // "watchadsontape.com" in url -> watchAdsOnTapeExtractor.videosFromUrl(url)
 

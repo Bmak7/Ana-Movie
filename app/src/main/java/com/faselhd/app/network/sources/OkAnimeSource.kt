@@ -112,6 +112,8 @@ class OkAnimeSource(private val context: Context) {
     private val streamTapeExtractor by lazy { StreamTapeExtractor(client) }
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
+    private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+
     val megaMaxExtractor = MegaMaxExtractor(
         client = client,
         doodExtractor = doodExtractor,
@@ -122,6 +124,7 @@ class OkAnimeSource(private val context: Context) {
         mp4uploadExtractor = mp4uploadExtractor,
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
+        luluStream1Extractor = luluStream1Extractor,
         // ... pass others here
     )
 

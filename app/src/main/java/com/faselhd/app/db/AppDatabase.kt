@@ -24,8 +24,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun downloadDao(): DownloadDao
     abstract fun favoriteDao(): FavoriteDao
 
-
     companion object {
+        private const val DATABASE_NAME = "anime_app_database"
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -35,7 +35,6 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_13_14 = object : Migration(13, 14) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Drop the tables you don’t want
                 db.execSQL("DROP TABLE IF EXISTS liked_songs")
                 db.execSQL("DROP TABLE IF EXISTS music_history")
             }
@@ -78,15 +77,20 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "anime_app_database"
+                    DATABASE_NAME
                 )
-                    // Uncomment if you want migrations instead of destructive
-                     .addMigrations(MIGRATION_13_14)
+                    .addMigrations(MIGRATION_13_14)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
             }
+        }
+
+        // ADD THIS FUNCTION
+        fun closeDatabase() {
+            INSTANCE?.close()
+            INSTANCE = null
         }
     }
 }
