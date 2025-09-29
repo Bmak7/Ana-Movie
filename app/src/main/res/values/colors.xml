@@ -36,7 +36,6 @@
 
     <color name="background_dark">#121212</color> <!-- Standard dark theme background -->
     <color name="onBackground_dark">#E0E0E0</color> <!-- Light gray text for readability -->
-    <color name="surface_dark">#1E1E1E</color> <!-- Slightly lighter dark for cards -->
     <color name="onSurface_dark">#E0E0E0</color> <!-- Light gray text on cards -->
     <color name="surfaceVariant_dark">#333333</color> <!-- Darker dividers -->
     <color name="onSurfaceVariant_dark">#9E9E9E</color> <!-- Dimmer text for metadata -->
@@ -91,7 +90,6 @@
     <color name="warning_orange">#FF9800</color>
 
     <!-- Surface colors -->
-    <color name="surface_elevated">#F5F5F5</color>
     <color name="surface_variant">#E0E0E0</color>
 
     <!-- Text colors -->
@@ -134,7 +132,6 @@
     <color name="white_30">#4DFFFFFF</color>
 
     <!-- Card and UI Elements -->
-    <color name="card_stroke">#E0E0E0</color>
     <color name="search_view_background">#FFFFFF</color>
     <color name="search_view_stroke">#E0E0E0</color>
     <color name="duration_chip_background">#80000000</color>
@@ -156,6 +153,140 @@
 
     <color name="dialogBackground">#E6000000</color>
 
+    <!-- Primary Brand Colors -->
+    <color name="primary_brand">#6C5CE7</color>
+    <color name="primary_brand_light">#A29BFE</color>
+    <color name="primary_brand_dark">#5B4BD6</color>
+    <color name="accent_green">#00D2A3</color>
+    <color name="accent_green_light">#55E6C1</color>
+    <color name="accent_orange">#FF9F43</color>
 
+    <!-- Surface Colors (Dark Theme Optimized) -->
+    <color name="surface_dark">#0F0F23</color>
+    <color name="surface_card">#1A1A2E</color>
+    <color name="surface_elevated">#16213E</color>
+    <color name="surface_overlay">#232046</color>
+
+    <!-- Glassmorphism Colors -->
+    <color name="glass_surface">#26FFFFFF</color>
+    <color name="glass_stroke">#40FFFFFF</color>
+    <color name="glass_backdrop">#1A000000</color>
+
+    <!-- Text Colors -->
+    <color name="primary_text">#FFFFFF</color>
+    <color name="secondary_text">#B8B8D6</color>
+    <color name="tertiary_text">#8B8BB0</color>
+    <color name="accent_text">#00D2A3</color>
+
+    <!-- Sidebar Navigation Colors -->
+    <color name="nav_icon_selected">#00D2A3</color>
+    <color name="nav_icon_normal">#8B8BB0</color>
+    <color name="nav_text_selected">#FFFFFF</color>
+    <color name="nav_text_normal">#B8B8D6</color>
+    <color name="nav_bg_selected">#2600D2A3</color>
+
+    <!-- Toolbar Colors -->
+    <color name="toolbar_title">#FFFFFF</color>
+    <color name="toolbar_bg_start">#6C5CE7</color>
+    <color name="toolbar_bg_end">#A29BFE</color>
+
+    <!-- Featured Section Colors -->
+    <color name="featured_card_bg">#33FFFFFF</color>
+    <color name="featured_card_stroke">#40FFFFFF</color>
+    <color name="featured_title">#FFFFFF</color>
+    <color name="featured_genre">#E0E0E0</color>
+    <color name="play_button_bg">#00D2A3</color>
+    <color name="mylist_stroke">#FFFFFF</color>
+    <color name="mylist_text">#FFFFFF</color>
+
+    <!-- Card Colors -->
+    <color name="card_bg">#1A1A2E</color>
+    <color name="card_stroke">#2A2A4A</color>
+    <color name="card_title">#FFFFFF</color>
+    <color name="card_subtitle">#B8B8D6</color>
+
+    <!-- Anime Grid Card Colors -->
+    <color name="anime_card_bg">#16213E</color>
+    <color name="anime_card_stroke">#2A3B5E</color>
+    <color name="anime_title_text">#FFFFFF</color>
+    <color name="anime_meta_text">#8B8BB0</color>
+
+    <!-- Rating & Badge Colors -->
+    <color name="rating_badge_bg">#FF9F43</color>
+    <color name="rating_badge_stroke">#FFAB5E</color>
+    <color name="rating_star">#FFD700</color>
+    <color name="quality_badge_bg">#6C5CE7</color>
+
+    <!-- Progress Colors -->
+    <color name="progress_primary">#00D2A3</color>
+    <color name="progress_secondary">#55E6C1</color>
+    <color name="progress_track">#2A2A4A</color>
+    <color name="progress_text">#B8B8D6</color>
+
+    <!-- Section Colors -->
+    <color name="section_title">#FFFFFF</color>
+    <color name="section_accent">#00D2A3</color>
+    <color name="top_hits_accent">#FF6B6B</color>
+    <color name="see_all_text">#00D2A3</color>
+
+    <!-- Shimmer Colors -->
+    <color name="shimmer_base">#26FFFFFF</color>
+    <color name="shimmer_highlight">#40FFFFFF</color>
+
+    <!-- Special Effect Colors -->
+    <color name="time_badge_bg">#CC000000</color>
+    <color name="time_badge_stroke">#40FFFFFF</color>
+    <color name="duration_badge_bg">#33FFFFFF</color>
+    <color name="duration_badge_stroke">#40FFFFFF</color>
+    <color name="duration_text">#FFFFFF</color>
+
+    <!-- Title Card Glassmorphism -->
+    <color name="title_card_bg">#4DFFFFFF</color>
+    <color name="title_card_stroke">#66FFFFFF</color>
+
+    <!-- Metadata Colors -->
+    <color name="metadata_icon">#8B8BB0</color>
+    <color name="metadata_text">#B8B8D6</color>
+    <color name="favorite_indicator">#FF4757</color>
+
+    <!-- Help Card Colors -->
+    <color name="help_card_bg">#26FFFFFF</color>
+    <color name="help_card_stroke">#40FFFFFF</color>
+    <color name="help_title">#FFFFFF</color>
+    <color name="help_text">#B8B8D6</color>
+
+    <!-- Overlay Effects -->
+    <color name="play_overlay_bg">#CC00D2A3</color>
+    <color name="play_overlay_stroke">#FFFFFF</color>
+    <color name="fab_bg">#6C5CE7</color>
+
+    <!-- Bottom Navigation -->
+    <color name="bottom_nav_bg_start">#1A1A2E</color>
+    <color name="bottom_nav_bg_end">#16213E</color>
+
+
+    <color name="sidebar_title">#FFFFFF</color>
+    <color name="nav_icon_enhanced">#00D2A3</color>
+    <color name="nav_text_enhanced">#FFFFFF</color>
+
+    <color name="featured_title_enhanced">#FFFFFF</color>
+    <color name="featured_genre_enhanced">#E0E0E0</color>
+    <color name="play_button_enhanced">#00D2A3</color>
+    <color name="mylist_stroke_enhanced">#FFFFFF</color>
+    <color name="mylist_text_enhanced">#FFFFFF</color>
+
+    <color name="section_title_enhanced">#FFFFFF</color>
+    <color name="see_all_enhanced">#00D2A3</color>
+    <color name="continue_accent">#00D2A3</color>
+    <color name="top_hits_accent_enhanced">#FF6B6B</color>
+    <color name="new_episodes_accent">#A29BFE</color>
+    <color name="latest_accent">#FDCB6E</color>
+
+    <color name="help_card_enhanced_bg">#26FFFFFF</color>
+
+    <color name="shimmer_base_enhanced">#26FFFFFF</color>
+    <color name="shimmer_highlight_enhanced">#40FFFFFF</color>
+
+    <color name="status_badge_color">#FF9800</color>
 
 </resources>

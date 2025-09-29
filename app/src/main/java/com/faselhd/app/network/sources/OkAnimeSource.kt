@@ -9,6 +9,7 @@ import com.faselhd.app.models.SAnime
 import com.faselhd.app.models.SEpisode
 import com.faselhd.app.models.Video
 import com.faselhd.app.network.AnimeSource
+import com.faselhd.app.network.NetworkClient
 import com.faselhd.app.network.extractors.*
 import com.faselhd.app.utils.*
 import com.lagradost.nicehttp.ignoreAllSSLErrors
@@ -47,33 +48,35 @@ class OkAnimeSource(private val context: Context) {
 
     val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
     val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
-    private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .ignoreAllSSLErrors()
-            .cache(
-                // Note that you need to add a ResponseInterceptor to make this 100% active.
-                // The server response dictates if and when stuff should be cached.
-                Cache(
-                    directory = File(context.cacheDir, "http_cache"),
-                    maxSize = 50L * 1024L * 1024L // 50 MiB
-                )
-            ).apply {
-                when (dns) {
-                    1 -> addGoogleDns()
-                    2 -> addCloudFlareDns()
-//                3 -> addOpenDns()
-                    4 -> addAdGuardDns()
-                    5 -> addDNSWatchDns()
-                    6 -> addQuad9Dns()
-                    7 -> addDnsSbDns()
-                    8 -> addCanadianShieldDns()
-                }
-            }
-            // Needs to be build as otherwise the other builders will change this object
-            .build()
-    }
+    private val client = NetworkClient.client
+
+//    private val client: OkHttpClient by lazy {
+//        OkHttpClient.Builder()
+//            .followRedirects(true)
+//            .followSslRedirects(true)
+//            .ignoreAllSSLErrors()
+//            .cache(
+//                // Note that you need to add a ResponseInterceptor to make this 100% active.
+//                // The server response dictates if and when stuff should be cached.
+//                Cache(
+//                    directory = File(context.cacheDir, "http_cache"),
+//                    maxSize = 50L * 1024L * 1024L // 50 MiB
+//                )
+//            ).apply {
+//                when (dns) {
+//                    1 -> addGoogleDns()
+//                    2 -> addCloudFlareDns()
+////                3 -> addOpenDns()
+//                    4 -> addAdGuardDns()
+//                    5 -> addDNSWatchDns()
+//                    6 -> addQuad9Dns()
+//                    7 -> addDnsSbDns()
+//                    8 -> addCanadianShieldDns()
+//                }
+//            }
+//            // Needs to be build as otherwise the other builders will change this object
+//            .build()
+//    }
 //    private val client: OkHttpClient by lazy {
 //        OkHttpClient.Builder()
 //            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
@@ -113,6 +116,8 @@ class OkAnimeSource(private val context: Context) {
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
     private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+    private val filemoonExtractor by lazy { FileMoonExtractor(client) }
+
 
     val megaMaxExtractor = MegaMaxExtractor(
         client = client,
@@ -125,6 +130,7 @@ class OkAnimeSource(private val context: Context) {
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
         luluStream1Extractor = luluStream1Extractor,
+        filemoonExtractor = filemoonExtractor
         // ... pass others here
     )
 
@@ -293,7 +299,7 @@ class OkAnimeSource(private val context: Context) {
                 voeExtractor.videosFromUrl(url)
             }
             // UNCOMMENT THE BLOCKS BELOW
-            "https://doo" in url || "https://d" in url  || selection.contains("Dood") -> {
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url || selection.contains("Dood") -> {
                 doodExtractor.videosFromUrl(url, "Doodstream")
             }
             "ok.ru" in url && selection.contains("Okru") -> {

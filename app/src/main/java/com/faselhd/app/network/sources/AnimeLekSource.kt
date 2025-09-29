@@ -102,6 +102,7 @@ class AnimeLekSource(private val context: Context) {
     private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
     private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
     private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+    private val filemoonExtractor by lazy { FileMoonExtractor(client) }
 
 
     val megaMaxExtractor = MegaMaxExtractor(
@@ -114,7 +115,9 @@ class AnimeLekSource(private val context: Context) {
         mp4uploadExtractor = mp4uploadExtractor,
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
-        luluStream1Extractor
+        luluStream1Extractor =  luluStream1Extractor,
+        filemoonExtractor = filemoonExtractor
+
     )
 
     // ============================== Popular & Latest ===============================
@@ -294,7 +297,7 @@ class AnimeLekSource(private val context: Context) {
                 println("DEBUG: Using mp4upload extractor")
                 mp4uploadExtractor.videosFromUrl(url)
             }
-            "dood" in url || "d-s.io" in url -> {
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> {
                 println("DEBUG: Using dood extractor")
                 doodExtractor.videosFromUrl(url)
             }

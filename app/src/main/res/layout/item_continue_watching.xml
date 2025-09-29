@@ -3,28 +3,30 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="300dp"
+        android:layout_width="320dp"
         android:layout_height="wrap_content"
-        android:layout_margin="6dp"
+        android:layout_margin="8dp"
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:cardBackgroundColor="?attr/colorSurface"
-        android:stateListAnimator="@animator/card_state_animator">
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/card_bg"
+        app:strokeColor="@color/card_stroke"
+        app:strokeWidth="1dp"
+        android:stateListAnimator="@animator/enhanced_card_animator">
 
     <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-        <!-- Thumbnail container with better aspect ratio -->
+        <!-- Enhanced thumbnail container with overlay effects -->
         <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="168dp">
+                android:layout_height="180dp">
 
-            <!-- Episode thumbnail with rounded top corners -->
+            <!-- Episode thumbnail with enhanced styling -->
             <ImageView
                     android:id="@+id/episode_icon"
                     android:layout_width="match_parent"
@@ -33,127 +35,191 @@
                     android:contentDescription="Episode thumbnail"
                     tools:src="@tools:sample/backgrounds/scenic" />
 
-            <!-- Dark overlay for better contrast -->
+            <!-- Multi-layer gradient overlay -->
             <View
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/gradient_dark_overlay"
-                    android:alpha="0.3" />
+                    android:background="@drawable/continue_watching_overlay" />
 
-            <!-- Play icon overlay -->
-            <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+            <!-- Enhanced play button with glow effect -->
+            <com.google.android.material.card.MaterialCardView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
                     android:layout_gravity="center"
-                    android:src="@drawable/ic_play_circle"
-                    android:alpha="0.8"
-                    app:tint="@android:color/white"
-                    android:contentDescription="Play episode" />
+                    app:cardBackgroundColor="@color/play_overlay_bg"
+                    app:cardCornerRadius="32dp"
+                    app:cardElevation="12dp"
+                    app:strokeColor="@color/play_overlay_stroke"
+                    app:strokeWidth="2dp">
 
-            <!-- Progress indicator at bottom -->
+                <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_play_arrow"
+                        app:tint="@android:color/white"
+                        android:contentDescription="Play episode" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Enhanced progress section at bottom -->
             <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom"
                     android:orientation="vertical"
-                    android:background="@drawable/gradient_bottom_overlay"
-                    android:padding="8dp">
+                    android:background="@drawable/progress_section_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp">
 
-                <!-- Time remaining indicator -->
-                <TextView
-                        android:id="@+id/time_remaining"
+                <!-- Time remaining with enhanced styling -->
+                <com.google.android.material.card.MaterialCardView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="end"
-                        android:textColor="@android:color/white"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:background="@drawable/rounded_background_dark"
-                        android:paddingHorizontal="6dp"
-                        android:paddingVertical="2dp"
-                        android:layout_marginBottom="4dp"
-                        tools:text="12 min left" />
+                        android:layout_marginBottom="8dp"
+                        app:cardBackgroundColor="@color/time_badge_bg"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/time_badge_stroke"
+                        app:strokeWidth="1dp">
 
-                <!-- Progress bar with better styling -->
-                <ProgressBar
-                        android:id="@+id/episode_progress_bar"
-                        style="?android:attr/progressBarStyleHorizontal"
+                    <TextView
+                            android:id="@+id/time_remaining"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="4dp"
+                            tools:text="12 min left" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Enhanced progress bar with glow effect -->
+                <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="4dp"
-                        android:progressDrawable="@drawable/custom_seekbar_progress"
-                        android:background="@drawable/progress_background"
-                        tools:progress="65" />
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                    <ProgressBar
+                            android:id="@+id/episode_progress_bar"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="6dp"
+                            android:progressDrawable="@drawable/enhanced_progress_bar"
+                            android:background="@drawable/progress_track_bg"
+                            android:elevation="2dp"
+                            tools:progress="65" />
+
+                    <!-- Progress percentage text -->
+                    <TextView
+                            android:id="@+id/progress_percentage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/progress_text"
+                            android:textSize="10sp"
+                            android:alpha="0.8"
+                            tools:text="65%" />
+                </LinearLayout>
 
             </LinearLayout>
 
         </FrameLayout>
 
-        <!-- Content section with improved typography -->
+        <!-- Enhanced content section with better typography -->
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="16dp"
+                android:background="@drawable/card_content_bg">
 
-            <!-- Anime title with better styling -->
+            <!-- Anime title with enhanced styling -->
             <TextView
                     android:id="@+id/anime_title_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
+                    android:textColor="@color/card_title"
                     android:maxLines="1"
                     android:ellipsize="end"
-                    android:letterSpacing="0.01"
+                    android:letterSpacing="0.02"
                     tools:text="Attack on Titan" />
 
-            <!-- Episode information with better hierarchy -->
+            <!-- Episode information with enhanced hierarchy -->
             <TextView
                     android:id="@+id/episode_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="6dp"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textColor="@color/card_subtitle"
                     android:maxLines="2"
                     android:ellipsize="end"
                     android:lineSpacingExtra="2dp"
+                    android:alpha="0.9"
                     tools:text="S4 E28: The Dawn of Humanity" />
 
-            <!-- Additional metadata -->
+            <!-- Enhanced metadata section -->
             <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
 
-                <!-- Episode duration -->
-                <TextView
-                        android:id="@+id/episode_duration"
+                <!-- Duration badge -->
+                <com.google.android.material.card.MaterialCardView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceCaption"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:background="@drawable/rounded_background_light"
-                        android:paddingHorizontal="6dp"
-                        android:paddingVertical="2dp"
-                        tools:text="24 min" />
+                        app:cardBackgroundColor="@color/duration_badge_bg"
+                        app:cardCornerRadius="8dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/duration_badge_stroke"
+                        app:strokeWidth="1dp">
+
+                    <TextView
+                            android:id="@+id/episode_duration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceCaption"
+                            android:textColor="@color/duration_text"
+                            android:textStyle="normal"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="4dp"
+                            tools:text="24 min" />
+                </com.google.android.material.card.MaterialCardView>
 
                 <View
                         android:layout_width="0dp"
                         android:layout_height="1dp"
                         android:layout_weight="1" />
 
-                <!-- Watch date -->
-                <TextView
-                        android:id="@+id/watch_date"
+                <!-- Watch date with icon -->
+                <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceCaption"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        tools:text="2 days ago" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                    <ImageView
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:src="@drawable/ic_timer"
+                            app:tint="@color/metadata_icon"
+                            android:layout_marginEnd="4dp"/>
+
+                    <TextView
+                            android:id="@+id/watch_date"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceCaption"
+                            android:textColor="@color/metadata_text"
+                            tools:text="2 days ago" />
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -161,12 +227,27 @@
 
     </LinearLayout>
 
-    <!-- Focus indicator for TV navigation -->
+    <!-- Enhanced focus indicator for TV navigation -->
     <View
             android:id="@+id/focus_indicator"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@drawable/tv_focus_indicator"
+            android:background="@drawable/enhanced_tv_focus_indicator"
             android:visibility="gone"
             android:alpha="0" />
+
+    <!-- Floating action button for quick actions -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_more_actions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="12dp"
+            android:src="@drawable/ic_more_vert"
+            app:fabSize="mini"
+            app:backgroundTint="@color/fab_bg"
+            app:tint="@android:color/white"
+            android:visibility="gone"
+            app:elevation="6dp"/>
+
 </com.google.android.material.card.MaterialCardView>

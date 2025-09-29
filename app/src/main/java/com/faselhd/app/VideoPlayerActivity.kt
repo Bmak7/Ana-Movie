@@ -28,6 +28,7 @@ import androidx.lifecycle.Observer
 import androidx.media3.common.*
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
@@ -42,6 +43,7 @@ import com.faselhd.app.models.SAnime
 import com.faselhd.app.models.SEpisode
 import com.faselhd.app.models.Video
 import com.faselhd.app.network.AnimeSource
+import com.faselhd.app.network.NetworkClient
 import com.faselhd.app.utils.*
 import com.faselhd.app.viewmodels.VideoPlayerViewModel
 import com.google.android.material.button.MaterialButton
@@ -173,6 +175,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerStateManager.StateListene
         val currentAnime = PlayerDataHolder.anime
         val episodeList = PlayerDataHolder.episodeList ?: emptyList()
         val currentEpisode = episodeList.firstOrNull { it.url == currentEpisodeUrl }
+
         // -- END OF DATA RETRIEVAL
 
         if (videoList.isEmpty() || currentAnime == null || currentEpisode == null || currentEpisodeUrl == null) {
@@ -267,6 +270,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerStateManager.StateListene
             }
         }
     }
+
 
     // ++ NEW: Core function for automatic selection and failover
     private fun tryNextVideo() {
@@ -637,40 +641,208 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerStateManager.StateListene
             .show()
     }
 
-    @androidx.annotation.OptIn(UnstableApi::class)
 
+//    @androidx.annotation.OptIn(UnstableApi::class)
+//
+//    private fun initializePlayerForVideo(video: Video) {
+//        player?.release()
+//        playerStateManager?.stopMonitoring()
+//        player = null
+//
+//        // No need to reset currentVideoIndex here, as it's managed by the flow
+//
+//        viewModel.updateServerName(video.quality)
+//
+//        val httpDataSourceFactory = OkHttpDataSource.Factory(NetworkUtils.getUnsafeOkHttpClient())
+//            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
+//        video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
+//
+//        val upstreamFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
+//        val isLiveStream = video.url.contains(".m3u8", ignoreCase = true)
+//// Now you can just get the cache, as it's already initialized.
+//        val cache: SimpleCache? = VideoCacheManager.getCache()
+//
+//        val dataSourceFactory: androidx.media3.datasource.DataSource.Factory = if (!isLiveStream && VideoCacheManager.isCacheEnabled(this)) {
+//            // This is VOD (Video on Demand), so we use the cache
+//            val cache = VideoCacheManager.initializeCache(this)
+//            if (cache != null) {
+//                Log.d("VideoPlayerActivity", "Using CacheDataSource for VOD: ${video.url}")
+//                CacheDataSource.Factory()
+//                    .setCache(cache)
+//                    .setUpstreamDataSourceFactory(upstreamFactory)
+//                    .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+//            } else {
+//                upstreamFactory
+//            }
+//        } else {
+//            // This is a live stream OR caching is disabled, so we bypass the cache
+//            if (isLiveStream) Log.d("VideoPlayerActivity", "Bypassing cache for Live Stream: ${video.url}")
+//            upstreamFactory
+//        }
+//
+//        val isLocalFile = video.url.startsWith("file://") || File(video.url).exists()
+//        val mediaItem = MediaItem.Builder()
+//            .setUri(video.url)
+//            .setSubtitleConfigurations(
+//                if (isLocalFile) findLocalSubtitleFiles(video.url) else getSubtitleConfigsFromVideo(video)
+//            )
+//            .build()
+//
+//        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+//        trackSelector = DefaultTrackSelector(this)
+//
+//        player = ExoPlayer.Builder(this)
+//            .setTrackSelector(trackSelector)
+//            .setMediaSourceFactory(mediaSourceFactory)
+//            .build().apply {
+//                setMediaItem(mediaItem)
+//                addListener(enhancedPlayerListener) // The error listener is key
+//                playWhenReady = true
+//
+//                val defaultSpeed = PlayerSettingsManager.getDefaultPlaybackSpeed(this@VideoPlayerActivity)
+//                playbackParameters = PlaybackParameters(defaultSpeed)
+//
+//                val startPos = viewModel.currentPosition.value ?: 0L
+//                if (startPos > 0) seekTo(startPos)
+//                prepare()
+//            }
+//
+//        playerStateManager = PlayerStateManager(this, player!!, trackSelector)
+//        playerStateManager?.addListener(this)
+//        playerStateManager?.optimizeForVideo(video)
+//        playerStateManager?.startMonitoring()
+//
+//        playerView.player = player
+//        playerView.resizeMode = currentResizeMode
+//        startProgressUpdates()
+//    }
+
+//    @androidx.annotation.OptIn(UnstableApi::class)
+//    private fun initializePlayerForVideo(video: Video) {
+//        player?.release()
+//        playerStateManager?.stopMonitoring()
+//        player = null
+//
+//        viewModel.updateServerName(video.quality)
+//
+//// --- START: THE FIX ---
+//
+//// Create the factory WITHOUT setting the User-Agent separately.
+//        val httpDataSourceFactory = OkHttpDataSource.Factory(NetworkClient.client)
+//            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
+//// --- REMOVED --- .setUserAgent("...")
+//
+//// This line is PERFECT. It will now be the ONLY thing setting headers.
+//// It will set BOTH the User-Agent and the Referer from the video object.
+//        video.headers?.let {
+//            Log.d("VideoPlayerActivity", "Setting custom headers for playback: $it")
+//            httpDataSourceFactory.setDefaultRequestProperties(it)
+//        }
+//
+//// --- END: THE FIX ---
+//
+//
+//        val upstreamFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
+//        val isLiveStream = video.url.contains(".m3u8", ignoreCase = true)
+//
+//        val dataSourceFactory: androidx.media3.datasource.DataSource.Factory = if (!isLiveStream && VideoCacheManager.isCacheEnabled(this)) {
+//            val cache = VideoCacheManager.initializeCache(this)
+//            if (cache != null) {
+//                Log.d("VideoPlayerActivity", "Using CacheDataSource for VOD: ${video.url}")
+//                CacheDataSource.Factory()
+//                    .setCache(cache)
+//                    .setUpstreamDataSourceFactory(upstreamFactory)
+//                    .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+//                    .setCacheReadDataSourceFactory(FileDataSource.Factory()) .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+//            } else {
+//                upstreamFactory
+//            }
+//        } else {
+//            if (isLiveStream) Log.d("VideoPlayerActivity", "Bypassing cache for Live Stream: ${video.url}")
+//            upstreamFactory
+//        }
+//
+//        val isLocalFile = video.url.startsWith("file://") || File(video.url).exists()
+//        val mediaItem = MediaItem.Builder()
+//            .setUri(video.url)
+//            .setSubtitleConfigurations(
+//                if (isLocalFile) findLocalSubtitleFiles(video.url) else getSubtitleConfigsFromVideo(video)
+//            )
+//            .build()
+//
+//        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+//        trackSelector = DefaultTrackSelector(this)
+//
+//        player = ExoPlayer.Builder(this)
+//            .setTrackSelector(trackSelector)
+//            .setMediaSourceFactory(mediaSourceFactory)
+//            .build().apply {
+//                setMediaItem(mediaItem)
+//                addListener(enhancedPlayerListener)
+//                playWhenReady = true
+//
+//                val defaultSpeed = PlayerSettingsManager.getDefaultPlaybackSpeed(this@VideoPlayerActivity)
+//                playbackParameters = PlaybackParameters(defaultSpeed)
+//
+//                val startPos = viewModel.currentPosition.value ?: 0L
+//                if (startPos > 0) seekTo(startPos)
+//                prepare()
+//            }
+//
+//        playerStateManager = PlayerStateManager(this, player!!, trackSelector)
+//        playerStateManager?.addListener(this)
+//        playerStateManager?.optimizeForVideo(video)
+//        playerStateManager?.startMonitoring()
+//
+//        playerView.player = player
+//        playerView.resizeMode = currentResizeMode
+//        startProgressUpdates()
+//    }
+
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializePlayerForVideo(video: Video) {
         player?.release()
         playerStateManager?.stopMonitoring()
         player = null
 
-        // No need to reset currentVideoIndex here, as it's managed by the flow
-
         viewModel.updateServerName(video.quality)
 
-        val httpDataSourceFactory = OkHttpDataSource.Factory(NetworkUtils.getUnsafeOkHttpClient())
+        // --- START: THE FIX ---
+
+        val source = intent.getSerializableExtra(EXTRA_SOURCE) as? AnimeSource
+
+        println("source video ss : ${source!!.name}")
+
+        var httpDataSourceFactory = OkHttpDataSource.Factory(NetworkUtils.getUnsafeOkHttpClient())
             .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
+
+        // This part is perfect. It creates our factory with the required headers.
+        if (source!!.name == "E3SK")
+        {
+             httpDataSourceFactory = OkHttpDataSource.Factory(NetworkUtils.getUnsafeOkHttpClient())
+        }
+//        val httpDataSourceFactory = OkHttpDataSource.Factory(NetworkUtils.getUnsafeOkHttpClient())
+//            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
         video.headers?.let { httpDataSourceFactory.setDefaultRequestProperties(it) }
 
+// This is the master factory that the player will use in the end.
         val upstreamFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
+
         val isLiveStream = video.url.contains(".m3u8", ignoreCase = true)
-// Now you can just get the cache, as it's already initialized.
         val cache: SimpleCache? = VideoCacheManager.getCache()
 
-        val dataSourceFactory: androidx.media3.datasource.DataSource.Factory = if (!isLiveStream && VideoCacheManager.isCacheEnabled(this)) {
-            // This is VOD (Video on Demand), so we use the cache
-            val cache = VideoCacheManager.initializeCache(this)
-            if (cache != null) {
-                Log.d("VideoPlayerActivity", "Using CacheDataSource for VOD: ${video.url}")
-                CacheDataSource.Factory()
-                    .setCache(cache)
-                    .setUpstreamDataSourceFactory(upstreamFactory)
-                    .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-            } else {
-                upstreamFactory
-            }
+        val dataSourceFactory: androidx.media3.datasource.DataSource.Factory = if (!isLiveStream && cache != null && VideoCacheManager.isCacheEnabled(this)) {
+            // This is a cachable video.
+            Log.d("VideoPlayerActivity", "Using CacheDataSource for VOD: ${video.url}")
+            CacheDataSource.Factory()
+                .setCache(cache)
+                // Be direct: Tell the cache to use our HTTP factory for all network downloads.
+                .setUpstreamDataSourceFactory(httpDataSourceFactory)
+                // The master factory will be used by the player to WRAP the cache source.
+                .setCacheReadDataSourceFactory(FileDataSource.Factory())
+                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
         } else {
-            // This is a live stream OR caching is disabled, so we bypass the cache
+            // This is a live stream or caching is off, so just use the master factory directly.
             if (isLiveStream) Log.d("VideoPlayerActivity", "Bypassing cache for Live Stream: ${video.url}")
             upstreamFactory
         }
@@ -691,7 +863,7 @@ class VideoPlayerActivity : AppCompatActivity(), PlayerStateManager.StateListene
             .setMediaSourceFactory(mediaSourceFactory)
             .build().apply {
                 setMediaItem(mediaItem)
-                addListener(enhancedPlayerListener) // The error listener is key
+                addListener(enhancedPlayerListener)
                 playWhenReady = true
 
                 val defaultSpeed = PlayerSettingsManager.getDefaultPlaybackSpeed(this@VideoPlayerActivity)

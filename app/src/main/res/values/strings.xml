@@ -232,6 +232,25 @@
 
     <string name="dns_pref">Dns Pref</string>
 
+    <string name="google_api_key">AIzaSyCTHa1VY7QVChsvHrNmBV0CEhX3lkDZ6mA</string>
+
+    <string name="app_tagline">Your Anime Universe</string>
+    <string name="nav_my_list">My List</string>
+    <string name="nav_discover">Discover</string>
+
+    <string name="section_continue_watching">Continue Watching</string>
+    <string name="section_trending_now">Trending Now</string>
+    <string name="section_new_episodes">New Episode Releases</string>
+    <string name="section_latest_updates">Latest Updates</string>
+    <string name="action_view_all">View All</string>
+    <string name="action_play_now">Play Now</string>
+    <string name="action_my_list">My List</string>
+    <string name="badge_new">NEW</string>
+    <string name="badge_hd">HD</string>
+    <string name="badge_episode_format">EP %d</string>
+    <string name="time_remaining_format">%d min left</string>
+    <string name="navigation_tips_title">Navigation Tips</string>
+    <string name="navigation_tips_content">• D-pad to navigate\n• ENTER to select\n• MENU for help</string>
 
 
 </resources>

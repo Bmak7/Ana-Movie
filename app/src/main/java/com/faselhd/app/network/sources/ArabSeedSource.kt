@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.preference.PreferenceManager
 import com.example.myapplication.R
 import com.faselhd.app.models.*
+import com.faselhd.app.network.NetworkClient
 import com.faselhd.app.network.extractors.*
 import com.faselhd.app.utils.*
 import com.lagradost.nicehttp.ignoreAllSSLErrors
@@ -43,9 +44,10 @@ data class WatchServerAjaxResponse(
 class ArabSeedSource(private val context: Context) {
     companion object {
         const val name = "عرب سيد"
-        const val BASE_URL = "https://a.asd.homes" // Removed /main/ to make URL joining easier
+        // Changed to ROOT_URL to distinguish from the dynamic content URL
+        const val ROOT_URL = "https://a.asd.homes"
         const val lang = "ar"
-        const val supportsLatest = true // Enabled since we can parse the main page
+        const val supportsLatest = true
         private const val USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
     }
@@ -65,59 +67,11 @@ class ArabSeedSource(private val context: Context) {
 
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val vidmolyExtractor by lazy { VidmolyExtractor(client) }
-//    private val voeExtractor by lazy { VoeExtractor(client) }
-//    private val doodExtractor by lazy { DoodExtractor(client) }
     private val filemoonExtractor by lazy { FileMoonExtractor(client) }
-//    private val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
-//    private val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
 
     val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
     val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
-    private val client: OkHttpClient by lazy {
-        val cookieJar = object : CookieJar {
-            private val cookieStore = HashMap<String, List<Cookie>>()
-            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-                cookieStore[url.host] = cookies
-            }
-            override fun loadForRequest(url: HttpUrl): List<Cookie> {
-                return cookieStore[url.host] ?: ArrayList()
-            }
-        }
-
-        OkHttpClient.Builder()
-            .cookieJar(cookieJar) // This automatically handles cookies
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-                    .build()
-                chain.proceed(request)
-            }
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .ignoreAllSSLErrors()
-            .cache(
-                // Note that you need to add a ResponseInterceptor to make this 100% active.
-                // The server response dictates if and when stuff should be cached.
-                Cache(
-                    directory = File(context.cacheDir, "http_cache"),
-                    maxSize = 50L * 1024L * 1024L // 50 MiB
-                )
-            ).apply {
-                when (dns) {
-                    1 -> addGoogleDns()
-                    2 -> addCloudFlareDns()
-//                3 -> addOpenDns()
-                    4 -> addAdGuardDns()
-                    5 -> addDNSWatchDns()
-                    6 -> addQuad9Dns()
-                    7 -> addDnsSbDns()
-                    8 -> addCanadianShieldDns()
-                }
-            }
-            // Needs to be build as otherwise the other builders will change this object
-            .build()
-    }
+    private val client = NetworkClient.client
     // --- END: OKHTTP CLIENT SETUP ---
 
     // Video extractors
@@ -126,16 +80,64 @@ class ArabSeedSource(private val context: Context) {
     private val voeExtractor by lazy { VoeExtractor(client) }
     private val bigWarpExtractor by lazy { BigWarpExtractor(client) }
 
+    // ============================== Dynamic URL Handling ==============================
+    // Variable to cache the dynamic URL after it's been resolved.
+    @Volatile
+    private var dynamicBaseUrl: String? = null
+
+    /**
+     * Fetches the root domain, finds the "enter" link, and returns the correct base URL.
+     * Caches the result to avoid repeated network calls.
+     */
+    private suspend fun resolveBaseUrl(): String {
+        // Return the cached URL if we already have it.
+        dynamicBaseUrl?.let { return it }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d("ArabSeed", "Resolving dynamic base URL from $ROOT_URL")
+                val request = Request.Builder().url(ROOT_URL).build()
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val document = Jsoup.parse(response.body?.string() ?: "", ROOT_URL)
+                    // Select the "enter" link to get the main site URL
+                    val enterUrl = document.selectFirst("a.enter")?.attr("abs:href")
+                    if (!enterUrl.isNullOrBlank() && enterUrl.startsWith("http")) {
+                        Log.d("ArabSeed", "Successfully resolved dynamic base URL: $enterUrl")
+                        // Cache the result, removing any trailing slash for consistency.
+                        dynamicBaseUrl = enterUrl.removeSuffix("/")
+                        dynamicBaseUrl!!
+                    } else {
+                        // Fallback to a previously known working path if the link isn't found
+                        Log.w("ArabSeed", "Could not find 'a.enter' link, falling back to default.")
+                        dynamicBaseUrl = "$ROOT_URL/main1"
+                        dynamicBaseUrl!!
+                    }
+                } else {
+                    // Fallback in case of a network error
+                    Log.e("ArabSeed", "Failed to fetch root URL, falling back to default.")
+                    "$ROOT_URL/main1"
+                }
+            } catch (e: Exception) {
+                Log.e("ArabSeed", "Could not resolve dynamic base URL due to an exception.", e)
+                // Fallback on any other error
+                "$ROOT_URL/main1"
+            }
+        }
+    }
+
 
     // ============================== Main Slider ==============================
     suspend fun fetchMainSlider(): List<SAnime> = withContext(Dispatchers.IO) {
-        val request = Request.Builder().url("$BASE_URL/main1?page_number=$1").build()
+        val baseUrl = resolveBaseUrl()
+        // The page number seems to be ignored for the slider, but we keep the structure.
+        val request = Request.Builder().url("$baseUrl?page_number=1").build()
         val response = client.newCall(request).execute()
-        mainSliderParse(response)
+        mainSliderParse(response, baseUrl)
     }
 
-    private fun mainSliderParse(response: Response): List<SAnime> {
-        val document = Jsoup.parse(response.body?.string() ?: "", "$BASE_URL/main1?page_number=$1")
+    private fun mainSliderParse(response: Response, baseUrl: String): List<SAnime> {
+        val document = Jsoup.parse(response.body?.string() ?: "", baseUrl)
         val sliderContainer = document.selectFirst("div.slider__container")
 
         if (sliderContainer == null) {
@@ -162,18 +164,18 @@ class ArabSeedSource(private val context: Context) {
     }
 
     // ============================== Popular ==============================
-
-    suspend fun fetchPopularSeries(page: Int): MangaPage = withContext(Dispatchers.IO) {
+    suspend fun fetchPopularSeries(page: Int): MangaPage {
         // The main page acts as the "popular" or "latest" page.
-        return@withContext fetchLatestUpdates(page)
+        return fetchLatestUpdates(page)
     }
 
 
     // ============================== Latest Episodes ==============================
     suspend fun fetchHomePageLatestEpisodes(): List<SAnime> = withContext(Dispatchers.IO) {
         try {
-            val request = Request.Builder().url("$BASE_URL/main1").build()
-            println("Sending request to URL: $BASE_URL/main1")
+            val baseUrl = resolveBaseUrl()
+            val request = Request.Builder().url(baseUrl).build()
+            println("Sending request to URL: $baseUrl")
             val response = client.newCall(request).execute()
             println("Received response with status: ${response.code}")
 
@@ -191,7 +193,7 @@ class ArabSeedSource(private val context: Context) {
             // Log a snippet of the HTML for debugging (first 500 characters)
             println("HTML snippet: ${body.take(500)}")
 
-            latestEpisodesParse(body)
+            latestEpisodesParse(body, baseUrl)
         } catch (e: IOException) {
             println("Network error while fetching latest episodes: ${e.message}")
             emptyList()
@@ -201,9 +203,9 @@ class ArabSeedSource(private val context: Context) {
         }
     }
 
-    private fun latestEpisodesParse(html: String): List<SAnime> {
+    private fun latestEpisodesParse(html: String, baseUrl: String): List<SAnime> {
         println("Starting HTML parsing")
-        val document = Jsoup.parse(html, "$BASE_URL/main1")
+        val document = Jsoup.parse(html, baseUrl)
 
         // Try multiple selectors to find episode items
         val selectors = listOf(
@@ -255,14 +257,15 @@ class ArabSeedSource(private val context: Context) {
 
     // ============================== Latest Updates ==============================
     suspend fun fetchLatestUpdates(page: Int): MangaPage = withContext(Dispatchers.IO) {
-        val url = "$BASE_URL/main1?page_number=$page"
+        val baseUrl = resolveBaseUrl()
+        val url = "$baseUrl?page_number=$page"
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
-        latestUpdatesParse(response)
+        latestUpdatesParse(response, baseUrl)
     }
 
-    private fun latestUpdatesParse(response: Response): MangaPage {
-        val document = Jsoup.parse(response.body!!.string(), BASE_URL)
+    private fun latestUpdatesParse(response: Response, baseUrl: String): MangaPage {
+        val document = Jsoup.parse(response.body!!.string(), baseUrl)
         val animeElements = document.select("div#ajax__area li .item__contents a")
         val animeList = animeElements.mapNotNull { element ->
             val isEpisode = element.hasClass("is__episode")
@@ -285,6 +288,7 @@ class ArabSeedSource(private val context: Context) {
     }
 
     // ============================== Details ==============================
+    // No changes needed here as it takes a full URL.
     suspend fun fetchAnimeDetails(animeUrl: String): SAnime = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(animeUrl).build()
         val response = client.newCall(request).execute()
@@ -299,12 +303,12 @@ class ArabSeedSource(private val context: Context) {
             title = document.selectFirst("h1.post__name")?.text()?.substringBefore(" الحلقة") ?: ""
             genre = document.select("ul.info__area__ul li:has(span:contains(نوع العرض)) a").joinToString { it.text() }
             description = document.selectFirst("div.post__story p")?.text() ?: ""
-            // Status logic: Check if it's a series page or a movie page
             status = if (animeUrl.contains("/selary/")) SAnime.ONGOING else SAnime.COMPLETED
         }
     }
 
     // ============================== Episodes ==============================
+    // No changes needed here as it takes a full URL.
     suspend fun fetchEpisodeList(animeUrl: String): List<SEpisode> = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(animeUrl).build()
         val response = client.newCall(request).execute()
@@ -337,24 +341,13 @@ class ArabSeedSource(private val context: Context) {
         }
     }
 
-
-
-
-
-    // Add these helper functions inside your ArabSeedSource class
-//    private fun parseCsrfToken(html: String): String? {
-//        val regex = Regex("""'csrf__token':\s*"([^"]+)"""")
-//        return regex.find(html)?.groups?.get(1)?.value
-//    }
-
-    // ============================== Video Links (Final Version) ==============================
+    // ============================== Video Links ==============================
+    // No changes needed in this section as it operates on full URLs passed to it.
     private fun parseCsrfToken(html: String): String? {
-        // This regex looks for the csrf_token in the JavaScript block
         val regex = Regex("""'csrf__token':\s*"([^"]+)"""")
         return regex.find(html)?.groups?.get(1)?.value
     }
 
-    // ============================== Video Links (Final Corrected Version) ==============================
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
         Log.d("ArabSeed", "Fetching videos for episode: $episodeUrl")
         try {
@@ -409,7 +402,6 @@ class ArabSeedSource(private val context: Context) {
                             val serverAjaxRequest = Request.Builder().url(serverAjaxUrl).post(serverFormBody).header("Referer", watchUrl).header("X-Requested-With", "XMLHttpRequest").build()
 
                             val serverResponse = client.newCall(serverAjaxRequest).execute()
-                            // The server now responds with a JSON object containing the embed URL directly.
                             val embedUrl = JSONObject(serverResponse.body!!.string()).optString("server")
 
                             if (embedUrl.startsWith("http")) {
@@ -430,29 +422,20 @@ class ArabSeedSource(private val context: Context) {
         }
     }
 
-    /**
-     * This is the dispatcher function. It takes a final embed URL and sends it
-     * to the appropriate extractor based on the domain.
-     */
     private suspend fun extractVideosFromUrl(url: String, qualityLabel: String): List<Video> {
         return try {
             when {
-                // Arabseed's own server (gamehub) and StreamWish are often the same extractor
                 "embed" in url  -> extractVideoFromIframe(url, qualityLabel)
-
                 "vidmoly" in url -> vidmolyExtractor.videosFromUrl(url)
                 "voe.sx" in url -> voeExtractor.videosFromUrl(url)
                 "dood" in url || "d-s.io" in url-> doodExtractor.videosFromUrl(url, qualityLabel)
-                "filemoon" in url || "filemoon.sx" in url -> filemoonExtractor.videosFromUrl(url, qualityLabel) // Assuming you have a Filemoon extractor
+                "filemoon" in url || "filemoon.sx" in url -> filemoonExtractor.videosFromUrl(url, qualityLabel)
                 "bigwarp" in url -> {
-                println("DEBUG: Processing BigWarp URL: $url")
-                val result = bigWarpExtractor.videosFromUrl(url)
-                println("DEBUG: BigWarp extraction result: ${result.size} videos found")
-                result
-            }
-                // Add other extractors as needed
-                // "watchadsontape.com" in url -> watchAdsOnTapeExtractor.videosFromUrl(url)
-
+                    println("DEBUG: Processing BigWarp URL: $url")
+                    val result = bigWarpExtractor.videosFromUrl(url)
+                    println("DEBUG: BigWarp extraction result: ${result.size} videos found")
+                    result
+                }
                 else -> {
                     Log.w("ArabSeed", "No extractor available for URL: $url")
                     emptyList()
@@ -463,21 +446,18 @@ class ArabSeedSource(private val context: Context) {
             emptyList()
         }
     }
+
     private suspend fun extractVideoFromIframe(iframeUrl: String, qualityLabel: String): List<Video> {
         try {
             val referer = URL(iframeUrl).let { "${it.protocol}://${it.host}/" }
             val request = Request.Builder().url(iframeUrl).header("Referer", referer).build()
             val response = client.newCall(request).execute()
             val htmlContent = response.body!!.string()
-
-            // *** THIS IS THE FIX: Declare and parse the iframeDoc variable ***
             val iframeDoc = Jsoup.parse(htmlContent)
 
-            // Regex to find the video source URL (e.g., ending in .m3u8 or .mp4)
             val sourceRegex = Pattern.compile("""['"](https?://[^'"]+\.(?:m3u8|mp4)[^'"]*)['"]""")
             val matcher = sourceRegex.matcher(htmlContent)
 
-            // Now this line will work correctly
             val videoUrl = iframeDoc.selectFirst("source[src]")?.attr("src")
                 ?: if (matcher.find()) matcher.group(1) else null
 
@@ -500,248 +480,12 @@ class ArabSeedSource(private val context: Context) {
             return emptyList()
         }
     }
-//    suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
-//        Log.d("ArabSeed", "Fetching videos for episode: $episodeUrl")
-//        try {
-//            val episodeRequest = Request.Builder().url(episodeUrl).build()
-//            val episodeResponse = client.newCall(episodeRequest).execute()
-//            if (!episodeResponse.isSuccessful) return@withContext emptyList()
-//            val episodeDoc = Jsoup.parse(episodeResponse.body.string(), episodeUrl)
-//
-//            val watchUrl = episodeDoc.selectFirst("a.watch__btn")?.attr("abs:href")
-//            if (watchUrl.isNullOrEmpty()) {
-//                Log.e("ArabSeed", "Could not find 'watch button' link.")
-//                return@withContext emptyList()
-//            }
-//            Log.d("ArabSeed", "Found watch page URL: $watchUrl")
-//
-//            val watchRequest = Request.Builder().url(watchUrl).header("Referer", episodeUrl).build()
-//            val watchResponse = client.newCall(watchRequest).execute()
-//            if (!watchResponse.isSuccessful) return@withContext emptyList()
-//            val watchPageHtml = watchResponse.body!!.string()
-//            val watchDoc = Jsoup.parse(watchPageHtml, watchUrl)
-//
-//            val csrfToken = parseCsrfToken(watchPageHtml)
-//            val postId = watchDoc.selectFirst(".servers__list li[data-post]")?.attr("data-post")
-//            val ajaxBaseUrl = URL(watchUrl).let { "${it.protocol}://${it.host}" }
-//
-//            if (csrfToken == null || postId == null) {
-//                Log.e("ArabSeed", "CSRF/PostID not found. Falling back.")
-//                return@withContext watchDoc.selectFirst("div.player__iframe iframe[src]")?.attr("abs:src")?.let {
-//                    extractVideoFromIframe(it, "Default Quality")
-//                } ?: emptyList()
-//            }
-//            Log.d("ArabSeed", "Found CSRF: $csrfToken, PostID: $postId, AJAX URL: $ajaxBaseUrl")
-//
-//            val videos = mutableListOf<Video>()
-//            val qualityElements = watchDoc.select(".qualities__list li[data-quality]")
-//            Log.d("ArabSeed", "Found ${qualityElements.size} qualities to process.")
-//
-//            for (qualityElement in qualityElements) {
-//                val quality = qualityElement.attr("data-quality")
-//                val qualityName = qualityElement.selectFirst("em")?.text() ?: quality
-//                Log.d("ArabSeed", "--- Processing Quality: $qualityName ---")
-//
-//                val qualityFormBody = FormBody.Builder()
-//                    .add("post_id", postId)
-//                    .add("quality", quality)
-//                    .add("csrf_token", csrfToken)
-//                    .build()
-//
-//                val qualityAjaxUrl = "$ajaxBaseUrl/get__quality__servers/"
-//                val qualityAjaxRequest = Request.Builder().url(qualityAjaxUrl).post(qualityFormBody)
-//                    .header("Referer", watchUrl).header("X-Requested-With", "XMLHttpRequest").build()
-//
-//                try {
-//                    val qualityResponse = client.newCall(qualityAjaxRequest).execute()
-//                    val newServersHtml = JSONObject(qualityResponse.body!!.string()).optString("html")
-//
-//                    if (newServersHtml.isNotBlank()) {
-//                        val newServerElements = Jsoup.parse(newServersHtml).select("li")
-//                        Log.d("ArabSeed", "Found ${newServerElements.size} servers for $qualityName")
-//
-//                        for (serverElement in newServerElements) {
-//                            val serverId = serverElement.attr("data-server")
-//                            val serverName = serverElement.selectFirst("span")?.text() ?: "Server"
-//
-//                            val serverFormBody = FormBody.Builder()
-//                                .add("post_id", postId).add("quality", quality)
-//                                .add("server", serverId).add("csrf_token", csrfToken).build()
-//
-//                            val serverAjaxUrl = "$ajaxBaseUrl/get__watch__server/"
-//                            val serverAjaxRequest = Request.Builder().url(serverAjaxUrl).post(serverFormBody)
-//                                .header("Referer", watchUrl).header("X-Requested-With", "XMLHttpRequest").build()
-//
-//                            val serverResponse = client.newCall(serverAjaxRequest).execute()
-//                            val serverResponseBody = serverResponse.body!!.string()
-//
-//                            // *** ADDED CRITICAL LOGGING ***
-//                            Log.d("ArabSeed", "AJAX Response for $serverName ($qualityName): $serverResponseBody")
-//
-//                            val serverJson = JSONObject(serverResponseBody)
-//                            val iframeHtml = serverJson.optString("html")
-//
-//                            if (iframeHtml.isNotBlank()) {
-//                                val embedUrl = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
-//                                if (embedUrl != null && embedUrl.startsWith("http")) {
-//                                    Log.d("ArabSeed", "Success! Got embed URL: $embedUrl")
-//                                    videos.addAll(extractVideoFromIframe(embedUrl, "$serverName - $qualityName"))
-//                                }
-//                            }
-//                        }
-//                    }
-//                } catch (e: Exception) {
-//                    Log.e("ArabSeed", "AJAX call failed for quality '$qualityName'.", e)
-//                }
-//            }
-//            return@withContext videos.distinctBy { it.url }
-//
-//        } catch (e: Exception) {
-//            Log.e("ArabSeed", "A critical error occurred in fetchVideoList", e)
-//            return@withContext emptyList()
-//        }
-//    }
-//
-//    /**
-//     * Extracts the direct video URL from the final embed page content.
-//     * Now with a more generic and powerful regex.
-//     */
-//    private suspend fun extractVideoFromIframe(iframeUrl: String, qualityLabel: String): List<Video> {
-//        try {
-//            val referer = URL(iframeUrl).let { "${it.protocol}://${it.host}/" }
-//            val request = Request.Builder().url(iframeUrl).header("Referer", referer).build()
-//            val response = client.newCall(request).execute()
-//            val htmlContent = response.body!!.string()
-//
-//            // *** THIS IS THE FIX: Declare and parse the iframeDoc variable ***
-//            val iframeDoc = Jsoup.parse(htmlContent)
-//
-//            // Regex to find the video source URL (e.g., ending in .m3u8 or .mp4)
-//            val sourceRegex = Pattern.compile("""['"](https?://[^'"]+\.(?:m3u8|mp4)[^'"]*)['"]""")
-//            val matcher = sourceRegex.matcher(htmlContent)
-//
-//            // Now this line will work correctly
-//            val videoUrl = iframeDoc.selectFirst("source[src]")?.attr("src")
-//                ?: if (matcher.find()) matcher.group(1) else null
-//
-//            return if (!videoUrl.isNullOrEmpty()) {
-//                Log.d("ArabSeed", "Successfully extracted video URL: $videoUrl")
-//                listOf(
-//                    Video(
-//                        url = videoUrl,
-//                        quality = qualityLabel,
-//                        videoUrl = videoUrl,
-//                        headers = mapOf("Referer" to referer)
-//                    )
-//                )
-//            } else {
-//                Log.w("ArabSeed", "Could not find video URL pattern in iframe: $iframeUrl")
-//                emptyList()
-//            }
-//        } catch (e: Exception) {
-//            Log.e("ArabSeed", "Failed to extract from iframe URL: $iframeUrl", e)
-//            return emptyList()
-//        }
-//    }
 
-
-    // ============================== Video Links (Corrected) ==============================
-//    suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
-//        Log.d("ArabSeed", "Fetching videos for episode: $episodeUrl")
-//
-//        try {
-//            // 1. Fetch the main episode page to find the watch page link
-//            val episodeRequest = Request.Builder().url(episodeUrl).build()
-//            val episodeResponse = client.newCall(episodeRequest).execute()
-//            if (!episodeResponse.isSuccessful) {
-//                Log.e("ArabSeed", "Failed to fetch episode page: ${episodeResponse.code}")
-//                return@withContext emptyList()
-//            }
-//            val episodeDoc = Jsoup.parse(episodeResponse.body!!.string(), episodeUrl)
-//
-//            // 2. Extract the watch page URL (e.g., m.gamehub.cam?objet__id=...)
-//            val watchUrl = episodeDoc.selectFirst("a.watch__btn")?.attr("abs:href")
-//            if (watchUrl.isNullOrEmpty()) {
-//                Log.e("ArabSeed", "Could not find the 'watch button' link.")
-//                return@withContext emptyList()
-//            }
-//            Log.d("ArabSeed", "Found watch page URL: $watchUrl")
-//
-//            // 3. Fetch the watch page to get the iframe URL
-//            val watchRequest = Request.Builder().url(watchUrl).header("Referer", episodeUrl).build()
-//            val watchResponse = client.newCall(watchRequest).execute()
-//            if (!watchResponse.isSuccessful) {
-//                Log.e("ArabSeed", "Failed to fetch watch page: ${watchResponse.code}")
-//                return@withContext emptyList()
-//            }
-//            val watchDoc = Jsoup.parse(watchResponse.body!!.string(), watchUrl)
-//
-//            // 4. Find the final iframe URL from the watch page
-//            val iframeUrl = watchDoc.selectFirst("div.player__iframe iframe[src]")?.attr("abs:src")
-//            if (iframeUrl.isNullOrEmpty()) {
-//                Log.e("ArabSeed", "Could not find the final iframe URL on the watch page.")
-//                return@withContext emptyList()
-//            }
-//            Log.d("ArabSeed", "Found iframe URL to parse: $iframeUrl")
-//
-//            // 5. Directly extract the video source from the iframe content
-//            return@withContext extractVideoFromIframe(iframeUrl)
-//
-//        } catch (e: Exception) {
-//            Log.e("ArabSeed", "An error occurred during fetchVideoList", e)
-//            return@withContext emptyList()
-//        }
-//    }
-//
-//    /**
-//     * Fetches the iframe content and extracts the direct video URL (.m3u8 or .mp4).
-//     * This is where we will analyze the HTML you requested.
-//     */
-//    private suspend fun extractVideoFromIframe(iframeUrl: String): List<Video> {
-//        try {
-//            val referer = URL(iframeUrl).let { "${it.protocol}://${it.host}/" }
-//            val request = Request.Builder().url(iframeUrl).header("Referer", referer).build()
-//            val response = client.newCall(request).execute()
-//            val htmlContent = response.body!!.string()
-//            val iframeDoc = Jsoup.parse(htmlContent)
-//
-//            // Display the fetched HTML in the logs so you can see what is being parsed.
-//            Log.d("ArabSeedHTML", "---- START IFRAME HTML ----")
-//            htmlContent.chunked(4000).forEach { chunk ->
-//                Log.d("ArabSeedHTML", chunk)
-//            }
-//            Log.d("ArabSeedHTML", "---- END IFRAME HTML ----")
-//
-//            // *** THE FIX: Use a Jsoup selector to find the <source> tag ***
-//            val sourceElement = iframeDoc.selectFirst("video#player_1 source[src]")
-//            val videoUrl = sourceElement?.attr("src")
-//
-//            return if (!videoUrl.isNullOrEmpty()) {
-//                Log.d("ArabSeed", "Successfully extracted video URL from <source> tag: $videoUrl")
-//                listOf(
-//                    Video(
-//                        url = videoUrl,
-//                        quality = "ArabSeed Server", // A descriptive name
-//                        videoUrl = videoUrl,
-//                        // The referer header is critical for the video to play
-//                        headers = mapOf("Referer" to referer)
-//                    )
-//                )
-//            } else {
-//                Log.w("ArabSeed", "Could not find a <source src=...> tag in the iframe HTML.")
-//                emptyList()
-//            }
-//
-//        } catch (e: Exception) {
-//            Log.e("ArabSeed", "Failed to extract video from iframe URL: $iframeUrl", e)
-//            return emptyList()
-//        }
-//    }
-    // Keep the existing getVideosFromUrl and other class methods as they are.
     // ============================== Search ==============================
     suspend fun fetchSearchAnime(page: Int, query: String, filters: AnimeFilterList): MangaPage = withContext(Dispatchers.IO) {
         val encodedQuery = URLEncoder.encode(query, "UTF-8")
-        val url = "$BASE_URL/find/?word=$encodedQuery"
+        // Search path is usually relative to the root domain, not the dynamic content page
+        val url = "$ROOT_URL/find/?word=$encodedQuery"
 
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
@@ -749,7 +493,7 @@ class ArabSeedSource(private val context: Context) {
     }
 
     private fun searchParse(response: Response): MangaPage {
-        val document = Jsoup.parse(response.body!!.string(), BASE_URL)
+        val document = Jsoup.parse(response.body!!.string(), ROOT_URL)
         val animeElements = document.select("div.series__list ul.blocks__ul li a")
         val animeList = animeElements.map { element ->
             SAnime().apply {
@@ -760,11 +504,11 @@ class ArabSeedSource(private val context: Context) {
                 }
             }
         }
-        // Search page does not have pagination
         return MangaPage(animeList, hasNextPage = false)
     }
 
-    // Filters are not currently used with search, but kept for future use.
+    // ============================== Filters ==============================
+    // No changes needed.
     fun getFilterList(): AnimeFilterList = AnimeFilterList(
         listOf(
             AnimeFilter.Header("الفلاتر تعمل فقط عند ترك البحث فارغاً"),
@@ -781,14 +525,12 @@ class ArabSeedSource(private val context: Context) {
         "التصنيف",
         arrayOf(
             Pair("أختر", ""),
-            // Movies
             Pair("افلام اجنبي", "category/foreign-movies-6/"),
             Pair("افلام عربي", "category/arabic-movies-5/"),
             Pair("افلام هندى", "category/indian-movies/"),
             Pair("افلام اسيوية", "category/asian-movies/"),
             Pair("افلام تركية", "category/turkish-movies/"),
             Pair("افلام انيميشن", "category/%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d9%86%d9%8a%d9%85%d9%8a%d8%b4%d9%86/"),
-            // Series
             Pair("مسلسلات اجنبي", "category/foreign-series-2/"),
             Pair("مسلسلات عربي", "category/arabic-series-2/"),
             Pair("مسلسلات تركيه", "category/turkish-series-2/"),

@@ -7,6 +7,7 @@ import androidx.preference.PreferenceManager
 import com.example.myapplication.R
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
+import com.faselhd.app.network.NetworkClient
 import com.faselhd.app.network.extractors.*
 import com.faselhd.app.utils.*
 import com.google.gson.Gson
@@ -27,20 +28,22 @@ class Shed4uSource(private val context: Context) {
     // =========================================================================
     //  Client Setup - Reusing the robust client from the example
     // =========================================================================
-    private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .addInterceptor { chain ->
-                val original = chain.request()
-                val request = original.newBuilder()
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
-                    .header("Referer", baseUrl)
-                    .build()
-                chain.proceed(request)
-            }
-            .build()
-    }
+    private val client = NetworkClient.client
+
+//    private val client: OkHttpClient by lazy {
+//        OkHttpClient.Builder()
+//            .followRedirects(true)
+//            .followSslRedirects(true)
+//            .addInterceptor { chain ->
+//                val original = chain.request()
+//                val request = original.newBuilder()
+//                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
+//                    .header("Referer", baseUrl)
+//                    .build()
+//                chain.proceed(request)
+//            }
+//            .build()
+//    }
 
     //region Extractors
     private val doodExtractor by lazy { DoodExtractor(client) }
@@ -389,11 +392,9 @@ class Shed4uSource(private val context: Context) {
     private fun extractVideosFromUrl(url: String): List<Video> {
         return when {
             //            DOOD_REGEX.matcher(url).find() -> doodExtractor.videosFromUrl(url, "Dood")
-            url.contains("d-s.io") || url.contains("dood") -> {
-                println("DEBUG: Processing Doodstream URL: $url")
-                val doodUrl = getFinalDoodUrl(url)
-                println("DEBUG: Final Dood URL: $doodUrl")
-                val result = doodExtractor.videosFromUrl(doodUrl, "Doodstream")
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> {
+
+                val result = doodExtractor.videosFromUrl(url, "Doodstream")
                 println("DEBUG: Doodstream extraction result: ${result.size} videos found")
                 result
             }

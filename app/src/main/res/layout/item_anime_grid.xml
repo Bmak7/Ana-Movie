@@ -13,131 +13,130 @@
         app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
     <FrameLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content">
-
-    <ImageView
-            android:id="@+id/anime_image"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            tools:src="@tools:sample/backgrounds/scenic"
-            android:contentDescription="Anime Poster Image" />
+            android:layout_height="wrap_content">
 
-    <!-- All your other views (gradient, title, rating) remain unchanged inside the FrameLayout -->
-    <View
-            android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:layout_gravity="bottom"
-            android:background="@drawable/gradient_bottom_overlay" />
+        <ImageView
+                android:id="@+id/anime_image"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:scaleType="centerCrop"
+                tools:src="@tools:sample/backgrounds/scenic"
+                android:contentDescription="Anime Poster Image" />
 
-    <TextView
-            android:id="@+id/anime_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:padding="12dp"
-            android:textColor="@android:color/white"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textStyle="bold"
-            android:maxLines="2"
-            android:ellipsize="end"
-            tools:text="Attack on Titan: The Final Season" />
-
-    <com.google.android.material.card.MaterialCardView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/green_rating_badge"
-            app:cardCornerRadius="8dp"
-            android:layout_margin="8dp"
-            android:layout_gravity="top|start"
-            app:cardElevation="2dp">
+        <View
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:layout_gravity="bottom"
+                android:background="@drawable/gradient_bottom_overlay" />
 
         <TextView
-                android:id="@+id/anime_rating"
+                android:id="@+id/anime_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:padding="12dp"
+                android:textColor="@android:color/white"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end"
+                tools:text="Attack on Titan: The Final Season" />
+
+        <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:textColor="@android:color/white"
-                android:textStyle="bold"
-                android:textSize="12sp"
-                tools:text="9.5"/>
-    </com.google.android.material.card.MaterialCardView>
+                app:cardBackgroundColor="@color/green_rating_badge"
+                app:cardCornerRadius="8dp"
+                android:layout_margin="8dp"
+                android:layout_gravity="top|start"
+                app:cardElevation="2dp">
+
+            <TextView
+                    android:id="@+id/anime_rating"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    tools:text="9.5"/>
+        </com.google.android.material.card.MaterialCardView>
 
     </FrameLayout>
 </com.google.android.material.card.MaterialCardView>
 
-<!--<?xml version="1.0" encoding="utf-8"?>-->
-<!--<com.google.android.material.card.MaterialCardView-->
-<!--        xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--        xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--        xmlns:tools="http://schemas.android.com/tools"-->
-<!--        android:layout_width="150dp"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_margin="8dp"-->
-<!--        android:clickable="true"-->
-<!--        android:focusable="true"-->
-<!--        app:cardCornerRadius="16dp"-->
-<!--        app:cardElevation="4dp"-->
-<!--        app:cardBackgroundColor="?attr/colorSurfaceVariant">-->
+        <!--<?xml version="1.0" encoding="utf-8"?>-->
+        <!--<com.google.android.material.card.MaterialCardView-->
+        <!--        xmlns:android="http://schemas.android.com/apk/res/android"-->
+        <!--        xmlns:app="http://schemas.android.com/apk/res-auto"-->
+        <!--        xmlns:tools="http://schemas.android.com/tools"-->
+        <!--        android:layout_width="150dp"-->
+        <!--        android:layout_height="wrap_content"-->
+        <!--        android:layout_margin="8dp"-->
+        <!--        android:clickable="true"-->
+        <!--        android:focusable="true"-->
+        <!--        app:cardCornerRadius="16dp"-->
+        <!--        app:cardElevation="4dp"-->
+        <!--        app:cardBackgroundColor="?attr/colorSurfaceVariant">-->
 
-<!--<FrameLayout-->
-<!--android:layout_width="match_parent"-->
-<!--android:layout_height="match_parent">-->
+        <!--<FrameLayout-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent">-->
 
-<!--&lt;!&ndash; The main anime image &ndash;&gt;-->
-<!--<ImageView-->
-<!--        android:id="@+id/anime_image"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="200dp"-->
-<!--android:scaleType="centerCrop"-->
-<!--tools:src="@tools:sample/backgrounds/scenic"-->
-<!--android:contentDescription="Anime Poster Image" />-->
+        <!--&lt;!&ndash; The main anime image &ndash;&gt;-->
+        <!--<ImageView-->
+        <!--        android:id="@+id/anime_image"-->
+        <!--        android:layout_width="match_parent"-->
+        <!--        android:layout_height="200dp"-->
+        <!--android:scaleType="centerCrop"-->
+        <!--tools:src="@tools:sample/backgrounds/scenic"-->
+        <!--android:contentDescription="Anime Poster Image" />-->
 
-<!--&lt;!&ndash; The gradient overlay view &ndash;&gt;-->
-<!--<View-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="80dp"-->
-<!--        android:layout_gravity="bottom"-->
-<!--        android:background="@drawable/gradient_bottom_overlay" />-->
+        <!--&lt;!&ndash; The gradient overlay view &ndash;&gt;-->
+        <!--<View-->
+        <!--        android:layout_width="match_parent"-->
+        <!--        android:layout_height="80dp"-->
+        <!--        android:layout_gravity="bottom"-->
+        <!--        android:background="@drawable/gradient_bottom_overlay" />-->
 
-<!--&lt;!&ndash; The TextView for the anime title &ndash;&gt;-->
-<!--<TextView-->
-<!--        android:id="@+id/anime_title"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_gravity="bottom"-->
-<!--        android:padding="12dp"-->
-<!--        android:textColor="@android:color/white"-->
-<!--        android:textAppearance="?attr/textAppearanceBodyMedium"-->
-<!--        android:textStyle="bold"-->
-<!--        android:maxLines="2"-->
-<!--        android:ellipsize="end"-->
-<!--        tools:text="Attack on Titan: The Final Season" />-->
+        <!--&lt;!&ndash; The TextView for the anime title &ndash;&gt;-->
+        <!--<TextView-->
+        <!--        android:id="@+id/anime_title"-->
+        <!--        android:layout_width="match_parent"-->
+        <!--        android:layout_height="wrap_content"-->
+        <!--        android:layout_gravity="bottom"-->
+        <!--        android:padding="12dp"-->
+        <!--        android:textColor="@android:color/white"-->
+        <!--        android:textAppearance="?attr/textAppearanceBodyMedium"-->
+        <!--        android:textStyle="bold"-->
+        <!--        android:maxLines="2"-->
+        <!--        android:ellipsize="end"-->
+        <!--        tools:text="Attack on Titan: The Final Season" />-->
 
-<!--&lt;!&ndash; The rating badge &ndash;&gt;-->
-<!--<com.google.android.material.card.MaterialCardView-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        app:cardBackgroundColor="@color/green_rating_badge"-->
-<!--        app:cardCornerRadius="8dp"-->
-<!--        android:layout_margin="8dp"-->
-<!--        android:layout_gravity="top|start"-->
-<!--        app:cardElevation="2dp">-->
+        <!--&lt;!&ndash; The rating badge &ndash;&gt;-->
+        <!--<com.google.android.material.card.MaterialCardView-->
+        <!--        android:layout_width="wrap_content"-->
+        <!--        android:layout_height="wrap_content"-->
+        <!--        app:cardBackgroundColor="@color/green_rating_badge"-->
+        <!--        app:cardCornerRadius="8dp"-->
+        <!--        android:layout_margin="8dp"-->
+        <!--        android:layout_gravity="top|start"-->
+        <!--        app:cardElevation="2dp">-->
 
-<!--    <TextView-->
-<!--            android:id="@+id/anime_rating"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:paddingHorizontal="8dp"-->
-<!--            android:paddingVertical="4dp"-->
-<!--            android:textColor="@android:color/white"-->
-<!--            android:textStyle="bold"-->
-<!--            android:textSize="12sp"-->
-<!--            tools:text="9.5"/>-->
-<!--</com.google.android.material.card.MaterialCardView>-->
+        <!--    <TextView-->
+        <!--            android:id="@+id/anime_rating"-->
+        <!--            android:layout_width="wrap_content"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:paddingHorizontal="8dp"-->
+        <!--            android:paddingVertical="4dp"-->
+        <!--            android:textColor="@android:color/white"-->
+        <!--            android:textStyle="bold"-->
+        <!--            android:textSize="12sp"-->
+        <!--            tools:text="9.5"/>-->
+        <!--</com.google.android.material.card.MaterialCardView>-->
 
-<!--</FrameLayout>-->
+        <!--</FrameLayout>-->
 
-<!--        </com.google.android.material.card.MaterialCardView>-->
+        <!--        </com.google.android.material.card.MaterialCardView>-->

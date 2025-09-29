@@ -1,8 +1,10 @@
 package com.faselhd.app.network
 import android.content.Context
+import com.anslayer.app.network.sources.AnslayerSource
 import com.arabictoons.app.network.sources.ArabicToonsSource
 import com.faselhd.app.models.*
 import com.faselhd.app.network.sources.*
+import com.faselhd.app.sources.FullReplaysSource
 import recloudstream.DailymotionSource
 
 enum class AnimeSource(val displayName: String, val isNsfw: Boolean = false) {
@@ -17,27 +19,34 @@ enum class AnimeSource(val displayName: String, val isNsfw: Boolean = false) {
     OKANIME("OKANIME"),
     NETFLIX_MIRROR("NETFLIX MIRROR"),
     PRIME_VIDEO_MIRROR("PRIME VIDEO MIRROR"),
+    ANSLAYER("ANSLAYER"),
     HIANIME("HIANIME"),
     ASIA2TV("ASIA2TV"),
     ANIMEIAT("ANIMEIAT"),
     EGYDEAD("EGYDEAD"),
     ANIME3RB("ANIME3RB"),
     ARABICTOONS("ARABIC TOONS"),
+    CARTOONY("Cartoony"),
     HUHU("Huhu"),
     DADDY_LIVE("Daddy Live"),
+    FULLREPLAYS("FullReplays"),
     FREE_TV("Free TV"),
+    YACINETV("Yacine Tv"),
     INTERNET_ARCHIVE("Internet Archive"),
     ANIMERCO("ANIMERCO"),
     UHDMOVIES("UHD Movies"),
     WITANIME("WITANIME"),
     ZIMABADK("ZIMABADK"),
     DRAMADRIP("DRAMADRIP"),
+    E3SK("E3sk"),
     ISQ("ISQ"),
+    Esk("EskSource"),
     ANIME4UP("ANIME4UP"),
     FIVETV("FIVETV"),
     ANIMELEK("ANIMELEK"),
     DAILY_MOTION("Daily Motion"),
     CIMA_NOW("Cima Now"),
+    CIMA_CLUB("Cima Club"),
     SPANKBANG("SPANKBANG", true),
     HENTAI_TIME("HENTAI TIME", true),
     XVIDEOS("XVIDEOS", true),
@@ -92,6 +101,7 @@ class SourceManager(private val context: Context) {
     private val asia2TvSource by lazy { Asia2TvSource(context) }
     private val animeiatSource by lazy { AnimeiatSource(context) }
     private val egyDeadSource by lazy { EgyDeadSource(context) }
+    private val fullReplaysSource by lazy { FullReplaysSource(context) }
     private val anime3rbSource by lazy { Anime3rbSource(context) }
     private val arabicToonsSource by lazy { ArabicToonsSource(context) }
     private val huhuSource by lazy { HuhuSource(context) }
@@ -116,6 +126,12 @@ class SourceManager(private val context: Context) {
     private val nxxhentaiSource by lazy { NxxhentaiSource(context) }
     private val cimaNowSource by lazy { CimaNowSource(context) }
     private val shed4uSource by lazy { Shed4uSource(context) }
+    private val eskSource by lazy { EskSource(context) }
+    private val e3skSource by lazy { E3skSource(context) }
+    private val cartoonySource by lazy { CartoonySource(context) }
+    private val yacineTvSource by lazy { YacineTvSource(context) }
+    private val cimaClubSource by lazy { CimaClubSource(context) }
+    private val anslyerSource by lazy { AnslayerSource(context) }
 
     private val currentSource: AnimeSource
         get() = getSelectedSource(context)
@@ -139,13 +155,18 @@ class SourceManager(private val context: Context) {
             AnimeSource.ANIMEIAT -> animeiatSource.fetchPopularSeries(page)
             AnimeSource.EGYDEAD -> egyDeadSource.fetchPopularSeries(page)
             AnimeSource.ANIME3RB -> MangaPage(emptyList(),false)
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchLatestUpdates(page)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchPopularSeries(page)
+            AnimeSource.ANSLAYER -> anslyerSource.fetchLatestUpdates(page)
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchPopularSeries(page)
             AnimeSource.WITANIME -> witAnimeSource.fetchLatestUpdates(page)
             AnimeSource.ANIMERCO -> animercoSource.fetchPopularSeries(page)
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchPopularSeries(page)
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchPopularSeries(page)
             AnimeSource.ISQ -> isqSource.fetchPopularSeries(page)
+            AnimeSource.Esk -> eskSource.fetchLatestUpdates(page)
+            AnimeSource.CIMA_CLUB -> cimaClubSource.fetchPopularSeries(page)
+            AnimeSource.E3SK -> e3skSource.fetchLatestUpdates(page)
             AnimeSource.ANIME4UP -> anime4upSource.fetchPopularSeries(page)
             AnimeSource.TOP_CINEMA -> topCinemaSource.fetchPopularSeries(page)
             AnimeSource.ARAB_SEED -> arabSeedSource.fetchPopularSeries(page)
@@ -154,11 +175,13 @@ class SourceManager(private val context: Context) {
             AnimeSource.FIVETV -> fiveTvSource.fetchPopularSeries(page)
             AnimeSource.ANIMELEK -> animeLekSource.fetchPopularSeries(page)
             AnimeSource.DAILY_MOTION -> dailymotionSource.fetchPopular(page)
+            AnimeSource.YACINETV -> yacineTvSource.fetchPopularSeries(page)
             AnimeSource.CIMA_NOW ->cimaNowSource.fetchPopularSeries(1)
             AnimeSource.SPANKBANG -> spankBangSource.fetchPopularSeries(page)
             AnimeSource.HENTAI_TIME -> hentaiTimeSource.fetchPopular(page)
             AnimeSource.XVIDEOS -> xvideosSource.fetchPopular(page)
             AnimeSource.NXXHENTAI -> nxxhentaiSource.fetchPopular(page)
+            AnimeSource.CARTOONY -> cartoonySource.fetchPopularSeries(page)
 
 
             AnimeSource.HUHU -> {
@@ -229,19 +252,26 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchPopularSeries(page)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchLatestUpdates(1)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchLatestUpdates(page)
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchLatestUpdates(page)
+            AnimeSource.CIMA_CLUB -> cimaClubSource.fetchLatestUpdates(page)
             AnimeSource.WITANIME -> witAnimeSource.fetchLatestUpdates(page)
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchLatestUpdates(page)
+            AnimeSource.CARTOONY -> cartoonySource.fetchPopularSeries(page)
 //            AnimeSource.ANIME3RB -> anime3rbSource.fetchPopularSeries(page)
             AnimeSource.INTERNET_ARCHIVE -> MangaPage(emptyList(), false)
             AnimeSource.ANIMERCO -> animercoSource.fetchLatestUpdates(page)
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchLatestUpdates(page)
             AnimeSource.ANIME4UP -> anime4upSource.fetchPopularSeries(page)
             AnimeSource.ISQ -> isqSource.fetchPopularSeries(page)
+            AnimeSource.Esk -> eskSource.fetchLatestUpdates(page)
+            AnimeSource.E3SK -> e3skSource.fetchLatestUpdates(page)
             AnimeSource.TOP_CINEMA -> topCinemaSource.fetchPopularSeries(page)
+            AnimeSource.ANSLAYER -> anslyerSource.fetchLatestUpdates(page)
             AnimeSource.ZIMABADK -> zimabadkSource.fetchLatestUpdates(page)
             AnimeSource.FIVETV -> fiveTvSource.fetchLatestUpdates(page)
             AnimeSource.ANIMELEK -> animeLekSource.fetchLatestUpdates(page)
             AnimeSource.DAILY_MOTION -> dailymotionSource.fetchPopular(page)
+            AnimeSource.YACINETV -> yacineTvSource.fetchPopularSeries(page)
             AnimeSource.CIMA_NOW ->cimaNowSource.fetchMainSlider(1)
             AnimeSource.SPANKBANG -> spankBangSource.fetchLatestUpdates(page)
             AnimeSource.HENTAI_TIME -> hentaiTimeSource.fetchLatestUpdates(page)
@@ -310,15 +340,21 @@ class SourceManager(private val context: Context) {
             AnimeSource.ASIA2TV -> asia2TvSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ANIMEIAT -> animeiatSource.fetchSearchAnime(page, query, filters)
             AnimeSource.HIANIME -> hiAnimeSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.YACINETV -> yacineTvSource.fetchSearchAnime(page, query, filters)
             AnimeSource.EGYDEAD -> egyDeadSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchSearchAnime(page, query, filters)
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ANIMERCO -> animercoSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchSearch(query)
             AnimeSource.WITANIME -> witAnimeSource.fetchSearchAnime(page, query, filters)
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchSearchAnime(page, query, filters)
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ISQ -> isqSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.Esk -> eskSource.fetchSearchAnime(page,query)
+            AnimeSource.ANSLAYER -> anslyerSource.fetchSearchAnime(page, query)
+            AnimeSource.CIMA_CLUB -> cimaClubSource.fetchSearchAnime(page, query, filters)
+            AnimeSource.E3SK -> e3skSource.fetchSearchAnime(page, query, filters)
             AnimeSource.SHED4U -> shed4uSource.fetchSearchAnime(page, query, filters)
             AnimeSource.TOP_CINEMA -> topCinemaSource.fetchSearchAnime(page, query, filters)
             AnimeSource.ARAB_SEED -> arabSeedSource.fetchSearchAnime(page, query, filters)
@@ -328,6 +364,7 @@ class SourceManager(private val context: Context) {
             AnimeSource.ANIMELEK -> animeLekSource.fetchSearchAnime(page, query, filters)
             AnimeSource.DAILY_MOTION -> dailymotionSource.fetchSearchAnime(page, query)
             AnimeSource.CIMA_NOW ->cimaNowSource.fetchSearch(query)
+            AnimeSource.CARTOONY -> cartoonySource.fetchSearchAnime(page, query, filters)
             AnimeSource.SPANKBANG -> spankBangSource.fetchSearch(page, query, filters)
             AnimeSource.HENTAI_TIME -> hentaiTimeSource.fetchSearchAnime(page, query, filters)
             AnimeSource.XVIDEOS -> xvideosSource.fetchSearchAnime(page, query, filters)
@@ -391,16 +428,23 @@ class SourceManager(private val context: Context) {
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.fetchAnimeDetails(animeUrl)!!
             AnimeSource.ASIA2TV -> asia2TvSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ANIMEIAT -> animeiatSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.CIMA_CLUB -> cimaClubSource.fetchAnimeDetails(animeUrl)
             AnimeSource.EGYDEAD -> egyDeadSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.YACINETV -> yacineTvSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.ANSLAYER -> anslyerSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.Esk -> eskSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchAnimeDetails(animeUrl)
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ANIMERCO -> animercoSource.fetchAnimeDetails(animeUrl)
             AnimeSource.HIANIME -> hiAnimeSource.fetchAnimeDetails(animeUrl)!!
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchAnimeDetails(animeUrl)
             AnimeSource.WITANIME -> witAnimeSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.CARTOONY -> cartoonySource.fetchAnimeDetails(animeUrl)
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchAnimeDetails(animeUrl)
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ISQ -> isqSource.fetchAnimeDetails(animeUrl)
+            AnimeSource.E3SK -> e3skSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ARAB_SEED -> arabSeedSource.fetchAnimeDetails(animeUrl)
             AnimeSource.TOP_CINEMA -> topCinemaSource.fetchAnimeDetails(animeUrl)
             AnimeSource.ANIME4UP -> anime4upSource.fetchAnimeDetails(animeUrl)
@@ -501,16 +545,23 @@ class SourceManager(private val context: Context) {
             AnimeSource.EGYDEAD -> egyDeadSource.fetchEpisodeList(animeUrl)
             AnimeSource.HIANIME -> hiAnimeSource.fetchEpisodeList(animeUrl)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchEpisodeList(animeUrl)
+            AnimeSource.YACINETV -> yacineTvSource.fetchEpisodeList(animeUrl)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchEpisodeList(animeUrl)
             AnimeSource.WITANIME -> witAnimeSource.fetchEpisodeList(animeUrl)
+            AnimeSource.CIMA_CLUB -> cimaClubSource.fetchEpisodeList(animeUrl)
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchEpisodeList(animeUrl)
             AnimeSource.ANIMERCO -> animercoSource.fetchEpisodeList(animeUrl)
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchEpisodeList(animeUrl)
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchEpisodeList(animeUrl)
+            AnimeSource.CARTOONY -> cartoonySource.fetchEpisodeList(animeUrl)
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchEpisodeList(animeUrl)
             AnimeSource.ANIME4UP -> anime4upSource.fetchEpisodeList(animeUrl)
             AnimeSource.TOP_CINEMA -> topCinemaSource.fetchEpisodeList(animeUrl)
             AnimeSource.ARAB_SEED -> arabSeedSource.fetchEpisodeList(animeUrl)
             AnimeSource.ISQ -> isqSource.fetchEpisodeList(animeUrl)
+            AnimeSource.Esk -> eskSource.fetchEpisodeList(animeUrl)
+            AnimeSource.E3SK -> e3skSource.fetchEpisodeList(animeUrl)
+            AnimeSource.ANSLAYER -> anslyerSource.fetchEpisodeList(animeUrl)
             AnimeSource.SHED4U -> shed4uSource.fetchEpisodeList(animeUrl)
             AnimeSource.ZIMABADK -> zimabadkSource.fetchEpisodeList(animeUrl)
             AnimeSource.FIVETV -> fiveTvSource.fetchEpisodeList(animeUrl)
@@ -572,13 +623,18 @@ class SourceManager(private val context: Context) {
             AnimeSource.ANIMEIAT -> animeiatSource.fetchVideoList(episodeUrl)
             AnimeSource.EGYDEAD -> egyDeadSource.fetchVideoList(episodeUrl)
             AnimeSource.ANIME3RB -> anime3rbSource.fetchVideoList(episodeUrl)
+            AnimeSource.CARTOONY -> cartoonySource.fetchVideoList(episodeUrl)
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchVideoList(episodeUrl)
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchVideoList(episodeUrl)
             AnimeSource.ANIMERCO -> animercoSource.fetchVideoList(episodeUrl)
             AnimeSource.WITANIME -> witAnimeSource.fetchVideoList(episodeUrl)
+            AnimeSource.CIMA_CLUB -> cimaClubSource.fetchVideoList(episodeUrl)
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchVideoList(episodeUrl)
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchVideoList(episodeUrl)
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchVideoList(episodeUrl)
             AnimeSource.ISQ -> isqSource.fetchVideoList(episodeUrl)
+            AnimeSource.E3SK -> e3skSource.fetchVideoList(episodeUrl)
+            AnimeSource.Esk -> eskSource.fetchVideoList(episodeUrl)
             AnimeSource.TOP_CINEMA -> topCinemaSource.fetchVideoList(episodeUrl)
             AnimeSource.ARAB_SEED -> arabSeedSource.fetchVideoList(episodeUrl)
             AnimeSource.ANIME4UP -> anime4upSource.fetchVideoList(episodeUrl)
@@ -586,6 +642,8 @@ class SourceManager(private val context: Context) {
             AnimeSource.FIVETV -> fiveTvSource.fetchVideoList(episodeUrl)
             AnimeSource.ANIMELEK -> animeLekSource.fetchVideoList(episodeUrl)
             AnimeSource.DAILY_MOTION -> dailymotionSource.fetchVideoList(episodeUrl)
+            AnimeSource.YACINETV -> yacineTvSource.fetchVideoList(episodeUrl)
+            AnimeSource.ANSLAYER -> anslyerSource.fetchVideoList(episodeUrl)
             AnimeSource.CIMA_NOW ->cimaNowSource.fetchVideoList(episodeUrl)
             AnimeSource.HENTAI_TIME -> hentaiTimeSource.fetchVideoList(episodeUrl)
             AnimeSource.NXXHENTAI -> nxxhentaiSource.fetchVideoList(episodeUrl)
@@ -598,10 +656,10 @@ class SourceManager(private val context: Context) {
             }
 
             AnimeSource.DADDY_LIVE -> {
-                // Get DaddyLive stream link
                 val video = daddyLiveSource.fetchLiveStreamLink(episodeUrl)
                 if (video != null) listOf(video) else emptyList()
             }
+
 
             AnimeSource.FREE_TV -> {
                 // Get Free TV stream link
@@ -626,10 +684,15 @@ class SourceManager(private val context: Context) {
             AnimeSource.ANIMEIAT -> animeiatSource.fetchMainSlider()
             AnimeSource.EGYDEAD -> egyDeadSource.fetchMainSlider()
             AnimeSource.ANIME3RB -> anime3rbSource.fetchMainSlider()
+            AnimeSource.CARTOONY -> cartoonySource.fetchLatestUpdates(1).manga
+            AnimeSource.Esk -> eskSource.fetchLatestUpdates(1).manga
+            AnimeSource.E3SK -> e3skSource.fetchLatestUpdates(1).manga
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchLatestUpdatess(1)
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.fetchMainSlider()
             AnimeSource.ANIMERCO -> animercoSource.fetchLatestUpdates(1).manga
             AnimeSource.WITANIME -> witAnimeSource.fetchMainSlider()
+            AnimeSource.ANSLAYER -> anslyerSource.fetchLatestUpdates(1).manga
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchLatestUpdates(1).manga
             AnimeSource.UHDMOVIES -> uhdMoviesSource.fetchMainSlider()
             AnimeSource.ISQ -> isqSource.fetchMainSlider()
             AnimeSource.TOP_CINEMA -> topCinemaSource.fetchMainSlider()
@@ -638,7 +701,9 @@ class SourceManager(private val context: Context) {
             AnimeSource.DRAMADRIP -> dramaDripSource.fetchMainSlider()
             AnimeSource.ZIMABADK -> zimabadkSource.fetchLatestUpdates(1).manga
             AnimeSource.FIVETV -> fiveTvSource.fetchMainSlider()
+            AnimeSource.YACINETV -> yacineTvSource.fetchPopularSeries(1).manga
             AnimeSource.SHED4U -> shed4uSource.fetchMainSlider()
+            AnimeSource.CIMA_CLUB -> cimaClubSource.fetchMainSlider()
             AnimeSource.DAILY_MOTION -> dailymotionSource.fetchPopular(1).manga
             AnimeSource.CIMA_NOW ->cimaNowSource.fetchPopularSeries(1).manga
             AnimeSource.ANIMELEK -> animeLekSource.fetchPopularSeries(1).manga
@@ -712,15 +777,20 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARABDRAMA2 -> arabDrama2Source.fetchHomePageLatestEpisodes()
             AnimeSource.NETFLIX_MIRROR -> emptyList()
             AnimeSource.PRIME_VIDEO_MIRROR -> emptyList()
+            AnimeSource.CARTOONY -> cartoonySource.fetchLatestUpdates(1).manga
             AnimeSource.ASIA2TV -> emptyList()
+            AnimeSource.ANSLAYER -> emptyList()
             AnimeSource.ANIMEIAT -> animeiatSource.fetchLatestUpdatess(1)
             AnimeSource.EGYDEAD -> emptyList()
+            AnimeSource.YACINETV -> emptyList()
             AnimeSource.ANIME3RB -> anime3rbSource.fetchHomePageLatestAnimes()
             AnimeSource.ARABICTOONS -> arabicToonsSource.fetchLatestUpdatess(1)
             AnimeSource.INTERNET_ARCHIVE -> emptyList()
             AnimeSource.ANIMERCO -> emptyList()
             AnimeSource.WITANIME -> emptyList()
             AnimeSource.UHDMOVIES -> emptyList()
+            AnimeSource.CIMA_CLUB -> emptyList()
+            AnimeSource.FULLREPLAYS -> fullReplaysSource.fetchLatestUpdates(1).manga
             AnimeSource.FIVETV -> fiveTvSource.fetchHomePageLatestEpisodes()
             AnimeSource.ARAB_SEED -> arabSeedSource.fetchHomePageLatestEpisodes()
             AnimeSource.DAILY_MOTION -> dailymotionSource.fetchPopular(1).manga
@@ -733,6 +803,8 @@ class SourceManager(private val context: Context) {
             AnimeSource.ZIMABADK -> zimabadkSource.fetchPopularSeries(1).manga
             AnimeSource.ANIMELEK -> animeLekSource.fetchPopularSeries(1).manga
             AnimeSource.SPANKBANG -> spankBangSource.fetchLatestUpdates(1).manga
+            AnimeSource.Esk -> eskSource.fetchLatestUpdates(1).manga
+            AnimeSource.E3SK -> e3skSource.fetchLatestUpdates(1).manga
             AnimeSource.HENTAI_TIME -> hentaiTimeSource.fetchLatestUpdates(1).manga
             AnimeSource.CIMA_NOW ->cimaNowSource.fetchMainSlider(1).manga
             AnimeSource.XVIDEOS -> xvideosSource.fetchLatestUpdates(1).manga
@@ -797,10 +869,12 @@ class SourceManager(private val context: Context) {
             AnimeSource.SHED4U -> shed4uSource.getFilterList()
             AnimeSource.ARAB_ANIME -> arabAnimeSource.getFilterList()
             AnimeSource.OKANIME -> okAnimeSource.getFilterList()
+            AnimeSource.YACINETV -> yacineTvSource.getFilterList()
             AnimeSource.ARAB_DRAMA -> arabDramSource.getFilterList()
             AnimeSource.NETFLIX_MIRROR -> netflixMirrorSource.getFilterList()
             AnimeSource.PRIME_VIDEO_MIRROR -> primeVideoMirrorSource.getFilterList()
             AnimeSource.ASIA2TV -> asia2TvSource.getFilterList()
+            AnimeSource.CIMA_CLUB -> cimaClubSource.getFilterList()
             AnimeSource.ANIMEIAT -> animeiatSource.getFilterList()
             AnimeSource.FIVETV -> fiveTvSource.getFilterList()
             AnimeSource.EGYDEAD -> egyDeadSource.getFilterList()
@@ -811,17 +885,22 @@ class SourceManager(private val context: Context) {
             AnimeSource.ARABICTOONS -> AnimeFilterList(emptyList())
             AnimeSource.INTERNET_ARCHIVE -> internetArchiveSource.getFilterList()
             AnimeSource.ANIMERCO -> animercoSource.getFilterList()
+            AnimeSource.ANSLAYER -> AnimeFilterList(emptyList())
+            AnimeSource.FULLREPLAYS -> AnimeFilterList(emptyList())
             AnimeSource.WITANIME -> witAnimeSource.getFilterList()
             AnimeSource.ANIMELEK -> animeLekSource.getFilterList()
+            AnimeSource.E3SK -> AnimeFilterList(emptyList())
             AnimeSource.DRAMADRIP -> dramaDripSource.getFilterList()
             AnimeSource.DAILY_MOTION ->  AnimeFilterList(emptyList())
             AnimeSource.UHDMOVIES -> uhdMoviesSource.getFilterList()
             AnimeSource.HIANIME ->AnimeFilterList(emptyList())
+            AnimeSource.Esk -> AnimeFilterList(emptyList())
             AnimeSource.ZIMABADK -> zimabadkSource.getFilterList()
             AnimeSource.ISQ -> isqSource.getFilterList()
             AnimeSource.TOP_CINEMA -> topCinemaSource.getFilterList()
             AnimeSource.SPANKBANG -> spankBangSource.getFilterList()
             AnimeSource.ANIME4UP ->AnimeFilterList(emptyList())
+            AnimeSource.CARTOONY -> AnimeFilterList(emptyList())
             AnimeSource.CIMA_NOW ->AnimeFilterList(emptyList())
             AnimeSource.ARABDRAMA2 -> arabDrama2Source.getFilterList()
             AnimeSource.ARAB_SEED -> arabSeedSource.getFilterList()
@@ -840,14 +919,14 @@ class SourceManager(private val context: Context) {
         }
     }
 
-    suspend fun fetchLiveStream(channel: SLiveTv): Video? {
-        return when (channel.source?.let { AnimeSource.valueOf(it) }) {
-            AnimeSource.HUHU -> huhuSource.fetchLiveStreamLink(channel.url)
-            AnimeSource.DADDY_LIVE -> daddyLiveSource.fetchLiveStreamLink(channel.url)
-            AnimeSource.FREE_TV -> freeTVSource.fetchLiveStreamLink(channel.url)
-            else -> null
-        }
-    }
+//    suspend fun fetchLiveStream(channel: SLiveTv): Video? {
+//        return when (channel.source?.let { AnimeSource.valueOf(it) }) {
+//            AnimeSource.HUHU -> huhuSource.fetchLiveStreamLink(channel.url)
+//            AnimeSource.DADDY_LIVE -> daddyLiveSource.fetchLiveStreamLink(channel.url)
+//            AnimeSource.FREE_TV -> freeTVSource.fetchLiveStreamLink(channel.url)
+//            else -> null
+//        }
+//    }
 
     fun getCurrentSourceName(): String {
         return currentSource.displayName

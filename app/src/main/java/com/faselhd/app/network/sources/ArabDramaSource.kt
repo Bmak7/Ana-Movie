@@ -405,7 +405,7 @@ class ArabDramaSource(private val context: Context) {
                         println("DEBUG: Found ${extractedVideos.size} videos from Voe")
                     }
 
-                    "doo" in serverUrl && "/e/" in serverUrl -> {
+                    "https://doo" in serverUrl || "https://d" in serverUrl ||"d000" in serverUrl || "dood" in serverUrl || "d-s.io" in serverUrl || "vide0" in serverUrl -> {
                         val extractedVideos = doodExtractor.videosFromUrl(serverUrl, "Doodstream")
                         videos.addAll(extractedVideos)
                         println("DEBUG: Found ${extractedVideos.size} videos from Doodstream")

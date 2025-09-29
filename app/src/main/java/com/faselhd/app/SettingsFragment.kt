@@ -63,7 +63,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         builder.setPositiveButton("OK") { dialog, _ ->
             val code = input.text.toString()
-            if (code == "********") {
+            if (code == "******") {
                 SourceManager.setAdultContentUnlocked(requireContext(), true)
                 Toast.makeText(requireContext(), "Adult content unlocked. Please restart the app.", Toast.LENGTH_LONG).show()
                 // Restart the app to apply changes

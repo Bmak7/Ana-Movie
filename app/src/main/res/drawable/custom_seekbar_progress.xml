@@ -1,33 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Background track -->
     <item android:id="@android:id/background">
-        <shape android:shape="rectangle">
-            <corners android:radius="2dp" />
-            <solid android:color="#4DFFFFFF" />  <!-- Semi-transparent white -->
-            <size android:height="4dp" />
+        <shape>
+            <solid android:color="@color/progress_track"/>
+            <corners android:radius="2dp"/>
         </shape>
     </item>
-
-    <!-- Secondary progress (buffer) -->
-    <item android:id="@android:id/secondaryProgress">
-        <scale android:scaleWidth="100%">
-            <shape android:shape="rectangle">
-                <corners android:radius="2dp" />
-                <solid android:color="#80FFFFFF" />  <!-- More opaque white -->
-                <size android:height="4dp" />
-            </shape>
-        </scale>
-    </item>
-
-    <!-- Primary progress -->
     <item android:id="@android:id/progress">
-        <scale android:scaleWidth="100%">
-            <shape android:shape="rectangle">
-                <corners android:radius="2dp" />
-                <solid android:color="#FF353C" />  <!-- Your accent color -->
-                <size android:height="4dp" />
+        <clip>
+            <shape>
+                <gradient
+                        android:startColor="@color/colorAccent"
+                        android:endColor="@color/colorAccent"
+                        android:angle="0"/>
+                <corners android:radius="2dp"/>
             </shape>
-        </scale>
+        </clip>
     </item>
 </layer-list>

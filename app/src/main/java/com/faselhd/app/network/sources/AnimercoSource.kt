@@ -98,6 +98,8 @@ class AnimercoSource(private val context: Context) {
     private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
     private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
     private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+    private val filemoonExtractor by lazy { FileMoonExtractor(client) }
+
 
     // GdrivePlayerExtractor and YourUploadExtractor can be added if you have them
     val megaMaxExtractor = MegaMaxExtractor(
@@ -111,6 +113,7 @@ class AnimercoSource(private val context: Context) {
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
         luluStream1Extractor = luluStream1Extractor,
+        filemoonExtractor = filemoonExtractor
         // ... pass others here
     )
 
@@ -350,7 +353,7 @@ class AnimercoSource(private val context: Context) {
                     Log.d("VideoDebug", "MP4Upload extracted ${it.size} videos")
                 }
             }
-            "https://doo" in url || "https://d" in url || "dood" in url-> {
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url-> {
                 Log.d("VideoDebug", "Detected Dood URL")
                 doodExtractor.videosFromUrl(url).also {
                     Log.d("VideoDebug", "Dood extracted ${it.size} videos")

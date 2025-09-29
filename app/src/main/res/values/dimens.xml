@@ -30,7 +30,6 @@
     <dimen name="padding_large">24dp</dimen>
 
     <!-- Card Dimensions -->
-    <dimen name="card_corner_radius">12dp</dimen>
     <dimen name="card_elevation">4dp</dimen>
     <dimen name="card_margin">8dp</dimen>
 
@@ -118,15 +117,22 @@
 
 
     <!-- General Spacing -->
-    <dimen name="grid_spacing">8dp</dimen>
-    <dimen name="section_padding">16dp</dimen>
+
 
     <!-- TV Specific (will be overridden) -->
-    <dimen name="tv_sidebar_width">240dp</dimen>
-    <dimen name="tv_item_spacing">16dp</dimen>
-    <dimen name="tv_button_height">52dp</dimen>
+
     <dimen name="tv_details_image_height">400dp</dimen>
     <dimen name="tv_details_title_size">28sp</dimen>
     <dimen name="tv_details_body_size">16sp</dimen>
+
+    <dimen name="tv_sidebar_width">280dp</dimen>
+    <dimen name="tv_item_spacing">12dp</dimen>
+    <dimen name="tv_button_height">56dp</dimen>
+    <dimen name="section_padding">24dp</dimen>
+    <dimen name="grid_spacing">8dp</dimen>
+    <dimen name="card_corner_radius">20dp</dimen>
+    <dimen name="small_card_corner_radius">16dp</dimen>
+    <dimen name="button_corner_radius">28dp</dimen>
+    <dimen name="badge_corner_radius">12dp</dimen>
 
 </resources>

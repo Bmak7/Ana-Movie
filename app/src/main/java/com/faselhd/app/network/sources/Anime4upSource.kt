@@ -101,6 +101,8 @@ class Anime4upSource(private val context: Context) {
     private val mivalyoExtractor by lazy { MivalyoExtractor(client) }
     private val vidTubeExtractor by lazy { VidTubeExtractor(client) }
     private val fourSharedExtractor by lazy { FourSharedExtractor(client) }
+    private val filemoonExtractor by lazy { FileMoonExtractor(client) }
+
 
 
     // VoeExtractor and others can be added if you have them.
@@ -115,6 +117,7 @@ class Anime4upSource(private val context: Context) {
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
         luluStream1Extractor = luluStream1Extractor,
+        filemoonExtractor = filemoonExtractor
         // ... pass others here
     )
 
@@ -320,7 +323,7 @@ class Anime4upSource(private val context: Context) {
         return when {
             "ok.ru" in url -> okruExtractor.videosFromUrl(url)
             "mp4upload" in url -> mp4uploadExtractor.videosFromUrl(url)
-            "dood" in url || "d-s.io" in url -> doodExtractor.videosFromUrl(url)
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> doodExtractor.videosFromUrl(url)
             "streamtape" in url -> streamTapeExtractor.videosFromUrl(url)
             "uqload" in url -> uqloadExtractor.videosFromUrl(url)
             "4shared" in url -> fourSharedExtractor.videosFromUrl(url)

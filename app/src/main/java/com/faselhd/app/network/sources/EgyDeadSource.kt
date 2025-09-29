@@ -305,11 +305,9 @@ class EgyDeadSource(private val context: Context) {
     private fun extractVideosFromUrl(url: String): List<Video> {
         return when {
             //            DOOD_REGEX.matcher(url).find() -> doodExtractor.videosFromUrl(url, "Dood")
-            url.contains("d-s.io") || url.contains("dood") -> {
-                println("DEBUG: Processing Doodstream URL: $url")
-                val doodUrl = getFinalDoodUrl(url)
-                println("DEBUG: Final Dood URL: $doodUrl")
-                val result = doodExtractor.videosFromUrl(doodUrl, "Doodstream")
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> {
+
+                val result = doodExtractor.videosFromUrl(url, "Doodstream")
                 println("DEBUG: Doodstream extraction result: ${result.size} videos found")
                 result
             }

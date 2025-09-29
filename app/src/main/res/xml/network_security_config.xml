@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext for certain domains if needed, though not for Cartoony -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- Add other domains that might use HTTP here -->
+    </domain-config>
+
+    <!-- This is the crucial part -->
+    <domain-config>
+        <!-- Trust subdomains for the Cartoony API -->
+        <domain includeSubdomains="true">cartoony.net</domain>
+        <domain includeSubdomains="true">premilkyway.com</domain>
+        <domain includeSubdomains="true">ovaltinecdn.com</domain>
+        <domain includeSubdomains="true">mxcontent.net</domain>
+        <domain includeSubdomains="true">cloudatacdn.com</domain>
+        <!-- TRUST THE DNS PROVIDERS -->
+        <domain includeSubdomains="true">dns.google</domain>
+        <domain includeSubdomains="true">cloudflare-dns.com</domain>
+        <domain includeSubdomains="true">dns.adguard.com</domain>
+        <!-- Add other DNS provider domains if you use them -->
+
+        <!-- This tells the app to trust the standard system certificate authorities -->
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

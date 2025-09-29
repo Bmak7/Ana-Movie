@@ -7,6 +7,9 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.lagradost.nicehttp.ignoreAllSSLErrors
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -38,8 +41,17 @@ object NetworkUtils {
 
             // Create an ssl socket factory with our all-trusting manager
 //            val sslSocketFactory = sslContext.socketFactory
-
+            val cookieJar = object : CookieJar {
+                private val cookieStore = HashMap<String, List<Cookie>>()
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+                    cookieStore[url.host] = cookies
+                }
+                override fun loadForRequest(url: HttpUrl): List<Cookie> {
+                    return cookieStore[url.host] ?: ArrayList()
+                }
+            }
             return OkHttpClient.Builder()
+                .cookieJar(cookieJar)
                 .followRedirects(true)
                 .followSslRedirects(true)
                 .ignoreAllSSLErrors()

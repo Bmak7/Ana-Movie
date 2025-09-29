@@ -131,6 +131,8 @@ class IsqSource(private val context: Context) {
     private val mp4uploadExtractor by lazy { Mp4uploadExtractor(client) }
     private val streamWishExtractor by lazy { StreamWishExtractor(client) }
     private val luluStream1Extractor by lazy { LuluStream1Extractor(client) }
+    private val filemoonExtractor by lazy { FileMoonExtractor(client) }
+
 
     val megaMaxExtractor = MegaMaxExtractor(
         client = client,
@@ -142,7 +144,8 @@ class IsqSource(private val context: Context) {
         mp4uploadExtractor = mp4uploadExtractor,
         vidTubeExtractor = vidTubeExtractor,
         mivalyoExtractor = mivalyoExtractor,
-        luluStream1Extractor,
+        luluStream1Extractor =  luluStream1Extractor,
+        filemoonExtractor = filemoonExtractor
         // ... pass others here
     )
     //endregion
@@ -292,7 +295,7 @@ class IsqSource(private val context: Context) {
         Log.d(TAG, "➡️ getVideosFromUrl() called with url=$url, quality=$quality, referer=$referer")
         return try {
             val videos = when {
-                "dood" in url || "d-s" in url || "vide0" in url -> {
+                "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> {
                     Log.d(TAG, "🎯 Using doodExtractor")
                     doodExtractor.videosFromUrl(url, quality)
                 }

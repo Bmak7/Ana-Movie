@@ -518,6 +518,11 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
+    <WebView
+            android:id="@+id/webViewExtractor"
+            android:layout_width="1px"
+            android:layout_height="1px"
+            android:visibility="gone" />
 
 </FrameLayout>
         <!--<?xml version="1.0" encoding="utf-8"?>-->

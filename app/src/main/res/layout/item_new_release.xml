@@ -3,16 +3,23 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="160dp"
-        android:layout_height="240dp"
-        android:layout_margin="4dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp">
+        android:layout_width="170dp"
+        android:layout_height="280dp"
+        android:layout_margin="6dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/anime_card_bg"
+        app:strokeColor="@color/anime_card_stroke"
+        app:strokeWidth="1dp"
+        android:stateListAnimator="@animator/new_release_animator">
 
     <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+        <!-- Main poster image -->
         <ImageView
                 android:id="@+id/anime_image"
                 android:layout_width="match_parent"
@@ -20,38 +27,213 @@
                 android:scaleType="centerCrop"
                 tools:src="@tools:sample/backgrounds/scenic" />
 
+        <!-- Enhanced gradient overlay with multiple layers -->
+        <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/new_release_overlay" />
+
+        <!-- "NEW" indicator badge -->
         <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/green_rating_badge"
-                app:cardCornerRadius="8dp"
-                android:layout_margin="8dp"
-                android:layout_gravity="top|start">
+                android:layout_gravity="top|start"
+                android:layout_margin="12dp"
+                app:cardBackgroundColor="@color/accent_orange"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/accent_green"
+                app:strokeWidth="1dp">
+
             <TextView
-                    android:id="@+id/anime_rating"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="4dp"
+                    android:text="NEW"
                     android:textColor="@android:color/white"
                     android:textStyle="bold"
-                    tools:text="9.5"/>
+                    android:textSize="10sp"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:letterSpacing="0.1"/>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Simplified TextView for title -->
-        <TextView
-                android:id="@+id/anime_title"
+        <!-- Enhanced rating badge with star -->
+        <com.google.android.material.card.MaterialCardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/rating_badge_bg"
+                app:cardCornerRadius="12dp"
+                android:layout_margin="12dp"
+                android:layout_gravity="top|end"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/rating_badge_stroke"
+                app:strokeWidth="1dp">
+
+            <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp">
+
+                <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_star"
+                        app:tint="@color/rating_star"
+                        android:layout_marginEnd="3dp"/>
+
+                <TextView
+                        android:id="@+id/anime_rating"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:textSize="11sp"
+                        tools:text="9.5"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Play overlay with enhanced styling -->
+        <com.google.android.material.card.MaterialCardView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center"
+                app:cardBackgroundColor="@color/play_overlay_bg"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="8dp"
+                app:strokeColor="@color/play_overlay_stroke"
+                app:strokeWidth="2dp"
+                android:visibility="gone"
+                android:id="@+id/play_overlay">
+
+            <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_play_arrow"
+                    app:tint="@android:color/white"
+                    android:contentDescription="Play anime" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Enhanced bottom content with glassmorphism -->
+        <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
-                android:background="#AA000000"
-        android:padding="8dp"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:ellipsize="end"
-        android:maxLines="2"
-        android:gravity="center"
-        tools:text="Anime Title"/>
+                android:orientation="vertical"
+                android:background="@drawable/new_release_bottom_bg"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="16dp">
+
+            <!-- Episode count indicator -->
+            <com.google.android.material.card.MaterialCardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginBottom="8dp"
+                    app:cardBackgroundColor="@color/duration_badge_bg"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/duration_badge_stroke"
+                    app:strokeWidth="1dp">
+
+                <TextView
+                        android:id="@+id/episode_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/white"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="3dp"
+                        tools:text="EP 12" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Anime title with enhanced typography -->
+            <TextView
+                    android:id="@+id/anime_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/white"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:lineSpacingExtra="2dp"
+                    android:letterSpacing="0.01"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="1"
+                    android:shadowDy="1"
+                    android:shadowRadius="2"
+                    tools:text="Demon Slayer: Kimetsu no Yaiba"/>
+
+            <!-- Genre/additional info -->
+            <TextView
+                    android:id="@+id/anime_genre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="#E0FFFFFF"
+                    android:textSize="11sp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:alpha="0.9"
+                    tools:text="Action • Shounen"/>
+
+            <!-- Release date -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_timer"
+                        app:tint="#B3FFFFFF"
+                        android:layout_marginEnd="4dp"/>
+
+                <TextView
+                        android:id="@+id/release_date"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="10sp"
+                        tools:text="Released today"/>
+
+                <ImageView
+                        android:id="@+id/bookmark_indicator"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/bookmark_24px"
+                        app:tint="@color/accent_green"
+                        android:visibility="gone"
+                        tools:visibility="visible"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Enhanced focus indicator for TV navigation -->
+        <View
+                android:id="@+id/focus_indicator"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/enhanced_new_release_focus"
+                android:visibility="gone"
+                android:alpha="0" />
+
+        <!-- Hover effect overlay -->
+        <View
+                android:id="@+id/hover_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/new_release_hover_overlay"
+                android:visibility="gone"
+                android:alpha="0"/>
 
     </FrameLayout>
 </com.google.android.material.card.MaterialCardView>

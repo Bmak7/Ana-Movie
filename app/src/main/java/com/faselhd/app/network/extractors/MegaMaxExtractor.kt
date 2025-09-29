@@ -1,7 +1,4 @@
-
-
 package com.faselhd.app.network.extractors
-
 
 import com.faselhd.app.models.Video
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.jsoup.Jsoup // <-- Add JSOUP dependency
 import java.io.IOException
 
 class MegaMaxExtractor(
@@ -24,12 +22,11 @@ class MegaMaxExtractor(
     private val streamWishExtractor: StreamWishExtractor,
     private val streamTapeExtractor: StreamTapeExtractor,
     private val mp4uploadExtractor: Mp4uploadExtractor,
-    private val vidTubeExtractor: VidTubeExtractor,
+    private val filemoonExtractor: FileMoonExtractor ,
+private val vidTubeExtractor: VidTubeExtractor,
     private val mivalyoExtractor: MivalyoExtractor,
     private val luluStream1Extractor: LuluStream1Extractor,
-
-// Add other extractors here as you create them...
-    // private val filemoonExtractor: FilemoonExtractor,
+    // Add other extractors here...
 ) {
 
     private val json = Json {
@@ -38,15 +35,16 @@ class MegaMaxExtractor(
     }
 
     //region Data Models for JSON Parsing
+    // For the Inertia response
     @Serializable
     private data class MegaMaxMirror(
         @SerialName("link") val link: String,
-        @SerialName("driver") val driver: String // Useful for identifying the host
+        @SerialName("driver") val driver: String
     )
 
     @Serializable
     private data class MegaMaxQualityLevel(
-        @SerialName("label") val label: String, // e.g., "1080p", "720p"
+        @SerialName("label") val label: String,
         @SerialName("mirrors") val mirrors: List<MegaMaxMirror>
     )
 
@@ -64,18 +62,18 @@ class MegaMaxExtractor(
     private data class MegaMaxResponse(
         @SerialName("props") val props: MegaMaxProps
     )
+
+    // For parsing the initial HTML data-page attribute
+    @Serializable
+    private data class PageData(
+        @SerialName("version") val version: String
+    )
     //endregion
 
     /**
      * Main function to extract final video files from a MegaMax URL.
-     * It first gets server links from MegaMax, then uses other extractors
-     * to get the final .mp4 or .m3u8 links from those servers.
-     *
-     * @param url The URL of the MegaMax iframe page.
-     * @return A flat list of all resolvable Video objects.
      */
     fun videosFromUrl(url: String): List<Video> {
-        // 1. Get the list of server pages from MegaMax
         val serverPages = getServerPages(url)
         if (serverPages.isEmpty()) {
             println("MegaMaxExtractor: No server pages found.")
@@ -84,7 +82,6 @@ class MegaMaxExtractor(
 
         println("MegaMaxExtractor: Found ${serverPages.size} server pages. Now extracting final links...")
 
-        // 2. Concurrently run the appropriate extractor for each server page
         return runBlocking(Dispatchers.IO) {
             serverPages.map { server ->
                 async {
@@ -100,27 +97,16 @@ class MegaMaxExtractor(
     private fun extractFromServer(url: String, quality: String, host: String): List<Video> {
         println("MegaMaxExtractor: Delegating to extractor for host '$host' with URL: $url")
         return when {
-            host.contains("doo") || host.contains("d-s") || host.contains("vide0") -> doodExtractor.videosFromUrl(url, quality)
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url  || "dood" in host -> doodExtractor.videosFromUrl(url, quality)
             host.contains("voe") -> voeExtractor.videosFromUrl(url)
+            "filemoon" in url || "filemoon.sx" in url -> filemoonExtractor.videosFromUrl(url, quality) // Assuming you have a Filemoon extractor
             host.contains("mixdrop") -> mixDropExtractor.videosFromUrl(url, quality)
             host.contains("streamwish") || host.contains("wish") -> streamWishExtractor.videosFromUrl(url, quality)
             host.contains("streamtape") -> streamTapeExtractor.videosFromUrl(url, quality)
             host.contains("mp4upload") -> mp4uploadExtractor.videosFromUrl(url, quality)
             host.contains("vidtube")  -> vidTubeExtractor.videosFromUrl(url)
-            url.contains("vidhi") || url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> {                println("mivalyo mivalyo url: $url")
-                mivalyoExtractor.videosFromUrl(url)
-            }
-//            host.contains("lulu") || host.contains("lulustream") -> {
-//                println("mivalyo mivalyo url: $url")
-//                luluStream1Extractor.videosFromUrl(url, url)
-//            }
-            "lulu" in url || "lulustream"  in url -> {
-                println("DEBUG: Using luluStream1Extractor for: $url")
-                luluStream1Extractor.videosFromUrl(url, url)
-            }
-            // Add cases for other extractors here
-            // host.contains("filemoon") -> filemoonExtractor.videosFromUrl(url, quality)
-
+            url.contains("vidhi") || url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> mivalyoExtractor.videosFromUrl(url)
+            "lulu" in url || "lulustream"  in url -> luluStream1Extractor.videosFromUrl(url, url)
             else -> {
                 println("MegaMaxExtractor: No extractor available for host: $host")
                 emptyList()
@@ -131,21 +117,31 @@ class MegaMaxExtractor(
     private data class ServerPage(val url: String, val quality: String, val host: String)
 
     /**
-     * Fetches the initial list of server pages from MegaMax.
+     * Fetches the initial list of server pages from MegaMax by first getting the
+     * dynamic Inertia version.
      */
     private fun getServerPages(url: String): List<ServerPage> {
         try {
+            // STEP 1: Get the dynamic Inertia version from the initial HTML page
+            val inertiaVersion = getInertiaVersion(url)
+                ?: throw IOException("Could not retrieve Inertia version.")
+
+            println("MegaMaxExtractor: Successfully fetched Inertia version: $inertiaVersion")
+
+            // STEP 2: Use the fetched version to make the partial data request
             val request = Request.Builder()
                 .url(url)
                 .addHeader("X-Requested-With", "XMLHttpRequest")
                 .addHeader("X-Inertia", "true")
-                .addHeader("X-Inertia-Version", "073aceb6c2dab1e478df72b19687c856")
+                .addHeader("X-Inertia-Version", inertiaVersion) // <-- USE DYNAMIC VERSION
                 .addHeader("X-Inertia-Partial-Data", "streams")
                 .addHeader("X-Inertia-Partial-Component", "files/mirror/video")
                 .build()
 
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return emptyList()
+                if (!response.isSuccessful) {
+                    throw IOException("Inertia request failed with code: ${response.code}")
+                }
                 val responseBody = response.body?.string() ?: return emptyList()
 
                 val megaMaxResponse = json.decodeFromString<MegaMaxResponse>(responseBody)
@@ -156,18 +152,214 @@ class MegaMaxExtractor(
                         val fullUrl = if (mirror.link.startsWith("//")) "https:${mirror.link}" else mirror.link
                         ServerPage(
                             url = fullUrl,
-                            quality = "${mirror.driver.capitalize()} - ${qualityLevel.label}",
-                            host = mirror.driver.toLowerCase()
+                            quality = "${mirror.driver.replaceFirstChar { it.uppercase() }} - ${qualityLevel.label}",
+                            host = mirror.driver.lowercase()
                         )
                     }
                 }
             }
-        } catch (e: IOException) {
-            println("MegaMaxExtractor: Error fetching server pages: ${e.message}")
-            return emptyList()
         } catch (e: Exception) {
-            println("MegaMaxExtractor: An unexpected error occurred: ${e.message}")
+            println("MegaMaxExtractor: Error during getServerPages: ${e.message}")
+            e.printStackTrace()
             return emptyList()
         }
     }
+
+    /**
+     * Fetches the initial HTML and parses the 'data-page' attribute to find the Inertia version.
+     */
+    private fun getInertiaVersion(url: String): String? {
+        return try {
+            val initialRequest = Request.Builder().url(url).build()
+            client.newCall(initialRequest).execute().use { response ->
+                if (!response.isSuccessful) return null
+                val htmlBody = response.body?.string() ?: return null
+
+                val document = Jsoup.parse(htmlBody)
+                val appDiv = document.select("div#app").first()
+                val dataPageJson = appDiv?.attr("data-page") ?: return null
+
+                val pageData = json.decodeFromString<PageData>(dataPageJson)
+                pageData.version
+            }
+        } catch (e: Exception) {
+            println("MegaMaxExtractor: Failed to parse Inertia version: ${e.message}")
+            null
+        }
+    }
 }
+
+
+//
+//
+//package com.faselhd.app.network.extractors
+//
+//
+//import com.faselhd.app.models.Video
+//import kotlinx.coroutines.Dispatchers
+//import kotlinx.coroutines.async
+//import kotlinx.coroutines.awaitAll
+//import kotlinx.coroutines.runBlocking
+//import kotlinx.serialization.SerialName
+//import kotlinx.serialization.Serializable
+//import kotlinx.serialization.json.Json
+//import okhttp3.OkHttpClient
+//import okhttp3.Request
+//import java.io.IOException
+//
+//class MegaMaxExtractor(
+//    private val client: OkHttpClient,
+//    // Pass instances of all other required extractors to the constructor
+//    private val doodExtractor: DoodExtractor,
+//    private val voeExtractor: VoeExtractor,
+//    private val mixDropExtractor: MixDropExtractor,
+//    private val streamWishExtractor: StreamWishExtractor,
+//    private val streamTapeExtractor: StreamTapeExtractor,
+//    private val mp4uploadExtractor: Mp4uploadExtractor,
+//    private val vidTubeExtractor: VidTubeExtractor,
+//    private val mivalyoExtractor: MivalyoExtractor,
+//    private val luluStream1Extractor: LuluStream1Extractor,
+//
+//// Add other extractors here as you create them...
+//    // private val filemoonExtractor: FilemoonExtractor,
+//) {
+//
+//    private val json = Json {
+//        ignoreUnknownKeys = true
+//        isLenient = true
+//    }
+//
+//    //region Data Models for JSON Parsing
+//    @Serializable
+//    private data class MegaMaxMirror(
+//        @SerialName("link") val link: String,
+//        @SerialName("driver") val driver: String // Useful for identifying the host
+//    )
+//
+//    @Serializable
+//    private data class MegaMaxQualityLevel(
+//        @SerialName("label") val label: String, // e.g., "1080p", "720p"
+//        @SerialName("mirrors") val mirrors: List<MegaMaxMirror>
+//    )
+//
+//    @Serializable
+//    private data class MegaMaxStreams(
+//        @SerialName("data") val data: List<MegaMaxQualityLevel>
+//    )
+//
+//    @Serializable
+//    private data class MegaMaxProps(
+//        @SerialName("streams") val streams: MegaMaxStreams
+//    )
+//
+//    @Serializable
+//    private data class MegaMaxResponse(
+//        @SerialName("props") val props: MegaMaxProps
+//    )
+//    //endregion
+//
+//    /**
+//     * Main function to extract final video files from a MegaMax URL.
+//     * It first gets server links from MegaMax, then uses other extractors
+//     * to get the final .mp4 or .m3u8 links from those servers.
+//     *
+//     * @param url The URL of the MegaMax iframe page.
+//     * @return A flat list of all resolvable Video objects.
+//     */
+//    fun videosFromUrl(url: String): List<Video> {
+//        // 1. Get the list of server pages from MegaMax
+//        val serverPages = getServerPages(url)
+//        if (serverPages.isEmpty()) {
+//            println("MegaMaxExtractor: No server pages found.")
+//            return emptyList()
+//        }
+//
+//        println("MegaMaxExtractor: Found ${serverPages.size} server pages. Now extracting final links...")
+//
+//        // 2. Concurrently run the appropriate extractor for each server page
+//        return runBlocking(Dispatchers.IO) {
+//            serverPages.map { server ->
+//                async {
+//                    extractFromServer(server.url, server.quality, server.host)
+//                }
+//            }.awaitAll().flatten()
+//        }
+//    }
+//
+//    /**
+//     * Delegates extraction to the correct specialized extractor based on the host.
+//     */
+//    private fun extractFromServer(url: String, quality: String, host: String): List<Video> {
+//        println("MegaMaxExtractor: Delegating to extractor for host '$host' with URL: $url")
+//        return when {
+//            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url  || "dood" in host -> doodExtractor.videosFromUrl(url, quality)
+//            host.contains("voe") -> voeExtractor.videosFromUrl(url)
+//            host.contains("mixdrop") -> mixDropExtractor.videosFromUrl(url, quality)
+//            host.contains("streamwish") || host.contains("wish") -> streamWishExtractor.videosFromUrl(url, quality)
+//            host.contains("streamtape") -> streamTapeExtractor.videosFromUrl(url, quality)
+//            host.contains("mp4upload") -> mp4uploadExtractor.videosFromUrl(url, quality)
+//            host.contains("vidtube")  -> vidTubeExtractor.videosFromUrl(url)
+//            url.contains("vidhi") || url.contains("/v/") || url.contains("bingezove") || url.contains("mivalyo") || url.contains("mivalyo.com") -> {                println("mivalyo mivalyo url: $url")
+//                mivalyoExtractor.videosFromUrl(url)
+//            }
+////            host.contains("lulu") || host.contains("lulustream") -> {
+////                println("mivalyo mivalyo url: $url")
+////                luluStream1Extractor.videosFromUrl(url, url)
+////            }
+//            "lulu" in url || "lulustream"  in url -> {
+//                println("DEBUG: Using luluStream1Extractor for: $url")
+//                luluStream1Extractor.videosFromUrl(url, url)
+//            }
+//            // Add cases for other extractors here
+//            // host.contains("filemoon") -> filemoonExtractor.videosFromUrl(url, quality)
+//
+//            else -> {
+//                println("MegaMaxExtractor: No extractor available for host: $host")
+//                emptyList()
+//            }
+//        }
+//    }
+//
+//    private data class ServerPage(val url: String, val quality: String, val host: String)
+//
+//    /**
+//     * Fetches the initial list of server pages from MegaMax.
+//     */
+//    private fun getServerPages(url: String): List<ServerPage> {
+//        try {
+//            val request = Request.Builder()
+//                .url(url)
+//                .addHeader("X-Requested-With", "XMLHttpRequest")
+//                .addHeader("X-Inertia", "true")
+//                .addHeader("X-Inertia-Version", "073aceb6c2dab1e478df72b19687c856")
+//                .addHeader("X-Inertia-Partial-Data", "streams")
+//                .addHeader("X-Inertia-Partial-Component", "files/mirror/video")
+//                .build()
+//
+//            client.newCall(request).execute().use { response ->
+//                if (!response.isSuccessful) return emptyList()
+//                val responseBody = response.body?.string() ?: return emptyList()
+//
+//                val megaMaxResponse = json.decodeFromString<MegaMaxResponse>(responseBody)
+//                val streamsData = megaMaxResponse.props.streams.data
+//
+//                return streamsData.flatMap { qualityLevel ->
+//                    qualityLevel.mirrors.map { mirror ->
+//                        val fullUrl = if (mirror.link.startsWith("//")) "https:${mirror.link}" else mirror.link
+//                        ServerPage(
+//                            url = fullUrl,
+//                            quality = "${mirror.driver.capitalize()} - ${qualityLevel.label}",
+//                            host = mirror.driver.toLowerCase()
+//                        )
+//                    }
+//                }
+//            }
+//        } catch (e: IOException) {
+//            println("MegaMaxExtractor: Error fetching server pages: ${e.message}")
+//            return emptyList()
+//        } catch (e: Exception) {
+//            println("MegaMaxExtractor: An unexpected error occurred: ${e.message}")
+//            return emptyList()
+//        }
+//    }
+//}

@@ -262,7 +262,7 @@ class ArabDrama2Source(private val context: Context) {
     private suspend fun getVideosFromUrl(url: String, quality: String, referer: String): List<Video> {
         return try {
             when {
-                "dood" in url || "d-s" in url -> doodExtractor.videosFromUrl(url, quality)
+                "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> doodExtractor.videosFromUrl(url, quality)
                 "uqload" in url -> uqloadExtractor.videosFromUrl(url)
                 "voe" in url -> voeExtractor.videosFromUrl(url)
                 "vidmoly" in url -> vidmolyExtractor.videosFromUrl(url)

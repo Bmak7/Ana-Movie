@@ -6,11 +6,15 @@ import com.example.myapplication.R
 import com.faselhd.app.models.*
 import com.faselhd.app.network.AnimeSource
 import com.faselhd.app.network.CloudflareInterceptor
+import com.faselhd.app.network.NetworkClient
 import com.faselhd.app.utils.*
 import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import org.json.JSONArray
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.io.File
@@ -39,33 +43,7 @@ class Anime3rbSource(private val context: Context) {
 
     val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
     val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
-    private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .ignoreAllSSLErrors()
-            .cache(
-                // Note that you need to add a ResponseInterceptor to make this 100% active.
-                // The server response dictates if and when stuff should be cached.
-                Cache(
-                    directory = File(context.cacheDir, "http_cache"),
-                    maxSize = 50L * 1024L * 1024L // 50 MiB
-                )
-            ).apply {
-                when (dns) {
-                    1 -> addGoogleDns()
-                    2 -> addCloudFlareDns()
-//                3 -> addOpenDns()
-                    4 -> addAdGuardDns()
-                    5 -> addDNSWatchDns()
-                    6 -> addQuad9Dns()
-                    7 -> addDnsSbDns()
-                    8 -> addCanadianShieldDns()
-                }
-            }
-            // Needs to be build as otherwise the other builders will change this object
-            .build()
-    }
+    private val client = NetworkClient.client
 //    private val client: OkHttpClient by lazy {
 //        val cookieManager = CookieManager()
 //        val cookieJar: CookieJar = JavaNetCookieJar(cookieManager)
@@ -104,7 +82,7 @@ class Anime3rbSource(private val context: Context) {
         }
     }
 
-        private fun toEpisodeAnime(element: Element): SAnime {
+    private fun toEpisodeAnime(element: Element): SAnime {
         return SAnime().apply {
             url = element.attr("abs:href")
             title = element.selectFirst("h3.title-name")?.text() ?: "Unknown"
@@ -113,16 +91,94 @@ class Anime3rbSource(private val context: Context) {
         }
     }
     suspend fun fetchSearchAnime(page: Int, query: String, filters: AnimeFilterList): MangaPage = withContext(Dispatchers.IO) {
-        val url = "$baseUrl/search?q=${query.replace(" ", "+")}"
-        val request = Request.Builder().url(url).build()
-        val document = Jsoup.parse(client.newCall(request).execute().body!!.string())
-
-        // Look for title cards in search results
-        val animeList = document.select("a.title-card, div.title-card a").mapNotNull { element ->
-            val linkElement = if (element.tagName() == "a") element else element.selectFirst("a")
-            linkElement?.let { toAnime(it) }
+        if (query.isBlank()) {
+            return@withContext MangaPage(emptyList(), false)
         }
-        MangaPage(animeList, hasNextPage = false)
+
+        try {
+            // Step 1: Get initial page and cookies
+            val mainPageRequest = Request.Builder().url(baseUrl).build()
+            val mainPageResponse = client.newCall(mainPageRequest).execute()
+            if (!mainPageResponse.isSuccessful) return@withContext MangaPage(emptyList(), false)
+
+            val document = Jsoup.parse(mainPageResponse.body!!.string(), baseUrl)
+
+            // Step 2: Extract CSRF token and snapshot with more robust selectors
+            val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
+
+            // MODIFIED SELECTOR: This is more generic and should find the search component's snapshot.
+            val snapshotJsonString = document.selectFirst("form[wire\\:snapshot]")?.attr("wire:snapshot")
+
+            if (csrfToken.isNullOrEmpty() || snapshotJsonString.isNullOrEmpty()) {
+                println("Failed to extract CSRF token or Live wire snapshot. Check HTML structure.")
+                return@withContext MangaPage(emptyList(), false)
+            }
+
+            // Step 3: Build the JSON payload using JSONObject to ensure correct formatting
+            val snapshotObject = JSONObject(snapshotJsonString)
+            val updatesObject = JSONObject().put("query", query)
+            val callsArray = JSONArray()
+
+            val componentObject = JSONObject()
+            componentObject.put("snapshot", snapshotObject.toString()) // Ensure snapshot is a string
+            componentObject.put("updates", updatesObject)
+            componentObject.put("calls", callsArray)
+
+            val componentsArray = JSONArray().put(componentObject)
+
+            val rootPayload = JSONObject()
+            rootPayload.put("_token", csrfToken)
+            rootPayload.put("components", componentsArray)
+
+            val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), rootPayload.toString())
+
+            // Step 4: Make the POST request
+            val livewireUrl = "$baseUrl/livewire/update"
+            val searchRequest = Request.Builder()
+                .url(livewireUrl)
+                .post(requestBody)
+                .header("X-CSRF-TOKEN", csrfToken)
+                .header("X-Livewire", "true")
+                .header("Accept", "application/json")
+                .header("Origin", baseUrl)
+                .build()
+
+            val searchResponse = client.newCall(searchRequest).execute()
+            if (!searchResponse.isSuccessful) return@withContext MangaPage(emptyList(), false)
+
+            // Step 5: Parse the response and extract results
+            val responseBody = searchResponse.body!!.string()
+            val jsonResponse = JSONObject(responseBody)
+
+            // The HTML is nested inside the 'effects' of the first component
+            val htmlContent = jsonResponse.getJSONArray("components").getJSONObject(0)
+                .getJSONObject("effects").getString("html")
+
+            val searchResultsDocument = Jsoup.parse(htmlContent)
+            val animeList = searchResultsDocument.select("a.simple-title-card").mapNotNull {
+                toLiveSearchAnime(it)
+            }
+
+            return@withContext MangaPage(animeList, false)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext MangaPage(emptyList(), false)
+        }
+    }
+
+    /**
+     * Helper function specifically for parsing anime from the live search result's HTML structure.
+     */
+    private fun toLiveSearchAnime(element: Element): SAnime {
+        return SAnime().apply {
+            url = element.attr("abs:href")
+            title = element.selectFirst("h4.text-lg")?.text()?.trim() ?: "Unknown Title"
+            thumbnail_url = element.selectFirst("img")?.attr("src")
+            source = AnimeSource.ANIME3RB.name
+            // Other details like description are not in the live search snippet.
+            // They will be loaded when the user selects the item and fetchAnimeDetails is called.
+        }
     }
 
     suspend fun fetchAnimeDetails(animeUrl: String): SAnime = withContext(Dispatchers.IO) {

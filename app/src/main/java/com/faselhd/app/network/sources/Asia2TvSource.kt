@@ -283,7 +283,7 @@ class Asia2TvSource(private val context: Context) {
             val videos = when {
 //                "dood" in host || "ds2play" in host -> {
 //                    println("DEBUG: Using doodExtractor for: $host")
-                    url.contains("d-s.io" ) || url.contains("dood") ||url.contains("vide0") -> {
+                "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> {
                         val doodUrl = getInstantFinalUrl(url)
                         println("doodUrl $doodUrl")
                         doodExtractor.videosFromUrl(doodUrl, "Doodstream")

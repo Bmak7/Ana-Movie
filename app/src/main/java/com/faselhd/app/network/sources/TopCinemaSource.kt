@@ -405,7 +405,7 @@ class TopCinemaSource(private val context: Context) {
                     Log.d("VideoDebug", "MP4Upload extracted ${it.size} videos")
                 }
             }
-            "https://doo" in url || "https://d" in url || "dood" in url-> {
+            "https://doo" in url || "https://d" in url ||"d000" in url || "dood" in url || "d-s.io" in url || "vide0" in url -> {
                 Log.d("VideoDebug", "Detected Dood URL")
                 doodExtractor.videosFromUrl(url).also {
                     Log.d("VideoDebug", "Dood extracted ${it.size} videos")
