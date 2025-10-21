@@ -322,7 +322,7 @@ class ArabSeedSource(private val context: Context) {
             episodeElements.map { element ->
                 SEpisode().apply {
                     url = element.attr("abs:href")
-                    name = element.selectFirst("div.epi__num")?.text() ?: "الحلقة"
+                    name = "Season : ${ element.selectFirst("div.epi__num")?.text() ?: "الحلقة" }"
                     episode_number = element.selectFirst("div.epi__num b")?.text()?.toFloatOrNull() ?: 1f
                     thumbnailUrl = document.selectFirst("div.poster__side div.poster__single img")?.attr("data-src") ?:document.selectFirst("div.poster__side div.poster__single img")?.attr("src")
                 }

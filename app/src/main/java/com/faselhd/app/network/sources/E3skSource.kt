@@ -13,6 +13,7 @@ import com.lagradost.nicehttp.ignoreAllSSLErrors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.*
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import java.io.File
 import java.io.IOException
@@ -251,7 +252,7 @@ class E3skSource(private val context: Context) {
                 val link = element.selectFirst("a")
                 SEpisode().apply {
                     url = decodeRedirectorUrl(link?.attr("abs:href") ?: "")
-                    name = link?.selectFirst(".title")?.text()?.trim() ?: "Episode"
+                    name = "Season : ${ link?.selectFirst(".title")?.text()?.trim() ?: "Episode" }"
                     episode_number = link?.selectFirst(".episodeNum span:nth-of-type(2)")?.text()?.toFloatOrNull() ?: 1f
                 }
             }.reversed()
@@ -272,64 +273,65 @@ class E3skSource(private val context: Context) {
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
         Log.d(TAG, "[fetchVideoList] Starting fetch for episode URL: $episodeUrl")
         try {
-            // 1. Fetch the E3sk episode page
+            // Step 1: Fetch the initial episode page to find the redirector link
             val episodeRequest = Request.Builder().url(episodeUrl).build()
             val episodeResponse = client.newCall(episodeRequest).execute()
-            val episodePageHtml = episodeResponse.body!!.string()
-            logHtmlContent(TAG, "E3sk Episode Page", episodePageHtml) // DEBUG HTML
-            val episodeDoc = Jsoup.parse(episodePageHtml, episodeUrl)
+            val episodeDoc = Jsoup.parse(episodeResponse.body!!.string(), episodeUrl)
 
-            // 2. Find the redirector link (e.g., to arbandroid.com or syara.net)
             val redirectorLink = episodeDoc.selectFirst("a.fullscreen-clickable")?.attr("abs:href")
             if (redirectorLink.isNullOrEmpty()) {
-                Log.e(TAG, "[fetchVideoList] CRITICAL: Could not find player redirect link (selector: a.fullscreen-clickable). Check the HTML log above.")
+                Log.e(TAG, "[fetchVideoList] Step 1 FAILED: Could not find the intermediate redirector link.")
                 return@withContext emptyList()
             }
             Log.d(TAG, "[fetchVideoList] Step 1 Success: Found intermediate redirector link: $redirectorLink")
 
-            // 3. Navigate through the intermediate "skip ad" page (arbandroid.com)
-            val intermediateRequest = Request.Builder().url(redirectorLink).header("Referer", episodeUrl).build()
-            val intermediateResponse = client.newCall(intermediateRequest).execute()
-            val intermediateHtml = intermediateResponse.body!!.string()
-            logHtmlContent(TAG, "Intermediate Ad Page (arbandroid/syara)", intermediateHtml) // DEBUG HTML
+            // --- START: CORRECTED LOGIC ---
 
-            // 4. Decode the final watch page URL from the intermediate link's query parameter
-            val watchPageUrl = URL(redirectorLink).query.substringAfter("url=")
-            Log.d(TAG, "[fetchVideoList] Step 2 Success: Extracted final watch page URL param: $watchPageUrl")
+            // Step 2: Extract the 'post' parameter which contains Base64 encoded data
+            val postDataEncoded = URI(redirectorLink).query.substringAfter("post=")
+            if (postDataEncoded.isBlank()) {
+                Log.e(TAG, "[fetchVideoList] Step 2 FAILED: 'post' parameter is missing or empty.")
+                return@withContext emptyList()
+            }
 
-            // 5. Fetch the final watch page (yallaev.net)
-            val watchRequest = Request.Builder().url(watchPageUrl).header("Referer", redirectorLink).build()
-            val watchResponse = client.newCall(watchRequest).execute()
-            val watchPageHtml = watchResponse.body!!.string()
-            logHtmlContent(TAG, "Final Watch Page (yallaev.net)", watchPageHtml) // DEBUG HTML
-            val watchDoc = Jsoup.parse(watchPageHtml, watchPageUrl)
+            // Step 3: Decode the Base64 string to get the JSON data
+            val decodedJsonString = String(Base64.decode(postDataEncoded, Base64.DEFAULT), StandardCharsets.UTF_8)
+            Log.d(TAG, "[fetchVideoList] Step 3 Success: Decoded JSON: $decodedJsonString")
+            val jsonObject = JSONObject(decodedJsonString)
+            val serversArray = jsonObject.getJSONArray("servers")
 
-            // 6. Extract videos from all available servers on the final watch page
+            // Step 4: Loop through the servers, construct embed URLs, and extract videos
             val videos = mutableListOf<Video>()
-            val serverElements = watchDoc.select("ul.serversList li")
-            Log.d(TAG, "[fetchVideoList] Step 3: Found ${serverElements.size} server elements to process.")
+            Log.d(TAG, "[fetchVideoList] Step 4: Found ${serversArray.length()} servers to process.")
 
-            for (server in serverElements) {
-                val serverName = server.selectFirst("em")?.text() ?: "Unknown"
+            for (i in 0 until serversArray.length()) {
+                val serverObject = serversArray.getJSONObject(i)
+                val serverName = serverObject.optString("name", "Unknown")
+                val serverId = serverObject.optString("id")
                 val qualityLabel = "$name - $serverName"
                 var embedUrl: String? = null
 
-                if (serverName.equals("daily", ignoreCase = true)) {
-                    embedUrl = server.selectFirst("code a")?.attr("abs:href")
-                } else {
-                    val serverId = server.attr("data-server")
-                    if (serverId.isNotBlank()) {
-                        embedUrl = "https://v.turkvearab.com/embed-$serverId.html"
-                    }
+                // Handle different server types based on the decoded JSON
+                if (serverName.equals("dailymotion", ignoreCase = true)) {
+                    // Dailymotion might have a different structure, but if it has an ID, we can build a link
+                    // For this source, the direct link is often inside the intermediate page's HTML
+                    // We will fall back to the generic turkvearab link if a specific one isn't found.
+                    embedUrl = "https://www.dailymotion.com/video/${serverId}"
+                } else if (serverId.isNotBlank()) {
+                    // For most other servers, the embed URL is constructed like this
+                    embedUrl = "https://v.turkvearab.com/embed-$serverId.html"
                 }
 
                 if (!embedUrl.isNullOrEmpty()) {
                     Log.d(TAG, "[fetchVideoList] Processing server '$serverName' with URL: $embedUrl")
-                    videos.addAll(extractVideosFromUrl(embedUrl, qualityLabel, episodeUrl))
+                    videos.addAll(extractVideosFromUrl(embedUrl, qualityLabel, redirectorLink))
                 } else {
-                    Log.w(TAG, "[fetchVideoList] Could not find embed URL for server: ${server.text()}")
+                    Log.w(TAG, "[fetchVideoList] Could not construct a valid embed URL for server: $serverObject")
                 }
             }
+
+            // --- END: CORRECTED LOGIC ---
+
             val distinctVideos = videos.distinctBy { it.url }
             Log.d(TAG, "[fetchVideoList] Finished. Found ${distinctVideos.size} distinct video links.")
             return@withContext distinctVideos

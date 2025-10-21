@@ -1,12 +1,14 @@
 package com.faselhd.app // Or your main package name
 
 import android.app.Application
+import android.content.Context
 import com.faselhd.app.utils.VideoCacheManager
 import kotlinx.serialization.json.Json
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.InjektModule
 import uy.kohesive.injekt.api.InjektRegistrar
 import uy.kohesive.injekt.api.addSingletonFactory
+import androidx.multidex.MultiDex
 
 class MyApplication : Application() {
     override fun onCreate() {
@@ -29,6 +31,11 @@ class MyApplication : Application() {
                 // You can register other dependencies here as well in the future.
             }
         })
+    }
+
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base)
+        MultiDex.install(this)
     }
 
     override fun onTerminate() {

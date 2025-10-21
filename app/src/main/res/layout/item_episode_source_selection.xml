@@ -1,0 +1,26 @@
+<!-- res/layout/item_episode_source_selection.xml -->
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingVertical="8dp"
+        android:paddingHorizontal="16dp"
+        android:background="?attr/selectableItemBackground">
+
+    <TextView
+            android:id="@+id/episode_title_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:text="Episode 1: The Beginning"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+    <Spinner
+            android:id="@+id/source_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+</LinearLayout>

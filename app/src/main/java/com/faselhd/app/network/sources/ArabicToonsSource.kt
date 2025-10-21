@@ -330,91 +330,98 @@ class ArabicToonsSource(private val context: Context) {
     // ============================ Video Links =============================
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
         val absoluteUrl = if (episodeUrl.startsWith("http")) episodeUrl else "$baseUrl/$episodeUrl"
+        Log.i("ArabicToons", "Fetching video list from: $absoluteUrl")
         try {
             val request = Request.Builder().url(absoluteUrl).build()
             val response = client.newCall(request).execute()
+            Log.i("ArabicToons", "Response received. Status: ${response.code}, URL: ${response.request.url}")
             videoListParse(response)
         } catch (e: Exception) {
-            e.printStackTrace()
-            emptyList<Video>()
+            Log.e("ArabicToons", "Error fetching video list: ${e.message}", e)
+            emptyList()
         }
     }
 
     /**
+     * **[CORRECTED]**
      * Parses the episode page response to find video URLs.
-     * It tries to extract from JavaScript first, then falls back to checking iframes.
+     * It looks for a specific JavaScript variable that holds the direct video link.
      */
     private suspend fun videoListParse(response: Response): List<Video> {
-        val document = Jsoup.parse(response.body!!.string())
-        val htmlContent = document.html()
+        val bodyString = response.body!!.string()
         val pageUrl = response.request.url.toString()
 
-        // Method 1: Look for HLS URL in JavaScript (most common case for this site)
-        var videos = extractFromJavascript(htmlContent, pageUrl)
+        Log.i("ArabicToons", "Parsing response from: $pageUrl")
+
+        // Method 1: Look for HLS/MP4 URL in JavaScript (this is the correct method for this site)
+        val videos = extractFromJavascript(bodyString, pageUrl)
         if (videos.isNotEmpty()) {
+            Log.i("ArabicToons", "JavaScript extraction successful! Found ${videos.size} video(s).")
             return videos
+        } else {
+            Log.w("ArabicToons", "JavaScript extraction failed. The site structure might have changed.")
         }
 
-        // Method 2: Look for iframe sources if JS extraction fails
-        videos = extractFromIframes(document, pageUrl)
-        if (videos.isNotEmpty()) {
-            return videos
-        }
+        // The iframe method is unlikely to work but can be kept as a last resort.
+        // val document = Jsoup.parse(bodyString)
+        // val iframeVideos = extractFromIframes(document, pageUrl)
+        // if (iframeVideos.isNotEmpty()) {
+        //     Log.i("ArabicToons", "Iframe extraction successful as a fallback.")
+        //     return iframeVideos
+        // }
 
+        Log.e("ArabicToons", "No video URLs found using any extraction method.")
         return emptyList()
     }
 
     /**
+     * **[CORRECTED]**
      * Extracts video URLs by parsing JavaScript content within the HTML.
-     * It specifically looks for the pattern used by arabic-toons.com to construct HLS URLs.
+     * It specifically looks for the `const videoSrc = "..."` pattern.
      */
     private fun extractFromJavascript(htmlContent: String, pageUrl: String): List<Video> {
-        // Pattern to find the JavaScript object containing parts of the URL.
-        val x9zfqv3Pattern = Regex("""const\s+x9zFqV3\s*=\s*\{([^}]+)\}""")
-        val match = x9zfqv3Pattern.find(htmlContent)
+        Log.i("ArabicToons", "Attempting JavaScript extraction...")
 
-        if (match != null) {
-            val objContent = match.groupValues[1]
-            val variables = mutableMapOf<String, String>()
-            // Pattern to parse key-value pairs from the JS object.
-            val propPattern = Regex("""(\w+):\s*["']([^"']+)["']""")
-            propPattern.findAll(objContent).forEach {
-                variables[it.groupValues[1]] = it.groupValues[2]
+        // This regex specifically targets the 'videoSrc' variable assignment.
+        val videoSrcPattern = Regex("""const\s+videoSrc\s*=\s*["'](https?://[^"']+)["']""")
+        val match = videoSrcPattern.find(htmlContent)
+
+        if (match != null && match.groupValues.size > 1) {
+            val resolvedUrl = match.groupValues[1]
+            Log.i("ArabicToons", "Found videoSrc URL: $resolvedUrl")
+
+            if (isValidVideoUrl(resolvedUrl)) {
+                val headers = mapOf(
+                    "Accept" to "*/*",
+                    "Accept-Language" to "en-US,en;q=0.5",
+                    "Accept-Encoding" to "gzip, deflate, br",
+                    "Referer" to baseUrl,
+                    "User-Agent" to USER_AGENT
+                )
+                // The URL is the direct source, create a single "Default" quality video.
+                val video = Video(resolvedUrl, "Default", resolvedUrl, "Default Quality", headers)
+                return listOf(video)
+            } else {
+                Log.w("ArabicToons", "URL found but failed validation: $resolvedUrl")
             }
-
-            // After parsing the object, look for the yB0hQ variable assignment which constructs the final URL.
-            val yb0hqPattern = Regex("""yB0hQ\s*=\s*`\$\{x9zFqV3\.jC1kO\}:\/\/\$\{x9zFqV3\.hF3nV\}\/\$\{x9zFqV3\.iA5pX\}\?\$\{x9zFqV3\.tN4qY\}`""")
-            if (yb0hqPattern.containsMatchIn(htmlContent)) {
-                val protocol = variables["jC1kO"]
-                val domain = variables["hF3nV"]
-                val path = variables["iA5pX"]
-                val params = variables["tN4qY"]
-
-                if (protocol != null && domain != null && path != null && params != null) {
-                    val resolvedUrl = "$protocol://$domain/$path?$params"
-                    if (isValidVideoUrl(resolvedUrl)) {
-                        // Create a single Video object with the HLS master playlist URL.
-                        // The player will handle quality selection.
-                        val headers = mapOf(
-                            "Referer" to baseUrl,
-//                            "User-Agent" to "Mozilla/5.0" // optional, but helps avoid 403
-                        )
-                        val video = Video(resolvedUrl, "Auto Quality", resolvedUrl, "??",headers)
-
-                        return listOf(video)
-                    }
-                }
-            }
+        } else {
+            Log.w("ArabicToons", "Could not find 'videoSrc' variable in the page's HTML.")
         }
+
         return emptyList()
     }
+
 
     /**
      * Finds all iframes on the page and recursively tries to extract video URLs from them.
+     * (This is a fallback method and likely not needed for the current site structure).
      */
     private suspend fun extractFromIframes(document: Document, pageUrl: String): List<Video> {
+        Log.i("ArabicToons", "Attempting iframe extraction as a fallback...")
         val videoList = mutableListOf<Video>()
         val iframes = document.select("iframe")
+        Log.i("ArabicToons", "Found ${iframes.size} iframe(s).")
+
         for (iframe in iframes) {
             val src = iframe.attr("src")
             if (src.isNotBlank()) {
@@ -422,14 +429,14 @@ class ArabicToonsSource(private val context: Context) {
                 try {
                     val request = Request.Builder().url(iframeUrl).build()
                     val response = client.newCall(request).execute()
-                    // Recursively call the JavaScript extractor on the iframe's content.
-                    val videosFromIframe = extractFromJavascript(response.body!!.string(), iframeUrl)
+                    val iframeContent = response.body!!.string()
+                    val videosFromIframe = extractFromJavascript(iframeContent, iframeUrl)
                     if (videosFromIframe.isNotEmpty()) {
+                        Log.i("ArabicToons", "Found ${videosFromIframe.size} video(s) in iframe: $iframeUrl")
                         videoList.addAll(videosFromIframe)
                     }
                 } catch (e: Exception) {
-                    // Silently ignore if an iframe fails to load.
-                    println("Error processing iframe $iframeUrl: ${e.message}")
+                    Log.e("ArabicToons", "Error processing iframe $iframeUrl", e)
                 }
             }
         }
@@ -440,13 +447,16 @@ class ArabicToonsSource(private val context: Context) {
      * Helper function to quickly validate if a URL seems like a video stream.
      */
     private fun isValidVideoUrl(url: String?): Boolean {
-        if (url.isNullOrBlank() || url.startsWith("data:")) {
-            return false
-        }
+        if (url.isNullOrBlank()) return false
         val lowerUrl = url.lowercase(Locale.ROOT)
-        val videoExtensions = listOf(".mp4", ".webm", ".mkv", ".m3u8")
+        // This site uses .mp4 links but sometimes video hosts use .m3u8 for streaming.
+        val videoExtensions = listOf(".mp4", ".m3u8")
         return videoExtensions.any { lowerUrl.contains(it) }
     }
+
+    /**
+     * Helper function to quickly validate if a URL seems like a video stream.
+     */
 
     // =============================== Search ===============================
     // NOTE: arabic-toons.com does not appear to have a standard search function.
@@ -521,3 +531,4 @@ class ArabicToonsSource(private val context: Context) {
         MangaPage(allResults, false)
     }
 }
+

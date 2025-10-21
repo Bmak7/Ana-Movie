@@ -1,6 +1,7 @@
 package com.faselhd.app.network.sources
 
 import android.content.Context
+import android.util.Base64
 import android.util.Log
 import androidx.preference.PreferenceManager
 import com.example.myapplication.R
@@ -28,7 +29,7 @@ class EskSource(private val context: Context) {
     // --- OKHTTP CLIENT (No changes) ---
     val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
     val dns = settingsManager.getInt(context.getString(R.string.dns_pref), 0)
-    private val client: OkHttpClient by lazy { /* ... same as before ... */
+    private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .cookieJar(object : CookieJar {
                 private val cookieStore = HashMap<String, List<Cookie>>()
@@ -73,6 +74,7 @@ class EskSource(private val context: Context) {
     // --- All other functions (fetchLatestUpdates, fetchVideoList, etc.) remain the same ---
     // ... (keep all other functions as they are correct) ...
     // ============================== Latest Updates / Main Page ==============================
+    // ============================== Latest Updates / Main Page ==============================
     suspend fun fetchLatestUpdates(page: Int): MangaPage = withContext(Dispatchers.IO) {
         if (page > 1) return@withContext MangaPage(emptyList(), false)
         val url = BASE_URL
@@ -85,8 +87,18 @@ class EskSource(private val context: Context) {
         val document = Jsoup.parse(response.body!!.string(), BASE_URL)
         val animeElements = document.select("ul.items-latest-eps li.type_item_box a.type_item")
         val animeList = animeElements.mapNotNull { element ->
+            // Get the encoded URL from the 'data-clse' attribute
+            val encodedUrl = element.attr("data-clse")
+            val decodedUrl = if (encodedUrl.isNotEmpty()) {
+                // Decode the Base64 string to get the real URL
+                String(Base64.decode(encodedUrl, Base64.DEFAULT))
+            } else {
+                // Fallback to href if data-clse is missing for some reason
+                element.attr("abs:href")
+            }
+
             SAnime().apply {
-                this.url = element.attr("abs:href")
+                this.url = decodedUrl // Use the decoded URL
                 this.title = element.selectFirst("div.item_title")?.text() ?: "No Title"
                 this.thumbnail_url = element.selectFirst("img.item_img")?.attr("data-image")
             }
@@ -95,26 +107,94 @@ class EskSource(private val context: Context) {
     }
 
     // ============================== Details ==============================
+    // ============================== Details ==============================
+    // ============================== Details ==============================
     suspend fun fetchAnimeDetails(animeUrl: String): SAnime = withContext(Dispatchers.IO) {
-        val request = Request.Builder().url(animeUrl).build()
-        val response = client.newCall(request).execute()
-        animeDetailsParse(response, animeUrl)
+        Log.d("EskSource", "fetchAnimeDetails started for URL: $animeUrl")
+        try {
+            val request = Request.Builder().url(animeUrl).build()
+            val response = client.newCall(request).execute()
+
+            Log.d("EskSource", "Response for $animeUrl - Code: ${response.code}")
+
+            if (!response.isSuccessful) {
+                Log.e("EskSource", "Failed to fetch details from $animeUrl. Aborting.")
+                // Returning an empty SAnime object or handle the error as appropriate
+                return@withContext SAnime()
+            }
+
+            // Read the body once and pass it to the parsing function.
+            val responseBody = response.body?.string()
+
+            if (responseBody.isNullOrEmpty()) {
+                Log.e("EskSource", "Response body is null or empty for $animeUrl.")
+                return@withContext SAnime()
+            }
+
+            // Print the entire HTML body to Logcat for inspection.
+            // Be aware this can be very long.
+            Log.d("EskSource", "--- Start of Response Body for $animeUrl ---")
+            // Logcat has a limit, so we print in chunks if necessary
+            responseBody.chunked(4000).forEach { chunk ->
+                Log.d("EskSource", chunk)
+            }
+            Log.d("EskSource", "--- End of Response Body for $animeUrl ---")
+
+            // Call the parsing function with the response body string
+            return@withContext animeDetailsParse(responseBody, animeUrl)
+
+        } catch (e: Exception) {
+            Log.e("EskSource", "Exception in fetchAnimeDetails for $animeUrl", e)
+            return@withContext SAnime() // Return empty object on error
+        }
     }
 
-    private fun animeDetailsParse(response: Response, animeUrl: String): SAnime {
-        val document = Jsoup.parse(response.body!!.string(), animeUrl)
+    // Modified to accept the response body as a String
+    private fun animeDetailsParse(responseBody: String, animeUrl: String): SAnime {
+        Log.d("EskSource", "animeDetailsParse started for URL: $animeUrl")
+        val document = Jsoup.parse(responseBody, animeUrl)
+
         return SAnime().apply {
-            url = animeUrl
-            thumbnail_url = document.selectFirst("div.poster img")?.attr("src")
-            title = document.selectFirst("h1.title")?.text()?.replace(Regex("""الحلقة \d+.*"""), "")?.trim() ?: ""
-            genre = document.select("div.categories a").joinToString { it.text() }
-            description = document.selectFirst("div.description span[data-nosnippet]")?.text() ?: ""
-            val lastEpisodeText = document.select("div.episodes-list a.ep-num").first()?.attr("title").orEmpty()
-            status = if (lastEpisodeText.contains("والاخيرة", true) || lastEpisodeText.contains("final", true)) {
+            this.url = animeUrl
+            Log.d("EskSource", "Parsing URL: $url")
+
+            // 1. Parse Thumbnail URL
+            val thumbSelector = "div.poster img"
+            Log.d("EskSource", "Attempting to select thumbnail with: '$thumbSelector'")
+            this.thumbnail_url = document.selectFirst(thumbSelector)?.attr("src")
+            Log.d("EskSource", "Parsed thumbnail_url: ${this.thumbnail_url}")
+
+            // 2. Parse Title
+            val titleSelector = "div.single_info h1.title"
+            Log.d("EskSource", "Attempting to select title with: '$titleSelector'")
+            this.title = document.selectFirst(titleSelector)?.text()?.trim() ?: "No Title"
+            Log.d("EskSource", "Parsed title: ${this.title}")
+
+            // 3. Parse Genre
+            val genreSelector = "div.categories a"
+            Log.d("EskSource", "Attempting to select genre with: '$genreSelector'")
+            this.genre = document.select(genreSelector).joinToString { it.text() }
+            Log.d("EskSource", "Parsed genre: ${this.genre}")
+
+            // 4. Parse Description
+            val descSelector = "div.description span[data-nosnippet]"
+            Log.d("EskSource", "Attempting to select description with: '$descSelector'")
+            this.description = document.selectFirst(descSelector)?.text() ?: ""
+            Log.d("EskSource", "Parsed description: ${this.description}")
+
+            // 5. Determine Status
+            val statusSelector = "div.items_list a.ep-num"
+            Log.d("EskSource", "Attempting to select episodes for status check with: '$statusSelector'")
+            val lastEpisodeText = document.select(statusSelector).first()?.attr("title").orEmpty()
+            Log.d("EskSource", "Text found for status check: '$lastEpisodeText'")
+            this.status = if (lastEpisodeText.contains("والاخيرة", true) || lastEpisodeText.contains("final", true)) {
                 SAnime.COMPLETED
             } else {
                 SAnime.ONGOING
             }
+            Log.d("EskSource", "Parsed status: ${this.status}")
+
+            Log.d("EskSource", "Finished parsing. Final SAnime object: $this")
         }
     }
 
@@ -127,16 +207,29 @@ class EskSource(private val context: Context) {
 
     private fun episodeListParse(response: Response): List<SEpisode> {
         val document = Jsoup.parse(response.body!!.string())
-        val episodeElements = document.select("div#episodes div.items_list a.ep-num")
+        val episodeElements = document.select("div.items_list a.ep-num")
+
         return if (episodeElements.isNotEmpty()) {
             episodeElements.map { element ->
+                // Get the encoded URL from the 'data-clse' attribute for the episode
+                val encodedUrl = element.attr("data-clse")
+                val decodedUrl = if (encodedUrl.isNotEmpty()) {
+                    // Decode the Base64 string to get the real URL
+                    String(Base64.decode(encodedUrl, Base64.DEFAULT))
+                } else {
+                    // Fallback to href if data-clse is missing
+                    element.attr("abs:href")
+                }
+
                 SEpisode().apply {
-                    url = element.attr("abs:href")
-                    name = "الحلقة " + element.selectFirst("b")?.text()?.trim()
-                    episode_number = element.selectFirst("b")?.text()?.toFloatOrNull() ?: 1f
+                    this.url = decodedUrl // Use the CORRECT decoded URL
+                    this.name =
+                        "Season : ${ element.attr("title").ifEmpty { "الحلقة " + element.selectFirst("b")?.text()?.trim() } }"
+                    this.episode_number = element.selectFirst("b")?.text()?.toFloatOrNull() ?: 1f
                 }
             }.reversed()
         } else {
+            // This part is for movies, which is correct and remains unchanged.
             listOf(
                 SEpisode().apply {
                     url = response.request.url.toString()
@@ -271,8 +364,18 @@ class EskSource(private val context: Context) {
         val document = Jsoup.parse(response.body!!.string(), response.request.url.toString())
         val animeElements = document.select("ul.search-page li.type_item_box a.type_item")
         val animeList = animeElements.map { element ->
+            // Get the encoded URL from the 'data-clse' attribute
+            val encodedUrl = element.attr("data-clse")
+            val decodedUrl = if (encodedUrl.isNotEmpty()) {
+                // Decode the Base64 string to get the real URL
+                String(Base64.decode(encodedUrl, Base64.DEFAULT))
+            } else {
+                // Fallback to href if data-clse is missing
+                element.attr("abs:href")
+            }
+
             SAnime().apply {
-                this.url = element.attr("abs:href")
+                this.url = decodedUrl // Use the decoded URL
                 this.title = element.selectFirst("div.item_title")?.text() ?: "Search Result"
                 this.thumbnail_url = element.selectFirst("img.item_img")?.attr("data-image")
             }

@@ -3,12 +3,31 @@
     <!-- Allow cleartext for certain domains if needed, though not for Cartoony -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">as.netflyapp.com</domain>-->
+
+        <!--        <domain includeSubdomains="true">as.netflyapp.com</domain>-->
         <!-- Add other domains that might use HTTP here -->
+    </domain-config>
+
+    <domain-config>
+        <domain includeSubdomains="true">netflyapp.com</domain>
+        <!-- Add any other HTTPS domains your app uses here -->
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config>
+        <domain includeSubdomains="true">b-cdn.net</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
     </domain-config>
 
     <!-- This is the crucial part -->
     <domain-config>
         <!-- Trust subdomains for the Cartoony API -->
+
         <domain includeSubdomains="true">cartoony.net</domain>
         <domain includeSubdomains="true">premilkyway.com</domain>
         <domain includeSubdomains="true">ovaltinecdn.com</domain>

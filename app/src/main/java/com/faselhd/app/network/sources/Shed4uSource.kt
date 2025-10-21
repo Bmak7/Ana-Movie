@@ -23,7 +23,7 @@ import java.util.regex.Pattern
 
 class Shed4uSource(private val context: Context) {
 
-    private val baseUrl = "https://shed4u.cam"
+    private val baseUrl = "https://shahid4u.you"
 
     // =========================================================================
     //  Client Setup - Reusing the robust client from the example
@@ -274,7 +274,7 @@ class Shed4uSource(private val context: Context) {
                 val seasonUrl = seasonElement.attr("abs:href")
                 try {
                     val seasonDoc = Jsoup.parse(client.newCall(Request.Builder().url(seasonUrl).build()).execute().body!!.string())
-                    seasonDoc.select("div.items a.epss[href*='/episode/']").reversed().forEach { episodeElement ->
+                    seasonDoc.select("div.items a.epss[href*='/episode/']").forEach { episodeElement ->
                         episodes.add(episodeFromElement(episodeElement, seasonName, thumbnailUrl))
                     }
                 } catch (e: Exception) {
@@ -284,7 +284,7 @@ class Shed4uSource(private val context: Context) {
         } else if (document.select("div.items a.epss[href*='/episode/']").isNotEmpty()) {
             // --- SINGLE-SEASON SHOW ---
             val seriesTitleAsSeason = document.select("span.title").text().substringBefore("الحلقة").trim()
-            document.select("div.items a.epss[href*='/episode/']").reversed().forEach { episodeElement ->
+            document.select("div.items a.epss[href*='/episode/']").forEach { episodeElement ->
                 episodes.add(episodeFromElement(episodeElement, seriesTitleAsSeason, thumbnailUrl))
             }
         }

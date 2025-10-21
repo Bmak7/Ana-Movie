@@ -347,7 +347,7 @@ class ArabDramaSource(private val context: Context) {
 
         episodesJson.EPS.map {
             SEpisode().apply {
-                name = it.episode_name
+                name = "Season : ${it.episode_name}"
                 episode_number = it.episode_number.toFloat()
                 url = it.infoSrc
             }

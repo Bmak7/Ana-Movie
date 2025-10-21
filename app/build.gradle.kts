@@ -15,8 +15,8 @@ android {
         minSdk = 26
         //noinspection EditedTargetSdkVersion
         targetSdk = 35
-        versionCode = 17
-        versionName = "2.4.5"
+        versionCode = 18
+        versionName = "2.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -134,6 +134,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("androidx.browser:browser:1.8.0")
 
+    implementation("androidx.multidex:multidex:2.0.1")
+
     // HTML parsing
     implementation("org.jsoup:jsoup:1.16.2")
 
@@ -201,6 +203,8 @@ dependencies {
 
     // WebDriverManager to automatically download and manage browser drivers
     implementation("io.github.bonigarcia:webdrivermanager:5.8.0")
+
+
 
     // SLF4J is a logging facade needed by Selenium. This avoids warnings.
     implementation("org.slf4j:slf4j-simple:2.0.13")

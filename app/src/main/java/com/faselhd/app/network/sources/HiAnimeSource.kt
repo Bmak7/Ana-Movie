@@ -508,7 +508,7 @@ class HiAnimeSource(private val context: Context) {
 
                     // Create both sub and dub versions if available
                     val subEpisode = SEpisode().apply {
-                        name = episodeTitle
+                        name = "Season : ${episodeTitle}"
                         url = "sub|$href"
                         episode_number = episodeNumber
                     }

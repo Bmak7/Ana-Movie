@@ -82,7 +82,7 @@ class AnimercoSource(private val context: Context) {
 //            .build()
 //    }
 
-    private val baseUrl = "https://web.animerco.org"
+    private val baseUrl = "https://got.animerco.org"
 
     // --- Extractors ---
     private val doodExtractor by lazy { DoodExtractor(client) }
@@ -241,7 +241,6 @@ class AnimercoSource(private val context: Context) {
 
     suspend fun fetchVideoList(episodeUrl: String): List<Video> = withContext(Dispatchers.IO) {
         Log.d("VideoDebug", "fetchVideoList called with URL: $episodeUrl")
-        val ajaxEndpoint = "https://tv.animerco.org/wp-admin/admin-ajax.php"
 
         try {
             // 1. Make the initial request to get the page content and cookies
@@ -250,33 +249,49 @@ class AnimercoSource(private val context: Context) {
 
             val responseBody = initialResponse.body?.string()
             if (responseBody.isNullOrEmpty()) {
+                Log.e("VideoDebug", "Initial response body was null or empty.")
                 return@withContext emptyList()
             }
 
-            // --- KEY CHANGE: Extract cookies to maintain the session ---
+            // 2. Extract cookies to maintain the session
             val cookies = initialResponse.headers.values("Set-Cookie").joinToString(separator = "; ") {
                 it.substringBefore(";")
             }
 
+            // 3. --- KEY CHANGE: Extract the entire dtAjax JSON object ---
+            val ajaxDataPattern = Pattern.compile("""var dtAjax\s*=\s*(\{.*?\});""")
+            val ajaxDataMatcher = ajaxDataPattern.matcher(responseBody)
 
-            // 2. --- KEY CHANGE: Extract the security nonce from the script content ---
-            val noncePattern = Pattern.compile("""var dtAjax\s*=\s*\{"url":".*?","nonce":"(.*?)"\}""")
-            val nonceMatcher = noncePattern.matcher(responseBody)
-            val nonce = if (nonceMatcher.find()) {
-                nonceMatcher.group(1)
+            val (ajaxUrl, nonce) = if (ajaxDataMatcher.find()) {
+                try {
+                    val jsonData = JSONObject(ajaxDataMatcher.group(1))
+                    val relativeUrl = jsonData.getString("url")
+                    // Construct the full URL from the base and the relative path
+                    val fullUrl = episodeUrl.toHttpUrl().scheme + "://" + episodeUrl.toHttpUrl().host + relativeUrl
+                    val extractedNonce = jsonData.getString("nonce")
+                    Log.d("VideoDebug", "Successfully extracted AJAX URL: $fullUrl and Nonce: $extractedNonce")
+                    Pair(fullUrl, extractedNonce)
+                } catch (e: Exception) {
+                    Log.e("VideoDebug", "Failed to parse dtAjax JSON object.", e)
+                    return@withContext emptyList()
+                }
             } else {
-                Log.e("VideoDebug", "Error: Could not find the security nonce.")
+                Log.e("VideoDebug", "Error: Could not find the dtAjax JavaScript object.")
                 return@withContext emptyList()
             }
 
+            if (ajaxUrl.isBlank() || nonce.isBlank()) {
+                Log.e("VideoDebug", "Extracted AJAX URL or Nonce is blank.")
+                return@withContext emptyList()
+            }
 
-            // 3. Find all server elements
-            val document = Jsoup.parse(responseBody)
+            // 4. Find all server elements
+            val document = Jsoup.parse(responseBody, episodeUrl)
             val serverElements = document.select("ul.server-list > li > a.option")
+            Log.d("VideoDebug", "Found ${serverElements.size} server elements.")
 
 
-            // 4. --- KEY CHANGE: Use flatMap for a cleaner, concurrent-safe approach ---
-            // Iterate through each server, make the AJAX call, and map the results to a list of Videos.
+            // 5. Use flatMap to concurrently and safely fetch video links
             val videos = serverElements.flatMap { playerElement ->
                 val serverName = playerElement.selectFirst("span.server")?.text() ?: "Unknown Server"
                 val postData = playerElement.attr("data-post")
@@ -284,10 +299,10 @@ class AnimercoSource(private val context: Context) {
                 val typeData = playerElement.attr("data-type")
 
                 if (postData.isBlank() || numeData.isBlank() || typeData.isBlank()) {
-                    return@flatMap emptyList<Video>() // Continue to next element
+                    return@flatMap emptyList<Video>()
                 }
 
-                // 5. --- KEY CHANGE: Build the FormBody WITH the nonce ---
+                // 6. Build the FormBody WITH the dynamically extracted nonce
                 val formBody = FormBody.Builder()
                     .add("action", "player_ajax")
                     .add("post", postData)
@@ -296,13 +311,13 @@ class AnimercoSource(private val context: Context) {
                     .add("nonce", nonce) // Nonce is now included
                     .build()
 
-                // 6. --- KEY CHANGE: Build the request WITH required headers ---
+                // 7. Build the request WITH required headers and the dynamic AJAX URL
                 val ajaxRequest = Request.Builder()
-                    .url(ajaxEndpoint)
+                    .url(ajaxUrl) // Use the dynamic URL
                     .post(formBody)
                     .header("Referer", episodeUrl)
                     .header("X-Requested-With", "XMLHttpRequest")
-                    .header("Cookie", cookies) // Add cookies to maintain session
+                    .header("Cookie", cookies)
                     .build()
 
                 try {
@@ -310,29 +325,35 @@ class AnimercoSource(private val context: Context) {
                     val ajaxBody = ajaxResponse.body?.string()
 
                     if (!ajaxResponse.isSuccessful || ajaxBody.isNullOrEmpty()) {
+                        Log.w("VideoDebug", "AJAX request for server '$serverName' failed or returned empty body.")
                         emptyList<Video>()
                     } else {
-                        // 7. --- KEY CHANGE: Robust JSON parsing ---
+                        // 8. Robustly parse the JSON to get the embed_url
                         val embedUrl = try {
                             JSONObject(ajaxBody).getString("embed_url").replace("\\", "")
                         } catch (e: Exception) {
+                            Log.e("VideoDebug", "Failed to parse embed_url from AJAX response for server '$serverName'.", e)
                             ""
                         }
 
                         if (embedUrl.isNotBlank()) {
+                            Log.d("VideoDebug", "Got embed URL for '$serverName': $embedUrl")
                             extractVideosFromUrl(embedUrl) // Call your existing extractor
                         } else {
                             emptyList<Video>()
                         }
                     }
                 } catch (e: Exception) {
+                    Log.e("VideoDebug", "Exception during AJAX call for server '$serverName'.", e)
                     emptyList<Video>()
                 }
             }
 
+            Log.i("VideoDebug", "Completed fetching. Total videos found: ${videos.size}")
             return@withContext videos
 
         } catch (e: Exception) {
+            Log.e("VideoDebug", "A critical error occurred in fetchVideoList.", e)
             return@withContext emptyList()
         }
     }
@@ -459,3 +480,4 @@ class AnimercoSource(private val context: Context) {
         )
     }
 }
+
